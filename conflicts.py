@@ -59,13 +59,12 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
     text += 'Ideally, start with the one that should be merged first.'
 
     for c in pull.get_issue_comments():
-        if c.user.login == login_name:
-            if c.body.startswith(ID_CONFLICTS_COMMENT):
-                if dry_run:
-                    print('{}.{}.body = {}'.format(pull, c, text))
-                else:
-                    c.edit(text)
-                return
+        if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
+            if dry_run:
+                print('{}.{}.body = {}'.format(pull, c, text))
+            else:
+                c.edit(text)
+            return
 
     if dry_run:
         print('{}.new_comment.body = {}'.format(pull, text))
@@ -90,6 +89,8 @@ def main():
     call_git(['checkout', 'origin/{}'.format(args.base_name), '--quiet'])
     call_git(['checkout', '-B', args.base_name, '--quiet'])
     call_git(['diff', '--exit-code'])  # Exit on changes
+    print('Fetching diffs ...')
+    call_git(['fetch', '--quiet', UPSTREAM_PULL])
 
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
@@ -105,9 +106,6 @@ def main():
     print('Open {}-pulls: {}'.format(args.base_name, len(pulls)))
     pulls_mergeable = [p for p in pulls if p.mergeable]
     print('Open mergeable {}-pulls: {}'.format(args.base_name, len(pulls_mergeable)))
-
-    print('Fetching diffs ...')
-    call_git(['fetch', UPSTREAM_PULL])
 
     if args.update_comments:
         for pull_update in pulls_mergeable:
