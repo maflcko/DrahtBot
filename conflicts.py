@@ -84,6 +84,7 @@ def main():
     call_git(['checkout', 'origin/{}'.format(args.base_name), '--quiet'])
     call_git(['checkout', '-B', args.base_name, '--quiet'])
     call_git(['diff', '--exit-code'])  # Exit on changes
+    call_git(['diff', '--staged', '--exit-code'])  # Exit on changes
     print('Fetching diffs ...')
     call_git(['fetch', '--quiet', UPSTREAM_PULL])
 
