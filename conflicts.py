@@ -33,15 +33,12 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
     for i, pull_other in enumerate(pulls_mergeable):
         if num == pull_other.number:
             continue
-        print('[{}/{}] Checking for conflicts {} <> {} <> {} ... '.format(i, len(pulls_mergeable), base_branch, num, pull_other.number), end=' ', flush=True)
         call_git(['checkout', base_id, '--quiet'])
         try:
             call_git(['merge', '{}/{}/head'.format(UPSTREAM_PULL, num), '{}/{}/head'.format(UPSTREAM_PULL, pull_other.number), '-m', 'Octomerge {}+{}+{}'.format(base_branch, num, pull_other.number), '--quiet'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            print('OK')
         except subprocess.CalledProcessError:
             call_git(['merge', '--abort'])
             conflicts += [pull_other]
-            print('CONFLICT')
     return conflicts
 
 
@@ -60,15 +57,13 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
 
     for c in pull.get_issue_comments():
         if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
-            if dry_run:
-                print('{}.{}.body = {}'.format(pull, c, text))
-            else:
+            print('{}.{}.body = {}'.format(pull, c, text))
+            if not dry_run:
                 c.edit(text)
             return
 
-    if dry_run:
-        print('{}.new_comment.body = {}'.format(pull, text))
-    else:
+    print('{}.new_comment.body = {}'.format(pull, text))
+    if not dry_run:
         pull.create_issue_comment(text)
 
 
@@ -112,6 +107,7 @@ def main():
             if pull_update.number < 13385:
                 # For now
                 continue
+            print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_update.number, 'other_pulls'))
             pulls_conflict = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_update.number, base_branch=args.base_name)
             update_comment(dry_run=args.dry_run, login_name=github_api.get_user().login, pull=pull_update, pulls_conflict=pulls_conflict)
 
@@ -127,6 +123,7 @@ def main():
             print('{} is not mergeable'.format(pull_merge.number))
             sys.exit(-1)
 
+        print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_merge.number, 'other_pulls'))
         conflicts = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_merge.number, base_branch=args.base_name)
 
         print()
