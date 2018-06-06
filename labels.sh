@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-source ./env_3/bin/activate && python3 labels.py --github_access_token 0a27048478dafc3fa56322874517e758ac83584e "${@}"
+source ./env_3/bin/activate && python3 labels.py --github_access_token d7d24ec6ff00000becdfbd15655202abc69e4d6f "${@}"
