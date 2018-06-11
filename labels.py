@@ -38,6 +38,8 @@ def main():
                 print('{}.add_to_labels({})'.format(p, label_needs_rebase))
                 if not args.dry_run:
                     issue.add_to_labels(label_needs_rebase)
+                    ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
+                    issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
         PAUSE = 1 * 60 * 60
         print('Sleeping for {}s'.format(PAUSE))
         time.sleep(PAUSE)
