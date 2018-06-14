@@ -1,4 +1,4 @@
-from github import Github
+from github import Github, GithubException
 import time
 import argparse
 
@@ -16,33 +16,39 @@ def main():
     label_needs_rebase = github_repo.get_label('Needs rebase')
 
     while True:
-        print('Get open pulls ...')
-        pulls = [p for p in github_repo.get_pulls(state='open')]
-        print('Fetching open pulls metadata ...')
-        pulls_update_mergeable = lambda: [p for p in pulls if p.mergeable is None]
-        while pulls_update_mergeable():
-            print('Update mergable state for pulls {}'.format([p.number for p in pulls_update_mergeable()]))
-            [p.update() for p in pulls_update_mergeable()]
+        try:
+            print('Get open pulls ...')
+            pulls = [p for p in github_repo.get_pulls(state='open')]
+            print('Fetching open pulls metadata ...')
+            pulls_update_mergeable = lambda: [p for p in pulls if p.mergeable is None]
+            while pulls_update_mergeable():
+                print('Update mergable state for pulls {}'.format([p.number for p in pulls_update_mergeable()]))
+                [p.update() for p in pulls_update_mergeable()]
 
-        print('Open pulls: {}'.format(len(pulls)))
+            print('Open pulls: {}'.format(len(pulls)))
 
-        for i, p in enumerate(pulls):
-            print('{}/{}'.format(i, len(pulls)))
-            issue = p.as_issue()
-            if p.mergeable and label_needs_rebase in issue.get_labels():
-                print('{}.remove_from_labels({})'.format(p, label_needs_rebase))
-                if not args.dry_run:
-                    issue.remove_from_labels(label_needs_rebase)
-                continue
-            if not p.mergeable and label_needs_rebase not in issue.get_labels():
-                print('{}.add_to_labels({})'.format(p, label_needs_rebase))
-                if not args.dry_run:
-                    issue.add_to_labels(label_needs_rebase)
-                    ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
-                    issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
-        PAUSE = 1 * 60 * 60
-        print('Sleeping for {}s'.format(PAUSE))
-        time.sleep(PAUSE)
+            for i, p in enumerate(pulls):
+                print('{}/{}'.format(i, len(pulls)))
+                issue = p.as_issue()
+                if p.mergeable and label_needs_rebase in issue.get_labels():
+                    print('{}.remove_from_labels({})'.format(p, label_needs_rebase))
+                    if not args.dry_run:
+                        issue.remove_from_labels(label_needs_rebase)
+                    continue
+                if not p.mergeable and label_needs_rebase not in issue.get_labels():
+                    print('{}.add_to_labels({})'.format(p, label_needs_rebase))
+                    if not args.dry_run:
+                        issue.add_to_labels(label_needs_rebase)
+                        ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
+                        issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
+            PAUSE = 1 * 60 * 60
+            print('Sleeping for {}s'.format(PAUSE))
+            time.sleep(PAUSE)
+        except GithubException as e:
+            if e.status != 502:
+                raise
+            print('Ignore {!r}'.format(e))
+            pass
 
 
 if __name__ == '__main__':
