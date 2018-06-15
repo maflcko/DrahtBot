@@ -31,7 +31,7 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
     conflicts = []
     base_id = get_git(['log', '-1', '--format=%H', base_branch])
     call_git(['checkout', base_id, '--quiet'])
-    call_git(['merge', '--quiet', '{}/{}/head'.format(UPSTREAM_PULL, num), '-m', 'Prepare base for {}'.format(num)])
+    call_git(['merge', '--quiet', '{}/{}/head'.format(UPSTREAM_PULL, num), '-m', 'Prepare base for {}'.format(num)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     base_id = get_git(['log', '-1', '--format=%H', 'HEAD'])
     for i, pull_other in enumerate(pulls_mergeable):
         if num == pull_other.number:
@@ -60,12 +60,12 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
 
     for c in pull.get_issue_comments():
         if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
-            print('{}.{}.body = {}'.format(pull, c, text))
+            print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
             if not dry_run:
                 c.edit(text)
             return
 
-    print('{}.new_comment.body = {}'.format(pull, text))
+    print('{}\n    .new_comment.body = {}\n'.format(pull, text))
     if not dry_run:
         pull.create_issue_comment(text)
 
