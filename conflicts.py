@@ -30,12 +30,15 @@ def git_checkout(local_ref):
 def calc_conflicts(pulls_mergeable, num, base_branch):
     conflicts = []
     base_id = get_git(['log', '-1', '--format=%H', base_branch])
+    call_git(['checkout', base_id, '--quiet'])
+    call_git(['merge', '--quiet', '{}/{}/head'.format(UPSTREAM_PULL, num), '-m', 'Prepare base for {}'.format(num)])
+    base_id = get_git(['log', '-1', '--format=%H', 'HEAD'])
     for i, pull_other in enumerate(pulls_mergeable):
         if num == pull_other.number:
             continue
         call_git(['checkout', base_id, '--quiet'])
         try:
-            call_git(['merge', '{}/{}/head'.format(UPSTREAM_PULL, num), '{}/{}/head'.format(UPSTREAM_PULL, pull_other.number), '-m', 'Octomerge {}+{}+{}'.format(base_branch, num, pull_other.number), '--quiet'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            call_git(['merge', '{}/{}/head'.format(UPSTREAM_PULL, pull_other.number), '-m', 'Merge base_{}+{}'.format(num, pull_other.number), '--quiet'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         except subprocess.CalledProcessError:
             call_git(['merge', '--abort'])
             conflicts += [pull_other]
