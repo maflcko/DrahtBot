@@ -31,12 +31,12 @@ def main():
                 print('{}/{}'.format(i, len(pulls)))
                 issue = p.as_issue()
                 if p.mergeable and label_needs_rebase in issue.get_labels():
-                    print('{}.remove_from_labels({})'.format(p, label_needs_rebase))
+                    print('{}\n    .remove_from_labels({})'.format(p, label_needs_rebase))
                     if not args.dry_run:
                         issue.remove_from_labels(label_needs_rebase)
                     continue
                 if not p.mergeable and label_needs_rebase not in issue.get_labels():
-                    print('{}.add_to_labels({})'.format(p, label_needs_rebase))
+                    print('{}\n    .add_to_labels({})'.format(p, label_needs_rebase))
                     if not args.dry_run:
                         issue.add_to_labels(label_needs_rebase)
                         ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
@@ -44,9 +44,7 @@ def main():
             PAUSE = 1 * 60 * 60
             print('Sleeping for {}s'.format(PAUSE))
             time.sleep(PAUSE)
-        except GithubException as e:
-            if e.status != 502:
-                raise
+        except (GithubException, OSError) as e:
             print('Ignore {!r}'.format(e))
             pass
 
