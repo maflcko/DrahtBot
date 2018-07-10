@@ -4,6 +4,8 @@ import argparse
 
 from util.util import return_with_pull_metadata
 
+ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
+
 
 def main():
     parser = argparse.ArgumentParser(description='Update the label that indicates a rebase is required.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -29,14 +31,17 @@ def main():
                 issue = p.as_issue()
                 if p.mergeable and label_needs_rebase in issue.get_labels():
                     print('{}\n    .remove_from_labels({})'.format(p, label_needs_rebase))
+                    comments = [c for c in issue.get_comments() if c.body.startswith(ID_NEEDS_REBASE_COMMENT)]
+                    print('    + delete {} comments'.format(len(comments)))
                     if not args.dry_run:
                         issue.remove_from_labels(label_needs_rebase)
+                        for c in comments:
+                            c.delete()
                     continue
                 if not p.mergeable and label_needs_rebase not in issue.get_labels():
                     print('{}\n    .add_to_labels({})'.format(p, label_needs_rebase))
                     if not args.dry_run:
                         issue.add_to_labels(label_needs_rebase)
-                        ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
                         issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
                     continue
             PAUSE = 1 * 60 * 60
