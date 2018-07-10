@@ -2,6 +2,8 @@ from github import Github, GithubException
 import time
 import argparse
 
+from util.util import return_with_pull_metadata
+
 
 def main():
     parser = argparse.ArgumentParser(description='Update the label that indicates a rebase is required.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -18,12 +20,7 @@ def main():
     while True:
         try:
             print('Get open pulls ...')
-            pulls = [p for p in github_repo.get_pulls(state='open')]
-            print('Fetching open pulls metadata ...')
-            pulls_update_mergeable = lambda: [p for p in pulls if p.mergeable is None]
-            while pulls_update_mergeable():
-                print('Update mergable state for pulls {}'.format([p.number for p in pulls_update_mergeable()]))
-                [p.update() for p in pulls_update_mergeable()]
+            pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
 
             print('Open pulls: {}'.format(len(pulls)))
 
@@ -41,6 +38,7 @@ def main():
                         issue.add_to_labels(label_needs_rebase)
                         ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
                         issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
+                    continue
             PAUSE = 1 * 60 * 60
             print('Sleeping for {}s'.format(PAUSE))
             time.sleep(PAUSE)

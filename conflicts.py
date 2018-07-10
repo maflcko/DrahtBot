@@ -6,6 +6,8 @@ import argparse
 import os
 import concurrent.futures
 
+from util.util import return_with_pull_metadata
+
 UPSTREAM_PULL = 'upstream-pull'
 
 
@@ -94,13 +96,8 @@ def main():
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
     github_repo = github_api.get_repo(args.github_repo)
-    pulls = github_repo.get_pulls(state='open')
-    print('Fetching open pulls metadata ...')
+    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
     pulls = [p for p in pulls if p.base.ref == args.base_name]
-    pulls_update_mergeable = lambda: [p for p in pulls if p.mergeable is None]
-    while pulls_update_mergeable():
-        print('Update mergable state for pulls {}'.format([p.number for p in pulls_update_mergeable()]))
-        [p.update() for p in pulls_update_mergeable()]
 
     print('Open {}-pulls: {}'.format(args.base_name, len(pulls)))
     pulls_mergeable = [p for p in pulls if p.mergeable]
