@@ -85,11 +85,18 @@ def main():
 
     print('Update git repo {}'.format(args.git_repo))
     os.chdir(args.git_repo)
+
+    # GC
+    call_git(['gc', '--quiet'])
+    call_git(['prune'])
+
+    # Get base branch
     git_fetch_branch(args.base_name)
     call_git(['checkout', 'origin/{}'.format(args.base_name), '--quiet'])
     call_git(['checkout', '-B', args.base_name, '--quiet'])
     call_git(['diff', '--exit-code'])  # Exit on changes
     call_git(['diff', '--staged', '--exit-code'])  # Exit on changes
+
     print('Fetching diffs ...')
     call_git(['fetch', '--quiet', UPSTREAM_PULL])
 
