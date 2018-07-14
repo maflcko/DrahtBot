@@ -61,12 +61,17 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
     text += 'Ideally, start with the one that should be merged first.'
 
     for c in pull.get_issue_comments():
+        if c.body == text:
+            # A comment is already up-to-date
+            return
         if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
+            # Our comment needs update
             print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
             if not dry_run:
                 c.edit(text)
             return
 
+    # Couldn't find any comment
     print('{}\n    .new_comment.body = {}\n'.format(pull, text))
     if not dry_run:
         pull.create_issue_comment(text)
