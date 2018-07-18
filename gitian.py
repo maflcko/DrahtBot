@@ -29,7 +29,7 @@ def main():
     print()
     url = 'https://github.com/{}'.format(args.github_repo)
 
-    def call_gitian_build(args_fwd, *, signer='none_signer', version='none_version'):
+    def call_gitian_build(args_fwd, *, signer='none_signer', commit=None):
         subprocess.check_call([
             sys.executable,
             '../../gitian-build.py',
@@ -41,8 +41,9 @@ def main():
             '--url',
             '{}'.format(url),
             '--no-commit',
+            '--commit',
             signer,
-            version,
+            commit,
         ] + args_fwd)
 
     args.gitian_folder = os.path.join(args.gitian_folder, '')
@@ -56,11 +57,8 @@ def main():
     while True:
         try:
             with tempfile.TemporaryDirectory(prefix=args.gitian_folder) as temp_dir:
-                print('Setting up docker gitian ...')
-                os.chdir(temp_dir)
-                call_gitian_build(['--setup'])
-
                 print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
+                os.chdir(temp_dir)
                 call_git(['clone', '--quiet', url, 'bitcoin'])
                 print('Set git metadata')
                 os.chdir(os.path.join(temp_dir, 'bitcoin'))
@@ -77,16 +75,20 @@ def main():
                 print('Get open, mergeable {} pulls ...'.format(args.base_name))
                 pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
                 call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
+                call_git(['fetch', 'origin'])
+                base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
                 pulls = [p for p in pulls if p.base.ref == args.base_name]
                 pulls = [p for p in pulls if p.mergeable]
 
                 print('Num: {}'.format(len(pulls)))
 
-                print('Starting gitian build for base branch ...')
-                os.chdir(os.path.join(temp_dir, 'bitcoin'))
-                base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
+                print('Setting up docker gitian ...')
                 os.chdir(temp_dir)
-                call_gitian_build(['--build', '--commit'], version=base_commit)
+                call_gitian_build(['--setup'], commit=base_commit)
+
+                print('Starting gitian build for base branch ...')
+                os.chdir(temp_dir)
+                call_gitian_build(['--build', '--commit'], commit=base_commit)
                 base_folder = os.path.join(temp_dir, 'bitcoin-binaries', base_commit)
 
                 for i, p in enumerate(pulls):
@@ -101,7 +103,7 @@ def main():
                     call_git(['merge', '--quiet', '{}/{}/head'.format(UPSTREAM_PULL, p.number), '-m', 'Marge {}'.format(p.number)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                     commit = get_git(['log', '-1', '--format=%H', 'HEAD'])
                     os.chdir(temp_dir)
-                    call_gitian_build(['--build', '--commit'], version=commit)
+                    call_gitian_build(['--build', '--commit'], commit=commit)
                     commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
 
                     print('{}\n    .remove_from_labels({})'.format(p, label_needs_gitian))
