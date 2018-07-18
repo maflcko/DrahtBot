@@ -70,16 +70,15 @@ def main():
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
     args = parser.parse_args()
 
-    args.git_repo = os.path.join(args.git_repo, '')
+    temp_dir = os.path.join(args.git_repo, '')
     os.makedirs(args.git_repo, exist_ok=True)
+    args.git_repo = os.path.join(temp_dir, 'bitcoin')
 
-    print('Update git repo {}'.format(args.git_repo))
     url = 'https://github.com/{}'.format(args.github_repo)
-    with tempfile.TemporaryDirectory(prefix=args.git_repo) as temp_dir:
-        os.chdir(temp_dir)
+    if not os.path.isdir(args.git_repo):
         print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
+        os.chdir(temp_dir)
         call_git(['clone', '--quiet', url, 'bitcoin'])
-        args.git_repo = os.path.join(temp_dir, 'bitcoin')
         print('Set git metadata')
         os.chdir(args.git_repo)
         with open(os.path.join(args.git_repo, '.git', 'config'), 'a') as f:
@@ -90,52 +89,53 @@ def main():
         call_git(['config', 'user.email', 'no@ne.nl'])
         call_git(['config', 'user.name', 'none'])
 
-        print('Fetching diffs ...')
-        call_git(['fetch', '--quiet', UPSTREAM_PULL])
+    print('Fetching diffs ...')
+    os.chdir(args.git_repo)
+    call_git(['fetch', '--quiet', UPSTREAM_PULL])
 
-        print('Fetching open pulls ...')
-        github_api = Github(args.github_access_token)
-        github_repo = github_api.get_repo(args.github_repo)
-        pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
-        call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
-        call_git(['fetch', 'origin', '{}'.format(args.base_name), '--quiet'])
-        pulls = [p for p in pulls if p.base.ref == args.base_name]
+    print('Fetching open pulls ...')
+    github_api = Github(args.github_access_token)
+    github_repo = github_api.get_repo(args.github_repo)
+    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
+    call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
+    call_git(['fetch', 'origin', '{}'.format(args.base_name), '--quiet'])
+    pulls = [p for p in pulls if p.base.ref == args.base_name]
 
-        print('Open {}-pulls: {}'.format(args.base_name, len(pulls)))
-        pulls_mergeable = [p for p in pulls if p.mergeable]
-        print('Open mergeable {}-pulls: {}'.format(args.base_name, len(pulls_mergeable)))
+    print('Open {}-pulls: {}'.format(args.base_name, len(pulls)))
+    pulls_mergeable = [p for p in pulls if p.mergeable]
+    print('Open mergeable {}-pulls: {}'.format(args.base_name, len(pulls_mergeable)))
 
-        if args.update_comments:
-            for pull_update in pulls_mergeable:
-                if pull_update.number < 13385:
-                    # For now
-                    continue
-                print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_update.number, 'other_pulls'))
-                pulls_conflict = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_update.number, base_branch=args.base_name)
-                update_comment(dry_run=args.dry_run, login_name=github_api.get_user().login, pull=pull_update, pulls_conflict=pulls_conflict)
+    if args.update_comments:
+        for pull_update in pulls_mergeable:
+            if pull_update.number < 13385:
+                # For now
+                continue
+            print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_update.number, 'other_pulls'))
+            pulls_conflict = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_update.number, base_branch=args.base_name)
+            update_comment(dry_run=args.dry_run, login_name=github_api.get_user().login, pull=pull_update, pulls_conflict=pulls_conflict)
 
-        if args.pull_id:
-            pull_merge = [p for p in pulls if p.number == args.pull_id]
+    if args.pull_id:
+        pull_merge = [p for p in pulls if p.number == args.pull_id]
 
-            if not pull_merge:
-                print('{} not found in all {} open {} pulls'.format(args.pull_id, len(pulls), args.base_name))
-                sys.exit(-1)
-            pull_merge = pull_merge[0]
+        if not pull_merge:
+            print('{} not found in all {} open {} pulls'.format(args.pull_id, len(pulls), args.base_name))
+            sys.exit(-1)
+        pull_merge = pull_merge[0]
 
-            if not pull_merge.mergeable:
-                print('{} is not mergeable'.format(pull_merge.number))
-                sys.exit(-1)
+        if not pull_merge.mergeable:
+            print('{} is not mergeable'.format(pull_merge.number))
+            sys.exit(-1)
 
-            print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_merge.number, 'other_pulls'))
-            conflicts = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_merge.number, base_branch=args.base_name)
+        print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_merge.number, 'other_pulls'))
+        conflicts = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_merge.number, base_branch=args.base_name)
 
-            print()
-            print('{} conflicts for pull #{} ({}):'.format(len(conflicts), pull_merge.number, pull_merge.title))
-            for pull_conflict in conflicts:
-                print('#{} ({})'.format(pull_conflict.number, pull_conflict.title))
+        print()
+        print('{} conflicts for pull #{} ({}):'.format(len(conflicts), pull_merge.number, pull_merge.title))
+        for pull_conflict in conflicts:
+            print('#{} ({})'.format(pull_conflict.number, pull_conflict.title))
 
-            print()
-            print('Needs rebase due to merge of #{}'.format(pull_merge.number))
+        print()
+        print('Needs rebase due to merge of #{}'.format(pull_merge.number))
 
 
 if __name__ == '__main__':

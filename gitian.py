@@ -29,10 +29,13 @@ def main():
     print()
     url = 'https://github.com/{}'.format(args.github_repo)
 
+    temp_dir = os.path.join(args.gitian_folder, '')
+    os.makedirs(temp_dir, exist_ok=True)
+
     def call_gitian_build(args_fwd, *, signer='none_signer', commit=None):
         subprocess.check_call([
             sys.executable,
-            '../../gitian-build.py',
+            '{}'.format(os.path.join(temp_dir, '..', 'gitian-build.py')),
             '--docker',
             '--jobs',
             '{}'.format(args.gitian_jobs),
@@ -46,75 +49,73 @@ def main():
             commit,
         ] + args_fwd)
 
-    args.gitian_folder = os.path.join(args.gitian_folder, '')
-    os.makedirs(args.gitian_folder, exist_ok=True)
-
     github_api = Github(args.github_access_token)
     github_repo = github_api.get_repo(args.github_repo)
 
     label_needs_gitian = github_repo.get_label('Needs gitian build')
 
-    with tempfile.TemporaryDirectory(prefix=args.gitian_folder) as temp_dir:
-                print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
-                os.chdir(temp_dir)
-                call_git(['clone', '--quiet', url, 'bitcoin'])
-                print('Set git metadata')
-                os.chdir(os.path.join(temp_dir, 'bitcoin'))
-                with open(os.path.join(temp_dir, 'bitcoin', '.git', 'config'), 'a') as f:
-                    f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
-                    f.write('    url = {}\n'.format(url))
-                    f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
-                    f.flush()
-                call_git(['config', 'user.email', 'no@ne.nl'])
-                call_git(['config', 'user.name', 'none'])
-                print('Fetch upsteam pulls')
-                os.chdir(os.path.join(temp_dir, 'bitcoin'))
-                call_git(['fetch', '--quiet', UPSTREAM_PULL])
-                print('Get open, mergeable {} pulls ...'.format(args.base_name))
-                pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
-                call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
-                call_git(['fetch', 'origin'])
-                base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
-                pulls = [p for p in pulls if p.base.ref == args.base_name]
-                pulls = [p for p in pulls if p.mergeable]
+    os.chdir(temp_dir)
+    git_repo_dir = os.path.join(temp_dir, 'bitcoin')
+    if not os.path.isdir(git_repo_dir):
+        print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
+        call_git(['clone', '--quiet', url, 'bitcoin'])
+        print('Set git metadata')
+        os.chdir(git_repo_dir)
+        with open(os.path.join(git_repo_dir, '.git', 'config'), 'a') as f:
+            f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
+            f.write('    url = {}\n'.format(url))
+            f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
+            f.flush()
+        call_git(['config', 'user.email', 'no@ne.nl'])
+        call_git(['config', 'user.name', 'none'])
+    print('Fetch upsteam pulls')
+    os.chdir(git_repo_dir)
+    call_git(['fetch', '--quiet', UPSTREAM_PULL])
+    print('Get open, mergeable {} pulls ...'.format(args.base_name))
+    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
+    call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
+    call_git(['fetch', 'origin'])
+    base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
+    pulls = [p for p in pulls if p.base.ref == args.base_name]
+    pulls = [p for p in pulls if p.mergeable]
 
-                print('Num: {}'.format(len(pulls)))
+    print('Num: {}'.format(len(pulls)))
 
-                print('Setting up docker gitian ...')
-                os.chdir(temp_dir)
-                call_gitian_build(['--setup'], commit=base_commit)
+    print('Setting up docker gitian ...')
+    os.chdir(temp_dir)
+    call_gitian_build(['--setup'], commit=base_commit)
 
-                print('Starting gitian build for base branch ...')
-                os.chdir(temp_dir)
-                call_gitian_build(['--build', '--commit'], commit=base_commit)
-                base_folder = os.path.join(temp_dir, 'bitcoin-binaries', base_commit)
+    print('Starting gitian build for base branch ...')
+    os.chdir(temp_dir)
+    call_gitian_build(['--build', '--commit'], commit=base_commit)
+    base_folder = os.path.join(temp_dir, 'bitcoin-binaries', base_commit)
 
-                for i, p in enumerate(pulls):
-                    print('{}/{}'.format(i, len(pulls)))
-                    issue = p.as_issue()
-                    if label_needs_gitian not in issue.get_labels():
-                        continue
+    for i, p in enumerate(pulls):
+        print('{}/{}'.format(i, len(pulls)))
+        issue = p.as_issue()
+        if label_needs_gitian not in issue.get_labels():
+            continue
 
-                    print('Starting gitian build ...')
-                    os.chdir(os.path.join(temp_dir, 'bitcoin'))
-                    call_git(['checkout', base_commit, '--quiet'])
-                    call_git(['merge', '--quiet', '{}/{}/head'.format(UPSTREAM_PULL, p.number), '-m', 'Marge {}'.format(p.number)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                    commit = get_git(['log', '-1', '--format=%H', 'HEAD'])
-                    os.chdir(temp_dir)
-                    call_gitian_build(['--build', '--commit'], commit=commit)
-                    commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
+        print('Starting gitian build ...')
+        os.chdir(git_repo_dir)
+        call_git(['checkout', base_commit, '--quiet'])
+        call_git(['merge', '--quiet', '{}/{}/head'.format(UPSTREAM_PULL, p.number), '-m', 'Marge {}'.format(p.number)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        commit = get_git(['log', '-1', '--format=%H', 'HEAD'])
+        os.chdir(temp_dir)
+        call_gitian_build(['--build', '--commit'], commit=commit)
+        commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
 
-                    print('{}\n    .remove_from_labels({})'.format(p, label_needs_gitian))
-                    comments = [c for c in issue.get_comments() if c.body.startswith(ID_GITIAN_COMMENT)]
-                    print('    + delete {} comments'.format(len(comments)))
+        print('{}\n    .remove_from_labels({})'.format(p, label_needs_gitian))
+        comments = [c for c in issue.get_comments() if c.body.startswith(ID_GITIAN_COMMENT)]
+        print('    + delete {} comments'.format(len(comments)))
 
-                    print(sorted(os.listdir(base_folder)))
-                    print(sorted(os.listdir(commit_folder)))
+        print(sorted(os.listdir(base_folder)))
+        print(sorted(os.listdir(commit_folder)))
 
-                    if not args.dry_run:
-                        issue.remove_from_labels(label_needs_gitian)
-                        for c in comments:
-                            c.delete()
+        if not args.dry_run:
+            issue.remove_from_labels(label_needs_gitian)
+            for c in comments:
+                c.delete()
 
 
 if __name__ == '__main__':
