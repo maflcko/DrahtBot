@@ -54,9 +54,7 @@ def main():
 
     label_needs_gitian = github_repo.get_label('Needs gitian build')
 
-    while True:
-        try:
-            with tempfile.TemporaryDirectory(prefix=args.gitian_folder) as temp_dir:
+    with tempfile.TemporaryDirectory(prefix=args.gitian_folder) as temp_dir:
                 print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
                 os.chdir(temp_dir)
                 call_git(['clone', '--quiet', url, 'bitcoin'])
@@ -117,13 +115,6 @@ def main():
                         issue.remove_from_labels(label_needs_gitian)
                         for c in comments:
                             c.delete()
-
-                PAUSE = 1 * 60 * 60
-                print('Sleeping for {}s'.format(PAUSE))
-                time.sleep(PAUSE)
-        except (GithubException, OSError) as e:
-            print('Ignore {!r}'.format(e))
-            pass
 
 
 if __name__ == '__main__':

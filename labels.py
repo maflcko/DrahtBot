@@ -19,14 +19,12 @@ def main():
 
     label_needs_rebase = github_repo.get_label('Needs rebase')
 
-    while True:
-        try:
-            print('Get open pulls ...')
-            pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
+    print('Get open pulls ...')
+    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
 
-            print('Open pulls: {}'.format(len(pulls)))
+    print('Open pulls: {}'.format(len(pulls)))
 
-            for i, p in enumerate(pulls):
+    for i, p in enumerate(pulls):
                 print('{}/{}'.format(i, len(pulls)))
                 issue = p.as_issue()
                 if p.mergeable and label_needs_rebase in issue.get_labels():
@@ -44,12 +42,6 @@ def main():
                         issue.add_to_labels(label_needs_rebase)
                         issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
                     continue
-            PAUSE = 1 * 60 * 60
-            print('Sleeping for {}s'.format(PAUSE))
-            time.sleep(PAUSE)
-        except (GithubException, OSError) as e:
-            print('Ignore {!r}'.format(e))
-            pass
 
 
 if __name__ == '__main__':
