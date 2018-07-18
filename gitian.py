@@ -17,7 +17,7 @@ def main():
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
-    parser.add_argument('--gitian_folder', help='The local scratch folder for temp gitian results', default=os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/gitian_scratch'))
+    parser.add_argument('--gitian_folder', help='The local scratch folder for temp gitian results', default=os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/scratch_gitian'))
     parser.add_argument('--gitian_jobs', help='The number of jobs', default=2)
     parser.add_argument('--gitian_mem', help='The memory to use', default=2000)
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
@@ -25,6 +25,7 @@ def main():
 
     print()
     print('Make sure to install docker and run the https://docs.docker.com/install/linux/linux-postinstall/')
+    print('sudo groupadd docker ; sudo usermod -aG docker $USER')
     print()
     url = 'https://github.com/{}'.format(args.github_repo)
 
@@ -61,11 +62,15 @@ def main():
 
                 print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
                 call_git(['clone', '--quiet', url, 'bitcoin'])
+                print('Set git metadata')
+                os.chdir(os.path.join(temp_dir, 'bitcoin'))
                 with open(os.path.join(temp_dir, 'bitcoin', '.git', 'config'), 'a') as f:
                     f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
                     f.write('    url = {}\n'.format(url))
                     f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
                     f.flush()
+                call_git(['config', 'user.email', 'no@ne.nl'])
+                call_git(['config', 'user.name', 'none'])
                 print('Fetch upsteam pulls')
                 os.chdir(os.path.join(temp_dir, 'bitcoin'))
                 call_git(['fetch', '--quiet', UPSTREAM_PULL])
