@@ -1,3 +1,5 @@
+import subprocess
+
 def return_with_pull_metadata(get_pulls):
     pulls = get_pulls()
     pulls_update_mergeable = lambda: [p for p in pulls if p.mergeable is None and not p.merged]
@@ -7,3 +9,11 @@ def return_with_pull_metadata(get_pulls):
         [p.update() for p in pulls_update_mergeable()]
         pulls = get_pulls()
     return pulls
+
+
+def call_git(args, **kwargs):
+    subprocess.check_call(['git'] + args, **kwargs)
+
+
+def get_git(args):
+    return subprocess.check_output(['git'] + args, universal_newlines=True).strip()

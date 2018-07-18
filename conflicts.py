@@ -6,17 +6,9 @@ import argparse
 import os
 import concurrent.futures
 
-from util.util import return_with_pull_metadata
+from util.util import return_with_pull_metadata, call_git, get_git
 
 UPSTREAM_PULL = 'upstream-pull'
-
-
-def call_git(args, **kwargs):
-    subprocess.check_call(['git'] + args, **kwargs)
-
-
-def get_git(args):
-    return subprocess.check_output(['git'] + args, universal_newlines=True).strip()
 
 
 def git_fetch_branch(branch_name):
@@ -109,6 +101,7 @@ def main():
     github_api = Github(args.github_access_token)
     github_repo = github_api.get_repo(args.github_repo)
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
+    call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
     pulls = [p for p in pulls if p.base.ref == args.base_name]
 
     print('Open {}-pulls: {}'.format(args.base_name, len(pulls)))
