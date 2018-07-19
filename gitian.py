@@ -81,9 +81,12 @@ def main():
 
     print('Num: {}'.format(len(pulls)))
 
-    print('Setting up docker gitian ...')
-    os.chdir(temp_dir)
-    call_gitian_build(['--setup'], commit=base_commit)
+    if not os.path.isdir(os.path.join(temp_dir, 'gitian-builder')):
+        print('Setting up docker gitian ...')
+        os.chdir(temp_dir)
+        call_gitian_build(['--setup'], commit=base_commit)
+        os.chdir(os.path.join(temp_dir, 'gitian-builder'))
+        call_git(['apply', '../../gitian_builder_gbuild.patch'])
 
     print('Starting gitian build for base branch ...')
     os.chdir(temp_dir)
@@ -98,9 +101,7 @@ def main():
 
         print('Starting gitian build ...')
         os.chdir(git_repo_dir)
-        call_git(['checkout', base_commit, '--quiet'])
-        call_git(['merge', '--quiet', '{}/{}/head'.format(UPSTREAM_PULL, p.number), '-m', 'Marge {}'.format(p.number)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        commit = get_git(['log', '-1', '--format=%H', 'HEAD'])
+        commit = get_git(['log', '-1', '--format=%H', '{}/{}/merge'.format(UPSTREAM_PULL, p.number)])
         os.chdir(temp_dir)
         call_gitian_build(['--build', '--commit'], commit=commit)
         commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
