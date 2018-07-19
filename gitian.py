@@ -31,8 +31,12 @@ def main():
 
     temp_dir = os.path.join(args.gitian_folder, '')
     os.makedirs(temp_dir, exist_ok=True)
+    git_repo_dir = os.path.join(temp_dir, 'bitcoin')
 
     def call_gitian_build(args_fwd, *, signer='none_signer', commit=None):
+        os.chdir(git_repo_dir)
+        call_git(['checkout', commit])
+        os.chdir(temp_dir)
         subprocess.check_call([
             sys.executable,
             '{}'.format(os.path.join(temp_dir, '..', 'gitian-build.py')),
@@ -54,10 +58,9 @@ def main():
 
     label_needs_gitian = github_repo.get_label('Needs gitian build')
 
-    os.chdir(temp_dir)
-    git_repo_dir = os.path.join(temp_dir, 'bitcoin')
     if not os.path.isdir(git_repo_dir):
         print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
+        os.chdir(temp_dir)
         call_git(['clone', '--quiet', url, 'bitcoin'])
         print('Set git metadata')
         os.chdir(git_repo_dir)
@@ -83,13 +86,11 @@ def main():
 
     if not os.path.isdir(os.path.join(temp_dir, 'gitian-builder')):
         print('Setting up docker gitian ...')
-        os.chdir(temp_dir)
         call_gitian_build(['--setup'], commit=base_commit)
         os.chdir(os.path.join(temp_dir, 'gitian-builder'))
         call_git(['apply', '../../gitian_builder_gbuild.patch'])
 
     print('Starting gitian build for base branch ...')
-    os.chdir(temp_dir)
     call_gitian_build(['--build', '--commit'], commit=base_commit)
     base_folder = os.path.join(temp_dir, 'bitcoin-binaries', base_commit)
 
@@ -102,7 +103,6 @@ def main():
         print('Starting gitian build ...')
         os.chdir(git_repo_dir)
         commit = get_git(['log', '-1', '--format=%H', '{}/{}/merge'.format(UPSTREAM_PULL, p.number)])
-        os.chdir(temp_dir)
         call_gitian_build(['--build', '--commit'], commit=commit)
         commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
 
