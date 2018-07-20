@@ -1,5 +1,6 @@
 from github import Github, GithubException
 import time
+import shutil
 import argparse
 import os
 import sys
@@ -21,6 +22,7 @@ def main():
     parser.add_argument('--gitian_folder', help='The local scratch folder for temp gitian results', default=os.path.join(THIS_FILE_PATH, '..', 'scratch_gitian'))
     parser.add_argument('--gitian_jobs', help='The number of jobs', default=2)
     parser.add_argument('--gitian_mem', help='The memory to use', default=2000)
+    parser.add_argument('--domain', help='Where the assets are reachable', default='http://127.0.0.1')
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
     args = parser.parse_args()
 
@@ -29,6 +31,9 @@ def main():
     print('sudo groupadd docker ; sudo usermod -aG docker $USER')
     print()
     url = 'https://github.com/{}'.format(args.github_repo)
+    GITIAN_WWW_FOLDER = '/var/www/html/gitian/{}/'.format(args.github_repo)
+    EXTERNAL_URL = '{}/gitian/{}/'.format(args.domain, args.github_repo)
+    os.makedirs(GITIAN_WWW_FOLDER, exist_ok=True)
 
     temp_dir = os.path.join(args.gitian_folder, '')
     os.makedirs(temp_dir, exist_ok=True)
@@ -93,7 +98,7 @@ def main():
 
     print('Starting gitian build for base branch ...')
     call_gitian_build(['--build', '--commit'], commit=base_commit)
-    base_folder = os.path.join(temp_dir, 'bitcoin-binaries', base_commit)
+    base_folder = shutil.move(src=os.path.join(temp_dir, 'bitcoin-binaries', base_commit), dst=GITIAN_WWW_FOLDER)
 
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
@@ -105,19 +110,27 @@ def main():
         os.chdir(git_repo_dir)
         commit = get_git(['log', '-1', '--format=%H', '{}/{}/merge'.format(UPSTREAM_PULL, p.number)])
         call_gitian_build(['--build', '--commit'], commit=commit)
-        commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
+        commit_folder = shutil.move(src=os.path.join(temp_dir, 'bitcoin-binaries', commit), dst=GITIAN_WWW_FOLDER)
+
+        text = ID_GITIAN_COMMENT
+        text += 'Gitian builds for commit {} ({}):\n'.format(base_commit, args.base_name)
+
+        for f in sorted(os.listdir(base_folder)):
+            os.chdir(base_folder)
+            text += ' * {}... [{}]({})\n'.format(subprocess.check_output(['sha256sum', f])[:32], f, EXTERNAL_URL + filename)
+
+        text += '\n\n'
+        text += 'Gitian builds for commit {} ({}):\n'.format(commit, 'master and this pull')
+        for f in sorted(os.listdir(commit_folder)):
+            os.chdir(commit_folder)
+            text += ' * {}... [{}]({})\n'.format(subprocess.check_output(['sha256sum', f])[:32], f, EXTERNAL_URL + filename)
 
         print('{}\n    .remove_from_labels({})'.format(p, label_needs_gitian))
-        comments = [c for c in issue.get_comments() if c.body.startswith(ID_GITIAN_COMMENT)]
-        print('    + delete {} comments'.format(len(comments)))
-
-        print(sorted(os.listdir(base_folder)))
-        print(sorted(os.listdir(commit_folder)))
+        print('    .create_comment({})'.format(text))
 
         if not args.dry_run:
+            issue.create_comment(text)
             issue.remove_from_labels(label_needs_gitian)
-            for c in comments:
-                c.delete()
 
 
 if __name__ == '__main__':
