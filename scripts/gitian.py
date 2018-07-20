@@ -13,11 +13,12 @@ UPSTREAM_PULL = 'upstream-pull'
 
 
 def main():
+    THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Gitian build and create an issue comment to share the results.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
-    parser.add_argument('--gitian_folder', help='The local scratch folder for temp gitian results', default=os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/scratch_gitian'))
+    parser.add_argument('--gitian_folder', help='The local scratch folder for temp gitian results', default=os.path.join(THIS_FILE_PATH, '..', 'scratch_gitian'))
     parser.add_argument('--gitian_jobs', help='The number of jobs', default=2)
     parser.add_argument('--gitian_mem', help='The memory to use', default=2000)
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
@@ -39,7 +40,7 @@ def main():
         os.chdir(temp_dir)
         subprocess.check_call([
             sys.executable,
-            '{}'.format(os.path.join(temp_dir, '..', 'gitian-build.py')),
+            '{}'.format(os.path.join(THIS_FILE_PATH, 'gitian-build.py')),
             '--docker',
             '--jobs',
             '{}'.format(args.gitian_jobs),
@@ -88,7 +89,7 @@ def main():
         print('Setting up docker gitian ...')
         call_gitian_build(['--setup'], commit=base_commit)
         os.chdir(os.path.join(temp_dir, 'gitian-builder'))
-        call_git(['apply', '../../gitian_builder_gbuild.patch'])
+        call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_gbuild.patch')])
 
     print('Starting gitian build for base branch ...')
     call_gitian_build(['--build', '--commit'], commit=base_commit)

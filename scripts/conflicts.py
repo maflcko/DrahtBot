@@ -60,10 +60,11 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
 
 
 def main():
+    THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Determine conflicting pull requests.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--pull_id', type=int, help='The pull request to check conflicts against.', default=0)
     parser.add_argument('--update_comments', action='store_true', help='Update the "conflicts comments".', default=False)
-    parser.add_argument('--git_repo', help='The locally cloned git repo used for scratching', default=os.path.abspath(os.path.dirname(os.path.realpath(__file__)) + '/scratch_conflicts'))
+    parser.add_argument('--git_repo', help='The locally cloned git repo used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch_conflicts'))
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
