@@ -56,7 +56,7 @@ def main():
             issue = p.as_issue()
             comments = [c for c in issue.get_comments() if c.body.startswith(ID_TRAVIS_RE_COMMENT)]
             text = ID_TRAVIS_RE_COMMENT
-            text += 'The last travis run for this pull request was {} days ago. To trigger a fresh travis build, this pull request should be closed and re-opened.'.format(delta.days)
+            text += 'The last travis run for this pull request was {} days ago and is thus outdated. To trigger a fresh travis build, this pull request should be closed and re-opened.'.format(delta.days)
             print('{}\n    .delete {} comments'.format(p, len(comments)))
             print('    .open()')
             print('    .create_comment({})'.format(text))
@@ -66,7 +66,7 @@ def main():
                 for c in comments:
                     c.delete()
                 issue.create_comment(text)
-                assert pull_3.open()
+                assert pull_3.reopen()
             continue
 
 
