@@ -28,7 +28,11 @@ def main():
 
     print()
     print('Make sure to install docker and run the https://docs.docker.com/install/linux/linux-postinstall/')
-    print('sudo groupadd docker ; sudo usermod -aG docker $USER')
+    print('sudo usermod -aG docker $USER')
+    print()
+    print('sudo usermod -aG www-data $USER')
+    print('sudo chown -R www-data:www-data /var/www')
+    print('sudo chmod -R g+rw /var/www')
     print()
     url = 'https://github.com/{}'.format(args.github_repo)
     GITIAN_WWW_FOLDER = '/var/www/html/gitian/{}/'.format(args.github_repo)
