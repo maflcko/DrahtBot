@@ -102,6 +102,7 @@ def main():
 
     print('Starting gitian build for base branch ...')
     call_gitian_build(['--build', '--commit'], commit=base_commit)
+    shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, base_commit), ignore_errors=True)
     base_folder = shutil.move(src=os.path.join(temp_dir, 'bitcoin-binaries', base_commit), dst=GITIAN_WWW_FOLDER)
 
     for i, p in enumerate(pulls):
@@ -114,6 +115,7 @@ def main():
         os.chdir(git_repo_dir)
         commit = get_git(['log', '-1', '--format=%H', '{}/{}/merge'.format(UPSTREAM_PULL, p.number)])
         call_gitian_build(['--build', '--commit'], commit=commit)
+        shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, commit), ignore_errors=True)
         commit_folder = shutil.move(src=os.path.join(temp_dir, 'bitcoin-binaries', commit), dst=GITIAN_WWW_FOLDER)
 
         text = ID_GITIAN_COMMENT
