@@ -121,13 +121,13 @@ def main():
 
         for f in sorted(os.listdir(base_folder)):
             os.chdir(base_folder)
-            text += ' * {}... [{}]({})\n'.format(subprocess.check_output(['sha256sum', f])[:32], f, EXTERNAL_URL + filename)
+            text += ' * {}... [{}]({})\n'.format(subprocess.check_output(['sha256sum', f])[:32], f, EXTERNAL_URL + f)
 
         text += '\n\n'
         text += 'Gitian builds for commit {} ({}):\n'.format(commit, 'master and this pull')
         for f in sorted(os.listdir(commit_folder)):
             os.chdir(commit_folder)
-            text += ' * {}... [{}]({})\n'.format(subprocess.check_output(['sha256sum', f])[:32], f, EXTERNAL_URL + filename)
+            text += ' * {}... [{}]({})\n'.format(subprocess.check_output(['sha256sum', f])[:32], f, EXTERNAL_URL + f)
 
         print('{}\n    .remove_from_labels({})'.format(p, label_needs_gitian))
         print('    .create_comment({})'.format(text))
