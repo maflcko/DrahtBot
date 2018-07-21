@@ -99,6 +99,7 @@ def main():
         call_gitian_build(['--setup'], commit=base_commit)
         os.chdir(os.path.join(temp_dir, 'gitian-builder'))
         call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_gbuild.patch')])
+        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), os.path.join(temp_dir, 'gitian-builder', 'inputs', '')])
 
     print('Starting gitian build for base branch ...')
     call_gitian_build(['--build', '--commit'], commit=base_commit)
