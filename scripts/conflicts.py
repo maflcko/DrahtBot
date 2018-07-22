@@ -30,10 +30,15 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
 
 
 def update_comment(dry_run, login_name, pull, pulls_conflict):
-    if not pulls_conflict:
-        return
-
     ID_CONFLICTS_COMMENT = '<!--e57a25ab6845829454e8d69fc972939a-->'
+
+    if not pulls_conflict:
+        for c in pull.get_issue_comments():
+            if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
+                print('{}\n    .delete{}\n'.format(pull, c.body))
+                if not dry_run:
+                    c.delete()
+        return
 
     text = ID_CONFLICTS_COMMENT
     text += 'Note to reviewers: This pull request conflicts with the following ones:\n'
