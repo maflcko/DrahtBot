@@ -53,7 +53,7 @@ def main():
                 # No travis result in any build or no builds
                 continue
             delta = datetime.datetime.utcnow() - build_finish
-            if delta < datetime.timedelta(days=300):
+            if delta < datetime.timedelta(days=60):
                 continue
 
             issue = p.as_issue()
