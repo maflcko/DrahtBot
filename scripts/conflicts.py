@@ -35,9 +35,15 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
     if not pulls_conflict:
         for c in pull.get_issue_comments():
             if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
-                print('{}\n    .delete{}\n'.format(pull, c.body))
+                # Empty existing comment
+                text = ID_CONFLICTS_COMMENT
+                text += 'No more conflicts as of last run.'
+                if c.body == text:
+                    return
+                print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
                 if not dry_run:
-                    c.delete()
+                    c.edit(text)
+                    return
         return
 
     text = ID_CONFLICTS_COMMENT
