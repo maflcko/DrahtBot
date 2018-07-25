@@ -37,6 +37,9 @@ def main():
     url = 'https://github.com/{}'.format(args.github_repo)
     GITIAN_WWW_FOLDER = '/var/www/html/gitian/{}/'.format(args.github_repo)
     EXTERNAL_URL = '{}/gitian/{}/'.format(args.domain, args.github_repo)
+
+    print('Clean gitian folder of old files')
+    subprocess.check_call('find {} -mindepth 1 -maxdepth 1 -type d -ctime +{} | xargs rm -rf'.format(GITIAN_WWW_FOLDER, 15), shell=True)
     os.makedirs(GITIAN_WWW_FOLDER, exist_ok=True)
 
     temp_dir = os.path.join(args.gitian_folder, '')
