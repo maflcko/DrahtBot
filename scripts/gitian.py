@@ -104,6 +104,13 @@ def main():
         call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_gbuild.patch')])
         subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), os.path.join(temp_dir, 'gitian-builder', 'inputs', '')])
 
+    for i in [p.as_issue() for p in pulls]:
+        if label_needs_gitian in i.get_labels():
+            break
+    else:
+        print('Nothing tagged with {}. Exiting...'.format(label_needs_gitian.name))
+        return
+
     print('Starting gitian build for base branch ...')
     call_gitian_build(['--build', '--commit'], commit=base_commit)
     shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, base_commit), ignore_errors=True)
