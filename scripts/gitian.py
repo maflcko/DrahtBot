@@ -38,9 +38,10 @@ def main():
     GITIAN_WWW_FOLDER = '/var/www/html/gitian/{}/'.format(args.github_repo)
     EXTERNAL_URL = '{}/gitian/{}/'.format(args.domain, args.github_repo)
 
-    print('Clean gitian folder of old files')
-    subprocess.check_call('find {} -mindepth 1 -maxdepth 1 -type d -ctime +{} | xargs rm -rf'.format(GITIAN_WWW_FOLDER, 15), shell=True)
-    os.makedirs(GITIAN_WWW_FOLDER, exist_ok=True)
+    if not args.dry_run:
+        print('Clean gitian folder of old files')
+        subprocess.check_call('find {} -mindepth 1 -maxdepth 1 -type d -ctime +{} | xargs rm -rf'.format(GITIAN_WWW_FOLDER, 15), shell=True)
+        os.makedirs(GITIAN_WWW_FOLDER, exist_ok=True)
 
     temp_dir = os.path.join(args.gitian_folder, '')
     os.makedirs(temp_dir, exist_ok=True)
@@ -113,8 +114,11 @@ def main():
 
     print('Starting gitian build for base branch ...')
     call_gitian_build(['--build', '--commit'], commit=base_commit)
-    shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, base_commit), ignore_errors=True)
-    base_folder = shutil.move(src=os.path.join(temp_dir, 'bitcoin-binaries', base_commit), dst=GITIAN_WWW_FOLDER)
+    base_folder = os.path.join(temp_dir, 'bitcoin-binaries', base_commit)
+    if not args.dry_run:
+        print('Moving results of {} to {}'.format(base_commit, GITIAN_WWW_FOLDER))
+        shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, base_commit), ignore_errors=True)
+        base_folder = shutil.move(src=base_folder, dst=GITIAN_WWW_FOLDER)
 
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
@@ -126,8 +130,11 @@ def main():
         os.chdir(git_repo_dir)
         commit = get_git(['log', '-1', '--format=%H', '{}/{}/merge'.format(UPSTREAM_PULL, p.number)])
         call_gitian_build(['--build', '--commit'], commit=commit)
-        shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, commit), ignore_errors=True)
-        commit_folder = shutil.move(src=os.path.join(temp_dir, 'bitcoin-binaries', commit), dst=GITIAN_WWW_FOLDER)
+        commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
+        if not args.dry_run:
+            print('Moving results of {} to {}'.format(base_commit, GITIAN_WWW_FOLDER))
+            shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, commit), ignore_errors=True)
+            commit_folder = shutil.move(src=commit_folder, dst=GITIAN_WWW_FOLDER)
 
         text = ID_GITIAN_COMMENT
         text += '\n'
