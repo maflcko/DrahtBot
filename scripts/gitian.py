@@ -49,7 +49,7 @@ def main():
 
     def call_gitian_build(args_fwd, *, signer='none_signer', commit=None):
         os.chdir(git_repo_dir)
-        call_git(['checkout', commit])
+        call_git(['checkout', '--quiet', commit])
         os.chdir(temp_dir)
         subprocess.check_call([
             sys.executable,
@@ -91,7 +91,7 @@ def main():
     print('Get open, mergeable {} pulls ...'.format(args.base_name))
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
     call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
-    call_git(['fetch', 'origin'])
+    call_git(['fetch', '--quiet', 'origin'])
     base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
     pulls = [p for p in pulls if p.base.ref == args.base_name]
     pulls = [p for p in pulls if p.mergeable]
@@ -103,7 +103,9 @@ def main():
         call_gitian_build(['--setup'], commit=base_commit)
         os.chdir(os.path.join(temp_dir, 'gitian-builder'))
         call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_gbuild.patch')])
-        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), os.path.join(temp_dir, 'gitian-builder', 'inputs', '')])
+        inputs_folder = os.path.join(temp_dir, 'gitian-builder', 'inputs', '')
+        os.makedirs(inputs_folder, exist_ok=True)
+        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), inputs_folder])
 
     for i in [p.as_issue() for p in pulls]:
         if label_needs_gitian in i.get_labels():
