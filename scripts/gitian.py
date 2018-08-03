@@ -24,6 +24,7 @@ def main():
     parser.add_argument('--gitian_mem', help='The memory to use', default=2000)
     parser.add_argument('--domain', help='Where the assets are reachable', default='http://127.0.0.1')
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
+    parser.add_argument('--build_one_commit', help='Only build this one commit and exit.', default='')
     args = parser.parse_args()
 
     print()
@@ -66,6 +67,13 @@ def main():
             signer,
             commit,
         ] + args_fwd)
+
+    if args.build_one_commit:
+        print('Starting gitian build for one commit ({}) ...'.format(args.build_one_commit))
+        call_gitian_build(['--build', '--commit'], commit=args.build_one_commit)
+        print('See folder:\n{}'.format(os.path.join(temp_dir, 'bitcoin-binaries', args.build_one_commit)))
+        print('Exit')
+        return
 
     github_api = Github(args.github_access_token)
     github_repo = github_api.get_repo(args.github_repo)
