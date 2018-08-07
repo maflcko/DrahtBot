@@ -35,7 +35,7 @@ def main():
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
         if p.mergeable:
-            if p.number in [9719]:
+            if p.number in [9719, 13446]:
                 # Abuse detected on these pulls, no re-trigger possible
                 continue
             html_source_commits = urllib.request.urlopen('https://github.com/{}/pull/{}/commits'.format(args.github_repo, p.number)).read().decode()
