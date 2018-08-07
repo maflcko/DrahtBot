@@ -5,6 +5,7 @@ import argparse
 from util.util import return_with_pull_metadata
 
 ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
+AVOID_COMMENT_ISSUES = [10973, 10102]
 
 
 def main():
@@ -25,23 +26,24 @@ def main():
     print('Open pulls: {}'.format(len(pulls)))
 
     for i, p in enumerate(pulls):
-                print('{}/{}'.format(i, len(pulls)))
-                issue = p.as_issue()
-                if p.mergeable and label_needs_rebase in issue.get_labels():
-                    print('{}\n    .remove_from_labels({})'.format(p, label_needs_rebase))
-                    comments = [c for c in issue.get_comments() if c.body.startswith(ID_NEEDS_REBASE_COMMENT)]
-                    print('    + delete {} comments'.format(len(comments)))
-                    if not args.dry_run:
-                        issue.remove_from_labels(label_needs_rebase)
-                        for c in comments:
-                            c.delete()
-                    continue
-                if not p.mergeable and label_needs_rebase not in issue.get_labels():
-                    print('{}\n    .add_to_labels({})'.format(p, label_needs_rebase))
-                    if not args.dry_run:
-                        issue.add_to_labels(label_needs_rebase)
-                        issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
-                    continue
+        print('{}/{}'.format(i, len(pulls)))
+        issue = p.as_issue()
+        if p.mergeable and label_needs_rebase in issue.get_labels():
+            print('{}\n    .remove_from_labels({})'.format(p, label_needs_rebase))
+            comments = [c for c in issue.get_comments() if c.body.startswith(ID_NEEDS_REBASE_COMMENT)]
+            print('    + delete {} comments'.format(len(comments)))
+            if not args.dry_run:
+                issue.remove_from_labels(label_needs_rebase)
+                for c in comments:
+                    c.delete()
+            continue
+        if not p.mergeable and label_needs_rebase not in issue.get_labels():
+            print('{}\n    .add_to_labels({})'.format(p, label_needs_rebase))
+            if not args.dry_run:
+                issue.add_to_labels(label_needs_rebase)
+                if issue.number not in AVOID_COMMENT_ISSUES:
+                    issue.create_comment(ID_NEEDS_REBASE_COMMENT + 'Needs rebase')
+            continue
 
 
 if __name__ == '__main__':
