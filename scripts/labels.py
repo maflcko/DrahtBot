@@ -2,9 +2,9 @@ from github import Github, GithubException
 import time
 import argparse
 
-from util.util import return_with_pull_metadata
+from util.util import return_with_pull_metadata, IdComment
 
-ID_NEEDS_REBASE_COMMENT = '<!--cf906140f33d8803c4a75a2196329ecb-->'
+ID_NEEDS_REBASE_COMMENT = IdComment.NEEDS_REBASE.value
 AVOID_COMMENT_ISSUES = [10973, 10102]
 
 
