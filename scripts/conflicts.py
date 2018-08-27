@@ -118,11 +118,11 @@ def main():
     print('Open mergeable {}-pulls: {}'.format(args.base_name, len(pulls_mergeable)))
 
     if args.update_comments:
-        for pull_update in pulls_mergeable:
+        for i, pull_update in enumerate(pulls_mergeable):
             if pull_update.number < 13385:
                 # For now
                 continue
-            print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_update.number, 'other_pulls'))
+            print('{}/{} Checking for conflicts {} <> {} <> {} ... '.format(i, len(pulls_mergeable), args.base_name, pull_update.number, 'other_pulls'))
             pulls_conflict = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_update.number, base_branch=args.base_name)
             update_comment(dry_run=args.dry_run, login_name=github_api.get_user().login, pull=pull_update, pulls_conflict=pulls_conflict)
 
