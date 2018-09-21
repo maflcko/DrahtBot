@@ -24,6 +24,7 @@ def main():
     github_repo_3 = github_api_3.repository(repo_owner, repo_name)
 
     label_needs_rebase = github_repo.get_label('Needs rebase')
+    label_up_for_grabs = github_repo.get_label('Up for grabs')
 
     print('Get open pulls ...')
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
@@ -43,8 +44,10 @@ def main():
             text = ID_CLOSED_COMMENT
             text += "There hasn't been much activity lately and the patch still needs rebase, so I am closing this for now. Please let me know when you want to continue working on this, so the pull request can be re-opened."
             print('{}\n    .close()'.format(p))
+            print('    .add_to_labels({})'.format(label_up_for_grabs))
             print('    .create_comment({})'.format(text))
             if not args.dry_run:
+                issue.add_to_labels(label_up_for_grabs)
                 issue.create_comment(text)
                 pull_3 = github_repo_3.pull_request(p.number)
                 assert pull_3.close()
