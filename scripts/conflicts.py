@@ -47,7 +47,7 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
         return
 
     text = ID_CONFLICTS_COMMENT
-    text += 'Note to reviewers: This pull request conflicts with the following ones:\n'
+    text += 'Reviewers, this pull request conflicts with the following ones:\n'
     text += ''.join(['\n* #{} ({} by {})'.format(p.number, p.title.strip(), p.user.login) for p in pulls_conflict])
     text += '\n\n'
     text += 'If you consider this pull request important, please also help to review the conflicting pull requests. '
