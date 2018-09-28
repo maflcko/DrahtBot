@@ -150,9 +150,9 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
         text += '\n'
         text += '| Coverage  | Change ([pull {pull_id}]({url_pull})) | Reference ([{base_name}]({url_base}))   |\n'
         text += '|-----------|-------------------------|--------------------|\n'
-        text += '| Lines     | {p_l:+.4f}              | {m_l:.4f}          |\n'
-        text += '| Functions | {p_f:+.4f}              | {m_f:.4f}          |\n'
-        text += '| Branches  | {p_b:+.4f}              | {m_b:.4f}          |\n'
+        text += '| Lines     | {p_l:+.4f} %            | {m_l:.4f} %        |\n'
+        text += '| Functions | {p_f:+.4f} %            | {m_f:.4f} %        |\n'
+        text += '| Branches  | {p_b:+.4f} %            | {m_b:.4f} %        |\n'
         text = text.format(
             url_base='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, base_branch),
             url_pull='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, pull.number),
