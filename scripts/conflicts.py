@@ -29,12 +29,12 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
     return conflicts
 
 
-def update_comment(dry_run, login_name, pull, pulls_conflict):
+def update_comment(dry_run, pull, pulls_conflict):
     ID_CONFLICTS_COMMENT = '<!--e57a25ab6845829454e8d69fc972939a-->'
 
     if not pulls_conflict:
         for c in pull.get_issue_comments():
-            if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
+            if c.body.startswith(ID_CONFLICTS_COMMENT):
                 # Empty existing comment
                 text = ID_CONFLICTS_COMMENT
                 text += 'No more conflicts as of last run.'
@@ -57,7 +57,7 @@ def update_comment(dry_run, login_name, pull, pulls_conflict):
         if c.body == text:
             # A comment is already up-to-date
             return
-        if c.user.login == login_name and c.body.startswith(ID_CONFLICTS_COMMENT):
+        if c.body.startswith(ID_CONFLICTS_COMMENT):
             # Our comment needs update
             print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
             if not dry_run:
@@ -121,7 +121,7 @@ def main():
         for i, pull_update in enumerate(pulls_mergeable):
             print('{}/{} Checking for conflicts {} <> {} <> {} ... '.format(i, len(pulls_mergeable), args.base_name, pull_update.number, 'other_pulls'))
             pulls_conflict = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_update.number, base_branch=args.base_name)
-            update_comment(dry_run=args.dry_run, login_name=github_api.get_user().login, pull=pull_update, pulls_conflict=pulls_conflict)
+            update_comment(dry_run=args.dry_run, pull=pull_update, pulls_conflict=pulls_conflict)
 
     if args.pull_id:
         pull_merge = [p for p in pulls if p.number == args.pull_id]
@@ -138,7 +138,7 @@ def main():
         print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_merge.number, 'other_pulls'))
         conflicts = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_merge.number, base_branch=args.base_name)
 
-        update_comment(dry_run=args.dry_run, login_name=github_api.get_user().login, pull=pull_merge, pulls_conflict=conflicts)
+        update_comment(dry_run=args.dry_run, pull=pull_merge, pulls_conflict=conflicts)
 
 
 if __name__ == '__main__':
