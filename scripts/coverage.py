@@ -162,7 +162,7 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
         if not pull_needs_update(pull):
             continue
         dir_result_pull = os.path.join(dir_cov_report, '{}'.format(pull.number))
-        res_pull = gen_coverage(docker_exec, dir_code, dir_result_pull, 'upstream-pull/{}/merge'.format(pull.number), make_jobs)
+        res_pull = gen_coverage(docker_exec, dir_code, dir_result_pull, '{}/{}/merge'.format(UPSTREAM_PULL, pull.number), make_jobs)
         text = ID_COVERAGE_COMMENT
         text += '\n'
         text += '| Coverage  | Change ([pull {pull_id}]({url_pull})) | Reference ([{base_name}]({url_base}))   |\n'
@@ -244,21 +244,21 @@ def main():
 
     print('Fetching diffs ...')
     os.chdir(code_dir)
-    call_git(['fetch', '--quiet', UPSTREAM_PULL])
-    call_git(['checkout', 'master'])
+    call_git(['fetch', '--quiet', '--all'])
     call_git(['reset', '--hard', 'HEAD'])
-    call_git(['merge', '--ff-only', 'master'])
+    call_git(['checkout', 'master'])
+    call_git(['pull', '--ff-only', 'origin', 'master'])
     os.chdir(report_dir)
-    call_git(['fetch', '--quiet', 'origin'])
-    call_git(['checkout', 'master'])
+    call_git(['fetch', '--quiet', '--all'])
     call_git(['reset', '--hard', 'HEAD'])
-    call_git(['merge', '--ff-only', 'master'])
+    call_git(['checkout', 'master'])
+    call_git(['pull', '--ff-only', 'origin', 'master'])
 
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
     repo_code = github_api.get_repo(args.repo_code)
     pulls = return_with_pull_metadata(lambda: [p for p in repo_code.get_pulls(state='open')])
-    call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
+    call_git(['fetch', '--quiet', '--all'])  # Do it again just to be safe
     call_git(['fetch', 'origin', '{}'.format(args.base_name), '--quiet'])
     pulls = [p for p in pulls if p.base.ref == args.base_name]
 

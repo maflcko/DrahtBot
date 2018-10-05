@@ -103,13 +103,13 @@ def main():
 
     print('Fetching diffs ...')
     os.chdir(args.git_repo)
-    call_git(['fetch', '--quiet', UPSTREAM_PULL])
+    call_git(['fetch', '--quiet', '--all'])
 
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
     github_repo = github_api.get_repo(args.github_repo)
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
-    call_git(['fetch', '--quiet', UPSTREAM_PULL])  # Do it again just to be safe
+    call_git(['fetch', '--quiet', '--all'])  # Do it again just to be safe
     call_git(['fetch', 'origin', '{}'.format(args.base_name), '--quiet'])
     pulls = [p for p in pulls if p.base.ref == args.base_name]
 
