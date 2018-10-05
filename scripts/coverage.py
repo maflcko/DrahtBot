@@ -246,10 +246,12 @@ def main():
     os.chdir(code_dir)
     call_git(['fetch', '--quiet', UPSTREAM_PULL])
     call_git(['checkout', 'master'])
+    call_git(['reset', '--hard', 'HEAD'])
     call_git(['merge', '--ff-only', 'master'])
     os.chdir(report_dir)
     call_git(['fetch', '--quiet', 'origin'])
     call_git(['checkout', 'master'])
+    call_git(['reset', '--hard', 'HEAD'])
     call_git(['merge', '--ff-only', 'master'])
 
     print('Fetching open pulls ...')
