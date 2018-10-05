@@ -77,18 +77,22 @@ def parse_perc(html_path):
     )
 
 
-def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs):
+def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache_base=False):
     print('Generate coverage for {} in {} (ref: {}).'.format(dir_code, dir_result, git_ref))
     os.chdir(dir_code)
     dir_build = os.path.join(dir_code, 'build')
+    dir_cache = os.path.join(dir_code, 'cache_base')
 
     print('Clear previous build and result folders')
-    os.makedirs(dir_build, exist_ok=True)
-    docker_exec('rm -r {}'.format(dir_build))
-    os.makedirs(dir_build, exist_ok=True)
-    os.makedirs(dir_result, exist_ok=True)
-    docker_exec('rm -r {}'.format(dir_result))
-    os.makedirs(dir_result, exist_ok=True)
+
+    def clear_dir(folder):
+        os.makedirs(folder, exist_ok=True)
+        docker_exec('rm -r {}'.format(folder))
+        os.makedirs(folder, exist_ok=True)
+
+    clear_dir(dir_build)
+    clear_dir(dir_result)
+    clear_dir(dir_cache) if cache_base else None
 
     print('Make coverage data in docker ...')
     os.chdir(dir_code)
@@ -96,7 +100,20 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs):
     docker_exec('./autogen.sh')
     os.chdir(dir_build)
     docker_exec('../configure --enable-zmq --with-incompatible-bdb --enable-lcov --enable-lcov-branch-coverage --disable-bench')
+    if cache_base:
+        print('Cache compiled obj files of {} in {} ...'.format(git_ref, dir_cache))
+        docker_exec('make -j{}'.format(make_jobs))
+        docker_exec('rmdir {}'.format(dir_cache))
+        docker_exec('mv {} {}'.format(dir_build, dir_cache))
+
+    print('Restore compiled obj files from cache ...')
+    clear_dir(dir_build)
+    docker_exec('rmdir {}'.format(dir_build))
+    docker_exec('cp -r {} {}'.format(dir_cache, dir_build))
+    print('re-make ...')
     docker_exec('make -j{}'.format(make_jobs))
+
+    print('Make coverage ...')
     docker_exec('make cov')
     docker_exec('mv {}/*coverage* {}/'.format(dir_build, dir_result))
     os.chdir(dir_result)
@@ -138,7 +155,7 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
 
     print('Generate base coverage')
     dir_result_base = os.path.join(dir_cov_report, '{}'.format(base_branch))
-    res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_branch, make_jobs)
+    res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_branch, make_jobs, cache_base=True)
 
     for i, pull in enumerate(pulls):
         print('{}/{} Calculating coverage ... '.format(i, len(pulls)))
