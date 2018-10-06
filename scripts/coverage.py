@@ -89,6 +89,7 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
         os.makedirs(folder, exist_ok=True)
         docker_exec('rm -r {}'.format(folder))
         os.makedirs(folder, exist_ok=True)
+        # Must change to a dir that exists after this funciton call
 
     clear_dir(dir_build)
     clear_dir(dir_result)
@@ -108,9 +109,11 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
 
     print('Restore compiled obj files from cache ...')
     clear_dir(dir_build)
+    os.chdir(dir_cache)  # Change to a dir that exists
     docker_exec('rmdir {}'.format(dir_build))
     docker_exec('cp -r {} {}'.format(dir_cache, dir_build))
     print('re-make ...')
+    os.chdir(dir_build)
     docker_exec('make -j{}'.format(make_jobs))
 
     print('Make coverage ...')
