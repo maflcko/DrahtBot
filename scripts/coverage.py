@@ -100,7 +100,16 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
     call_git(['checkout', '{}'.format(git_ref)])
     docker_exec('./autogen.sh')
     os.chdir(dir_build)
-    docker_exec('../configure --enable-zmq --with-incompatible-bdb --enable-lcov --enable-lcov-branch-coverage --disable-bench')
+
+    wrapper_dir = os.path.join(dir_code, 'wrappers')
+    os.makedirs(wrapper_dir, exist_ok=True)
+    with open(os.path.join(wrapper_dir, 'genhtml'), 'w') as f:
+        f.write('#!/usr/bin/env bash\n')
+        f.write('export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1\n')
+        f.write('export FAKETIME="2000-01-01 12:00:00"\n')
+        f.write('/usr/bin/genhtml $@')
+    docker_exec('chmod +x {}'.format(os.path.join(wrapper_dir, 'genhtml')))
+    docker_exec('PATH={}:{} ../configure --enable-zmq --with-incompatible-bdb --enable-lcov --enable-lcov-branch-coverage --disable-bench'.format(wrapper_dir, '${PATH}'))
     if cache_base:
         print('Cache compiled obj files of {} in {} ...'.format(git_ref, dir_cache))
         docker_exec('make -j{}'.format(make_jobs))
@@ -154,7 +163,7 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
     print('Docker running with id {}. Installing packages ...'.format(docker_id))
     docker_exec = lambda cmd: subprocess.check_output(['docker', 'exec', docker_id, 'bash', '-c', 'cd {} && {}'.format(os.getcwd(), cmd)], universal_newlines=True)
     docker_exec('apt-get update')
-    docker_exec('apt-get install --no-install-recommends --no-upgrade -qq {}'.format('python3-zmq libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils'))
+    docker_exec('apt-get install --no-install-recommends --no-upgrade -qq {}'.format('python3-zmq libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils faketime'))
 
     print('Generate base coverage')
     dir_result_base = os.path.join(dir_cov_report, '{}'.format(base_branch))
