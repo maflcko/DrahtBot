@@ -34,7 +34,7 @@ def update_comment(dry_run, pull, pulls_conflict):
 
     if not pulls_conflict:
         text = ID_CONFLICTS_COMMENT
-        text += 'No more conflicts as of last run.'
+        text += 'Placeholder for additional metadata.'
 
         for c in pull.get_issue_comments():
             if c.body.startswith(ID_CONFLICTS_COMMENT):
