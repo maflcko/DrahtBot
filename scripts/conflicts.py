@@ -33,17 +33,23 @@ def update_comment(dry_run, pull, pulls_conflict):
     ID_CONFLICTS_COMMENT = '<!--e57a25ab6845829454e8d69fc972939a-->'
 
     if not pulls_conflict:
+        text = ID_CONFLICTS_COMMENT
+        text += 'No more conflicts as of last run.'
+
         for c in pull.get_issue_comments():
             if c.body.startswith(ID_CONFLICTS_COMMENT):
                 # Empty existing comment
-                text = ID_CONFLICTS_COMMENT
-                text += 'No more conflicts as of last run.'
                 if c.body == text:
                     return
                 print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
                 if not dry_run:
                     c.edit(text)
                     return
+        if pull.number < 14631:
+            return  # for now don't add the comment to grandfathered-in pulls
+        print('{}\n    .new_comment.body = {}\n'.format(pull, text))
+        if not dry_run:
+            pull.create_issue_comment(text)
         return
 
     text = ID_CONFLICTS_COMMENT
