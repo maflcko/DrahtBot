@@ -44,7 +44,7 @@ def update_comment(dry_run, pull, pulls_conflict):
                 print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
                 if not dry_run:
                     c.edit(text)
-                    return
+                return
         if pull.number < 14631:
             return  # for now don't add the comment to grandfathered-in pulls
         print('{}\n    .new_comment.body = {}\n'.format(pull, text))
