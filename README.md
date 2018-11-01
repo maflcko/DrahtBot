@@ -8,3 +8,10 @@ pip install pygithub
 pip install github3.py
 pip install travispy
 ```
+
+example cmd
+-----------
+
+```
+while sleep 3600; do ./gitian.sh --gitian_jobs 1 --gitian_mem 2000 --domain https://drahtbot.space; done
+```
