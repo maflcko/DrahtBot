@@ -6,6 +6,7 @@ from enum import Enum, unique
 class IdComment(Enum):
     NEEDS_REBASE = '<!--cf906140f33d8803c4a75a2196329ecb-->'
     CLOSED = '<!--5fd3d806e98f4a0ca80977bb178665a0-->'
+    METADATA = '<!--e57a25ab6845829454e8d69fc972939a-->'
 
 
 def return_with_pull_metadata(get_pulls):

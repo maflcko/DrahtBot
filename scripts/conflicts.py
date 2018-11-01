@@ -6,9 +6,10 @@ import argparse
 import os
 import tempfile
 
-from util.util import return_with_pull_metadata, call_git, get_git
+from util.util import return_with_pull_metadata, call_git, get_git, IdComment
 
 UPSTREAM_PULL = 'upstream-pull'
+ID_CONFLICTS_COMMENT = IdComment.METADATA.value  # Only use of metadata right now
 
 
 def calc_conflicts(pulls_mergeable, num, base_branch):
@@ -30,8 +31,6 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
 
 
 def update_comment(dry_run, pull, pulls_conflict):
-    ID_CONFLICTS_COMMENT = '<!--e57a25ab6845829454e8d69fc972939a-->'
-
     if not pulls_conflict:
         text = ID_CONFLICTS_COMMENT
         text += 'Placeholder for additional metadata.'
