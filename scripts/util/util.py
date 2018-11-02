@@ -11,7 +11,7 @@ class IdComment(Enum):
 
 
 def get_metadata_comment(sections):
-    return ''.join([IdComment.METADATA.value + '\n\n### Metadata\nThe following sections might be updated with supplementary metadata relevant to reviewers and maintainers.\n\n'] + sorted(sections))
+    return ''.join([IdComment.METADATA.value + '\n\nThe following sections might be updated with supplementary metadata relevant to reviewers and maintainers.\n\n'] + sorted(sections))
 
 
 def update_metadata_comment(pull, section_id, text, dry_run):

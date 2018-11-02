@@ -31,7 +31,7 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
 
 
 def update_comment(dry_run, pull, pulls_conflict):
-    text = '\n#### Conflicts\n'
+    text = '\n### Conflicts\n'
     if not pulls_conflict:
         text += 'No conflicts as of last run.'
         update_metadata_comment(pull, ID_CONFLICTS_SEC, text=text, dry_run=dry_run)
