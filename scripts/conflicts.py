@@ -6,10 +6,10 @@ import argparse
 import os
 import tempfile
 
-from util.util import return_with_pull_metadata, call_git, get_git, IdComment
+from util.util import return_with_pull_metadata, call_git, get_git, IdComment, update_metadata_comment
 
 UPSTREAM_PULL = 'upstream-pull'
-ID_CONFLICTS_COMMENT = IdComment.METADATA.value  # Only use of metadata right now
+ID_CONFLICTS_SEC = IdComment.SEC_CONFLICTS.value
 
 
 def calc_conflicts(pulls_mergeable, num, base_branch):
@@ -31,48 +31,19 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
 
 
 def update_comment(dry_run, pull, pulls_conflict):
+    text = '\n#### Conflicts\n'
     if not pulls_conflict:
-        text = ID_CONFLICTS_COMMENT
-        text += 'Placeholder for additional metadata.'
-
-        for c in pull.get_issue_comments():
-            if c.body.startswith(ID_CONFLICTS_COMMENT):
-                # Empty existing comment
-                if c.body == text:
-                    return
-                print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
-                if not dry_run:
-                    c.edit(text)
-                return
-        if pull.number < 14631:
-            return  # for now don't add the comment to grandfathered-in pulls
-        print('{}\n    .new_comment.body = {}\n'.format(pull, text))
-        if not dry_run:
-            pull.create_issue_comment(text)
+        text += 'No conflicts as of last run.'
+        update_metadata_comment(pull, ID_CONFLICTS_SEC, text=text, dry_run=dry_run)
         return
 
-    text = ID_CONFLICTS_COMMENT
     text += 'Reviewers, this pull request conflicts with the following ones:\n'
     text += ''.join(['\n* [#{}](https://drahtbot.github.io/bitcoin_core_issue_redirect/r/{}.html) ({} by {})'.format(p.number, p.number, p.title.strip(), p.user.login) for p in pulls_conflict])
     text += '\n\n'
     text += 'If you consider this pull request important, please also help to review the conflicting pull requests. '
     text += 'Ideally, start with the one that should be merged first.'
 
-    for c in pull.get_issue_comments():
-        if c.body == text:
-            # A comment is already up-to-date
-            return
-        if c.body.startswith(ID_CONFLICTS_COMMENT):
-            # Our comment needs update
-            print('{}\n    .{}\n        .body = {}\n'.format(pull, c, text))
-            if not dry_run:
-                c.edit(text)
-            return
-
-    # Couldn't find any comment
-    print('{}\n    .new_comment.body = {}\n'.format(pull, text))
-    if not dry_run:
-        pull.create_issue_comment(text)
+    update_metadata_comment(pull, ID_CONFLICTS_SEC, text=text, dry_run=dry_run)
 
 
 def main():
