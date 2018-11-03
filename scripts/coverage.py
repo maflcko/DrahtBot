@@ -13,9 +13,9 @@ import argparse
 import collections
 import subprocess
 
-from util.util import return_with_pull_metadata, call_git, get_git
+from util.util import return_with_pull_metadata, call_git, get_git, IdComment, update_metadata_comment
 
-ID_COVERAGE_COMMENT = '<!--32850dd3fdea838b4049e64f46995ea2-->'
+ID_COVERAGE_SEC = IdComment.SEC_COVERAGE.value
 CovResult = collections.namedtuple('Result', ['lin', 'fun', 'bra'])
 
 UPSTREAM_PULL = 'upstream-pull'
@@ -137,12 +137,14 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
 
 
 def pull_needs_update(pull):
-    issue = pull.as_issue()
-    for c in issue.get_comments():
-        if c.body.startswith(ID_COVERAGE_COMMENT):
-            delta = datetime.datetime.utcnow() - c.updated_at
-            return delta > datetime.timedelta(days=3)
-    return True
+    text = get_section_text(pull, ID_COVERAGE_SEC)
+    if not text:
+        return True
+
+    updated_at = text.split('<sup>Updated at: ', 1)[1].split('.</sup>', 1)[0]
+    updated_at = datetime.datetime.fromisoformat(updated_at)
+    delta = datetime.datetime.utcnow() - updated_at
+    return delta > datetime.timedelta(days=3)
 
 
 def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_run, slug, remote_url):
@@ -175,13 +177,14 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
             continue
         dir_result_pull = os.path.join(dir_cov_report, '{}'.format(pull.number))
         res_pull = gen_coverage(docker_exec, dir_code, dir_result_pull, '{}/{}/merge'.format(UPSTREAM_PULL, pull.number), make_jobs)
-        text = ID_COVERAGE_COMMENT
+        text = '\n\n#### Coverage\n'
         text += '\n'
         text += '| Coverage  | Change ([pull {pull_id}]({url_pull})) | Reference ([{base_name}]({url_base}))   |\n'
         text += '|-----------|-------------------------|--------------------|\n'
         text += '| Lines     | {p_l:+.4f} %            | {m_l:.4f} %        |\n'
         text += '| Functions | {p_f:+.4f} %            | {m_f:.4f} %        |\n'
         text += '| Branches  | {p_b:+.4f} %            | {m_b:.4f} %        |\n'
+        text += '\n<sup>Updated at: {updated_at}.</sup>\n'
         text = text.format(
             url_base='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, base_branch),
             url_pull='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, pull.number),
@@ -193,22 +196,9 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
             m_l=res_base.lin,
             m_f=res_base.fun,
             m_b=res_base.bra,
+            updated_at=datetime.datetime.utcnow().isoformat(),
         )
-        update_comment(dry_run=dry_run, pull=pull, text=text)
-
-
-def update_comment(dry_run, pull, text):
-    issue = pull.as_issue()
-    for c in issue.get_comments():
-        if c.body.startswith(ID_COVERAGE_COMMENT):
-            print('{}\n    .c.edit({})'.format(pull, text))
-            if not dry_run:
-                c.edit(text)
-            return
-    print('{}\n    .create_comment({})'.format(pull, text))
-    if not dry_run:
-        issue.create_comment(text)
-    return
+        update_metadata_comment(pull, ID_COVERAGE_SEC, text=text, dry_run=dry_run)
 
 
 def main():
