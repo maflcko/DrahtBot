@@ -21,9 +21,9 @@ def main():
     github_repo_3 = github_api_3.repository(repo_owner, repo_name)
 
     print('Get open pulls ...')
-    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open', sort='created')[:5]])
+    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open', sort='created')][-5:])
 
-    print('To check pulls: {}'.format(len(pulls)))
+    print('To check pulls: {}'.format(pulls))
 
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
