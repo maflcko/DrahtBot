@@ -79,8 +79,9 @@ def main():
 
     print('Fetching diffs ...')
     os.chdir(args.git_repo)
-    call_git(['gc'])
     call_git(['prune'])
+    call_git(['repack', '-d'])
+    call_git(['gc'])
     call_git(['fetch', '--quiet', '--all'])
 
     print('Fetching open pulls ...')
