@@ -13,7 +13,7 @@ import argparse
 import collections
 import subprocess
 
-from util.util import return_with_pull_metadata, call_git, get_git, IdComment, update_metadata_comment
+from util.util import return_with_pull_metadata, call_git, get_git, IdComment, update_metadata_comment, get_section_text
 
 ID_COVERAGE_SEC = IdComment.SEC_COVERAGE.value
 CovResult = collections.namedtuple('Result', ['lin', 'fun', 'bra'])
@@ -133,6 +133,12 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
     call_git(['add', './'])
     call_git(['commit', '-m', 'Add coverage results for {}'.format(git_ref)])
     call_git(['push', 'origin', 'master'])
+
+    # Work around permission errors
+    clear_dir(dir_result)
+    os.chdir(dir_result)
+    call_git(['reset', '--hard', 'HEAD'])
+
     return parse_perc(os.path.join(dir_result, 'total.coverage', 'index.html'))
 
 
@@ -162,8 +168,11 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
         'ubuntu:18.04',
     ], universal_newlines=True).strip()
 
-    print('Docker running with id {}. Installing packages ...'.format(docker_id))
     docker_exec = lambda cmd: subprocess.check_output(['docker', 'exec', docker_id, 'bash', '-c', 'cd {} && {}'.format(os.getcwd(), cmd)], universal_newlines=True)
+
+    print('Docker running with id {}.'.format(docker_id))
+
+    print('Installing packages ...')
     docker_exec('apt-get update')
     docker_exec('apt-get install --no-install-recommends --no-upgrade -qq {}'.format('python3-zmq libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils faketime'))
 
@@ -226,20 +235,21 @@ def main():
     report_url = 'git@github.com:{}.git'.format(args.repo_report)
 
     def create_scratch_dir(folder, url):
-        if not os.path.isdir(folder):
-            print('Clone {} repo to {}'.format(url, folder))
-            os.chdir(args.scratch_dir)
-            call_git(['clone', '--quiet', url, folder])
-            print('Set git metadata')
-            os.chdir(folder)
-            with open(os.path.join(folder, '.git', 'config'), 'a') as f:
-                f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
-                f.write('    url = {}\n'.format(url))
-                f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
-                f.flush()
-            call_git(['config', 'user.email', '39886733+DrahtBot@users.noreply.github.com'])
-            call_git(['config', 'user.name', 'DrahtBot'])
-            call_git(['config', 'core.sshCommand', 'ssh -i {} -F /dev/null'.format(args.ssh_key)])
+        if os.path.isdir(folder):
+            return
+        print('Clone {} repo to {}'.format(url, folder))
+        os.chdir(args.scratch_dir)
+        call_git(['clone', '--quiet', url, folder])
+        print('Set git metadata')
+        os.chdir(folder)
+        with open(os.path.join(folder, '.git', 'config'), 'a') as f:
+            f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
+            f.write('    url = {}\n'.format(url))
+            f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
+            f.flush()
+        call_git(['config', 'user.email', '39886733+DrahtBot@users.noreply.github.com'])
+        call_git(['config', 'user.name', 'DrahtBot'])
+        call_git(['config', 'core.sshCommand', 'ssh -i {} -F /dev/null'.format(args.ssh_key)])
 
     create_scratch_dir(code_dir, code_url)
     create_scratch_dir(report_dir, report_url)
