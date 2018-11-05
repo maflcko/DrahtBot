@@ -19,12 +19,12 @@ def get_metadata_sections(pull):
     for c in pull.get_issue_comments():
         if c.body.startswith(IdComment.METADATA.value):
             sections = ['<!--' + s for s in c.body.split('<!--')][2:]
-            return sections
-    return None
+            return c, sections
+    return None, None
 
 
 def update_metadata_comment(pull, section_id, text, dry_run):
-    sections = get_metadata_sections(pull)
+    c, sections = get_metadata_sections(pull)
     if sections:
         for i in range(len(sections)):
             if sections[i].startswith(section_id):
@@ -56,7 +56,7 @@ def update_metadata_comment(pull, section_id, text, dry_run):
 
 
 def get_section_text(pull, section_id):
-    sections = get_metadata_sections(pull)
+    _, sections = get_metadata_sections(pull)
     if sections:
         for s in sections:
             if s.startswith(section_id):
