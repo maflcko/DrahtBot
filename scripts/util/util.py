@@ -46,8 +46,6 @@ def update_metadata_comment(pull, section_id, text, dry_run):
             c.edit(text_all)
         return
     # Create new metadata comment
-    if pull.number < 14618:
-        return  # for now don't add the comment to grandfathered-in pulls
     text_all = get_metadata_comment([section_id + text])
     print('{}\n    .new_comment.body = {}\n'.format(pull, text_all))
     if not dry_run:

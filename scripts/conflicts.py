@@ -33,9 +33,9 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
 def update_comment(dry_run, pull, pulls_conflict):
     text = '\n### Conflicts\n'
     if not pulls_conflict:
-        text += 'No conflicts as of last run.'
-        update_metadata_comment(pull, ID_CONFLICTS_SEC, text=text, dry_run=dry_run)
         return
+        # text += 'No conflicts as of last run.'
+        # update_metadata_comment(pull, ID_CONFLICTS_SEC, text=text, dry_run=dry_run)
 
     text += 'Reviewers, this pull request conflicts with the following ones:\n'
     text += ''.join(['\n* [#{}](https://drahtbot.github.io/bitcoin_core_issue_redirect/r/{}.html) ({} by {})'.format(p.number, p.number, p.title.strip(), p.user.login) for p in pulls_conflict])
