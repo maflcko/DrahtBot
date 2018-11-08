@@ -39,7 +39,7 @@ def main():
                 continue  # Should rarely happen
 
             delta = datetime.datetime.utcnow() - p.updated_at
-            if delta < datetime.timedelta(days=30 * 9):
+            if delta < datetime.timedelta(days=30 * 3):
                 continue
             text = ID_CLOSED_COMMENT
             text += "There hasn't been much activity lately and the patch still needs rebase, so I am closing this for now. Please let me know when you want to continue working on this, so the pull request can be re-opened."
