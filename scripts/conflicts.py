@@ -79,9 +79,6 @@ def main():
 
     print('Fetching diffs ...')
     os.chdir(args.git_repo)
-    call_git(['prune'])
-    call_git(['repack', '-d'])
-    call_git(['gc'])
     call_git(['fetch', '--quiet', '--all'])
 
     print('Fetching open pulls ...')
@@ -96,28 +93,34 @@ def main():
     pulls_mergeable = [p for p in pulls if p.mergeable]
     print('Open mergeable {}-pulls: {}'.format(args.base_name, len(pulls_mergeable)))
 
-    if args.update_comments:
-        for i, pull_update in enumerate(pulls_mergeable):
-            print('{}/{} Checking for conflicts {} <> {} <> {} ... '.format(i, len(pulls_mergeable), args.base_name, pull_update.number, 'other_pulls'))
-            pulls_conflict = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_update.number, base_branch=args.base_name)
-            update_comment(dry_run=args.dry_run, pull=pull_update, pulls_conflict=pulls_conflict)
+    with tempfile.TemporaryDirectory() as temp_git_work_tree:
+        call_git(['worktree', 'add', '{}'.format(temp_git_work_tree), 'HEAD'])
+        os.chdir(temp_git_work_tree)
 
-    if args.pull_id:
-        pull_merge = [p for p in pulls if p.number == args.pull_id]
+        if args.update_comments:
+            for i, pull_update in enumerate(pulls_mergeable):
+                print('{}/{} Checking for conflicts {} <> {} <> {} ... '.format(i, len(pulls_mergeable), args.base_name, pull_update.number, 'other_pulls'))
+                pulls_conflict = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_update.number, base_branch=args.base_name)
+                update_comment(dry_run=args.dry_run, pull=pull_update, pulls_conflict=pulls_conflict)
 
-        if not pull_merge:
-            print('{} not found in all {} open {} pulls'.format(args.pull_id, len(pulls), args.base_name))
-            sys.exit(-1)
-        pull_merge = pull_merge[0]
+        if args.pull_id:
+            pull_merge = [p for p in pulls if p.number == args.pull_id]
 
-        if not pull_merge.mergeable:
-            print('{} is not mergeable'.format(pull_merge.number))
-            sys.exit(-1)
+            if not pull_merge:
+                print('{} not found in all {} open {} pulls'.format(args.pull_id, len(pulls), args.base_name))
+                sys.exit(-1)
+            pull_merge = pull_merge[0]
 
-        print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_merge.number, 'other_pulls'))
-        conflicts = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_merge.number, base_branch=args.base_name)
+            if not pull_merge.mergeable:
+                print('{} is not mergeable'.format(pull_merge.number))
+                sys.exit(-1)
 
-        update_comment(dry_run=args.dry_run, pull=pull_merge, pulls_conflict=conflicts)
+            print('Checking for conflicts {} <> {} <> {} ... '.format(args.base_name, pull_merge.number, 'other_pulls'))
+            conflicts = calc_conflicts(pulls_mergeable=pulls_mergeable, num=pull_merge.number, base_branch=args.base_name)
+
+            update_comment(dry_run=args.dry_run, pull=pull_merge, pulls_conflict=conflicts)
+
+        os.chdir(args.git_repo)
 
 
 if __name__ == '__main__':
