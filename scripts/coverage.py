@@ -89,7 +89,7 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
         os.makedirs(folder, exist_ok=True)
         docker_exec('rm -r {}'.format(folder))
         os.makedirs(folder, exist_ok=True)
-        # Must change to a dir that exists after this funciton call
+        # Must change to a dir that exists after this function call
 
     clear_dir(dir_build)
     clear_dir(dir_result)
@@ -157,18 +157,22 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
     print('Start docker process ...')
     os.makedirs(dir_cov_report, exist_ok=True)
     docker_id = subprocess.check_output([
-        'docker',
+        'podman',
         'run',
         '-idt',
-        '--rm',
+        #'--rm', # Doesn't work with podman
         '--volume={}:{}:rw,z'.format(dir_code, dir_code),
         '--volume={}:{}:rw,z'.format(dir_cov_report, dir_cov_report),
+        #'--mount', # Doesn't work with fedora (needs rw,z)
+        #'type=bind,src={},dst={}'.format(dir_code, dir_code),
+        #'--mount',
+        #'type=bind,src={},dst={}'.format(dir_cov_report, dir_cov_report),
         '-e',
         'LC_ALL=C.UTF-8',
         'ubuntu:18.04',
     ], universal_newlines=True).strip()
 
-    docker_exec = lambda cmd: subprocess.check_output(['docker', 'exec', docker_id, 'bash', '-c', 'cd {} && {}'.format(os.getcwd(), cmd)], universal_newlines=True)
+    docker_exec = lambda cmd: subprocess.check_output(['podman', 'exec', docker_id, 'bash', '-c', 'cd {} && {}'.format(os.getcwd(), cmd)], universal_newlines=True)
 
     print('Docker running with id {}.'.format(docker_id))
 
