@@ -181,18 +181,22 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
     docker_exec('apt-get install --no-install-recommends --no-upgrade -qq {}'.format('python3-zmq libssl-dev libevent-dev libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils faketime'))
 
     print('Generate base coverage')
+    os.chdir(dir_code)
+    base_git_ref = get_git(['log', '--format=%H', '-1', base_branch])
     dir_result_base = os.path.join(dir_cov_report, '{}'.format(base_branch))
-    res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_branch, make_jobs, cache_base=True)
+    res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_git_ref, make_jobs, cache_base=True)
 
     for i, pull in enumerate(pulls):
         print('{}/{} Calculating coverage ... '.format(i, len(pulls)))
         if not pull_needs_update(pull):
             continue
+        os.chdir(dir_code)
+        pull_git_ref = get_git(['log', '--format=%H', '-1', '{}/{}/merge'.format(UPSTREAM_PULL, pull.number)])
         dir_result_pull = os.path.join(dir_cov_report, '{}'.format(pull.number))
-        res_pull = gen_coverage(docker_exec, dir_code, dir_result_pull, '{}/{}/merge'.format(UPSTREAM_PULL, pull.number), make_jobs)
+        res_pull = gen_coverage(docker_exec, dir_code, dir_result_pull, pull_git_ref, make_jobs)
         text = '\n\n### Coverage\n'
         text += '\n'
-        text += '| Coverage  | Change ([pull {pull_id}]({url_pull})) | Reference ([{base_name}]({url_base}))   |\n'
+        text += '| Coverage  | Change ([pull {pull_id}]({url_pull}), {pull_git_ref}) | Reference ([{base_name}]({url_base}), {base_git_ref})   |\n'
         text += '|-----------|-------------------------|--------------------|\n'
         text += '| Lines     | {p_l:+.4f} %            | {m_l:.4f} %        |\n'
         text += '| Functions | {p_f:+.4f} %            | {m_f:.4f} %        |\n'
@@ -209,6 +213,8 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
             m_l=res_base.lin,
             m_f=res_base.fun,
             m_b=res_base.bra,
+            base_git_ref=base_git_ref,
+            pull_git_ref=pull_git_ref,
             updated_at=datetime.datetime.utcnow().isoformat(),
         )
         update_metadata_comment(pull, ID_COVERAGE_SEC, text=text, dry_run=dry_run)
