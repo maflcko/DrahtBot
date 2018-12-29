@@ -274,7 +274,7 @@ def main():
     call_git(['fetch', '--quiet', '--all'])
     call_git(['reset', '--hard', 'HEAD'])
     call_git(['checkout', 'master'])
-    call_git(['pull', '--ff-only', 'origin', 'master'])
+    call_git(['reset', '--hard', 'origin/master'])
 
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
