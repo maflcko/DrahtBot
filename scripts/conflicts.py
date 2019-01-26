@@ -1,5 +1,6 @@
 from github import Github
 import sys
+import shutil
 import time
 import subprocess
 import argparse
@@ -105,7 +106,10 @@ def main():
     print('Open mergeable {}-pulls: {}'.format(args.base_name, len(pulls_mergeable)))
 
     with tempfile.TemporaryDirectory() as temp_git_work_tree:
-        call_git(['worktree', 'add', '{}'.format(temp_git_work_tree), 'HEAD'])
+        shutil.copytree(
+            os.path.join(args.git_repo, '.git'),
+            os.path.join(temp_git_work_tree, '.git'),
+        )
         os.chdir(temp_git_work_tree)
 
         if args.update_comments:
