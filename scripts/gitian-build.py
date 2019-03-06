@@ -48,7 +48,7 @@ def build():
         print('\nCompiling ' + args.version + ' Linux')
         subprocess.call(['bin/gbuild', '-j', args.jobs, '-m', args.memory, '--commit', 'bitcoin='+args.commit, '--url', 'bitcoin='+args.url, '../bitcoin/contrib/gitian-descriptors/gitian-linux.yml'])
         subprocess.call('mv build/out/bitcoin-*.tar.gz build/out/src/bitcoin-*.tar.gz ../bitcoin-binaries/'+args.version, shell=True)
-        subprocess.call('mv result/bitcoin-linux-*-res.yml ../bitcoin-binaries/'+args.version, shell=True)
+        subprocess.call('mv result/*-linux-*-res.yml ../bitcoin-binaries/'+args.version, shell=True)
         subprocess.call('mv var/build.log ../bitcoin-binaries/'+args.version+'/bitcoin-linux-build.log', shell=True)
 
     if args.windows:
@@ -56,7 +56,7 @@ def build():
         subprocess.call(['bin/gbuild', '-j', args.jobs, '-m', args.memory, '--commit', 'bitcoin='+args.commit, '--url', 'bitcoin='+args.url, '../bitcoin/contrib/gitian-descriptors/gitian-win.yml'])
         subprocess.call('mv build/out/bitcoin-*-win-unsigned.tar.gz inputs/bitcoin-win-unsigned.tar.gz', shell=True)
         subprocess.call('mv build/out/bitcoin-*.zip build/out/bitcoin-*.exe ../bitcoin-binaries/'+args.version, shell=True)
-        subprocess.call('mv result/bitcoin-win-*-res.yml ../bitcoin-binaries/'+args.version, shell=True)
+        subprocess.call('mv result/*-win-*-res.yml ../bitcoin-binaries/'+args.version, shell=True)
         subprocess.call('mv var/build.log ../bitcoin-binaries/'+args.version+'/bitcoin-win-build.log', shell=True)
 
     if args.macos:
@@ -64,7 +64,7 @@ def build():
         subprocess.call(['bin/gbuild', '-j', args.jobs, '-m', args.memory, '--commit', 'bitcoin='+args.commit, '--url', 'bitcoin='+args.url, '../bitcoin/contrib/gitian-descriptors/gitian-osx.yml'])
         subprocess.call('mv build/out/bitcoin-*-osx-unsigned.tar.gz inputs/bitcoin-osx-unsigned.tar.gz', shell=True)
         subprocess.call('mv build/out/bitcoin-*.tar.gz build/out/bitcoin-*.dmg ../bitcoin-binaries/'+args.version, shell=True)
-        subprocess.call('mv result/bitcoin-osx-*-res.yml ../bitcoin-binaries/'+args.version, shell=True)
+        subprocess.call('mv result/*-osx-*-res.yml ../bitcoin-binaries/'+args.version, shell=True)
         subprocess.call('mv var/build.log ../bitcoin-binaries/'+args.version+'/bitcoin-osx-build.log', shell=True)
 
     os.chdir(workdir)
