@@ -25,7 +25,7 @@ def get_metadata_sections(pull):
 
 def update_metadata_comment(pull, section_id, text, dry_run):
     c, sections = get_metadata_sections(pull)
-    if sections:
+    if sections is not None:
         for i in range(len(sections)):
             if sections[i].startswith(section_id):
                 # Section exists
