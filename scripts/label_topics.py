@@ -7,6 +7,7 @@ from util.util import return_with_pull_metadata
 
 # Map from label name to regex modified
 LABELS = {
+    'Build system': ['^configure', 'Makefile', '\.in$', '^depends', '^contrib/gitian'],
     'TX fees and policy': ['^src/policy/'],
     'Utils/log/libs': ['^src/util/'],
     'UTXO Db and Indexes': ['^src/txdb', '^src/index/', '^src/coins', '^src/leveldb', '^src/db'],
