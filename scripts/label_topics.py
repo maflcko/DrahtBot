@@ -47,7 +47,7 @@ def main():
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
         issue = p.as_issue()
-        if p.mergeable and not len([l for l in issue.get_labels()]):
+        if not len([l for l in issue.get_labels()]):
             modified_files = [f.filename for f in p.get_files()]
             print('{}: {}'.format(p.title, ', '.join(modified_files)))
             new_labels = []
