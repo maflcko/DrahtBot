@@ -126,6 +126,8 @@ def main():
                 if match:
                     new_labels += [l]
                     match = False
+            if not new_labels:
+                continue
             print('{}\n    .add_to_labels({})'.format(p, ', '.join(new_labels)))
             if not args.dry_run:
                 issue.add_to_labels(*set(new_labels))
