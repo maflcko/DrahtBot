@@ -2,28 +2,77 @@ from github import Github, GithubException
 import time
 import argparse
 import re
+from collections import namedtuple
 
 from util.util import return_with_pull_metadata
 
-# Map from label name to regex modified
+# Tuple of arrays of regexes
+Needle = namedtuple('Needle', ['file', 'title'])
+
+# Map from label name to Needle
 LABELS = {
-    'Build system': ['^configure', 'Makefile', '\.in$', '^depends', '^contrib/gitian'],
-    'TX fees and policy': ['^src/policy/'],
-    'Utils/log/libs': ['^src/util/', '^src/crypto', '^src/key'],
-    'UTXO Db and Indexes': ['^src/txdb', '^src/index/', '^src/coins', '^src/leveldb', '^src/db'],
-    'Validation': ['^src/validation', '^src/chain'],
-    'Wallet': ['^src/wallet/', '^src/interfaces/wallet'],
-    'Consensus': ['^src/versionbits', '^src/script/(bitcoin|interpreter|script|sigcache)'],
-    'GUI': ['^src/qt'],
-    'Mempool': ['^src/txmempool'],
-    'Mining': ['^src/miner', '^src/rpc/mininig'],
-    'P2P': ['^src/net', '^src/tor'],
-    'RPC/REST/ZMQ': ['^src/rpc', '^src/rest', '^src/zmq', '^src/wallet/rpc', '^src/http'],
-    'Scripts and tools': ['^contrib/'],
-    'Tests': ['^src/test', '^src/qt/test', '^test', '^src/wallet/test'],
-    'Docs': ['^doc/', '.*.md$'],
+    'Build system': Needle(
+        ['^configure', 'Makefile', '\.in$', '^depends', '^contrib/gitian'],
+        ['^build:', '^depends:'],
+    ),
+    'TX fees and policy': Needle(
+        ['^src/policy/'],
+        ['^policy:'],
+    ),
+    'Utils/log/libs': Needle(
+        ['^src/util/', '^src/crypto', '^src/key'],
+        ['^log:'],
+    ),
+    'UTXO Db and Indexes': Needle(
+        ['^src/txdb', '^src/index/', '^src/coins', '^src/leveldb', '^src/db'],
+        [],
+    ),
+    'Validation': Needle(
+        ['^src/validation', '^src/chain'],
+        ['^validation:'],
+    ),
+    'Wallet': Needle(
+        ['^src/wallet/', '^src/interfaces/wallet'],
+        ['^wallet:'],
+    ),
+    'Consensus': Needle(
+        ['^src/versionbits', '^src/script/(bitcoin|interpreter|script|sigcache)'],
+        ['^consensus:'],
+    ),
+    'GUI': Needle(
+        ['^src/qt'],
+        ['^gui:', '^qt:'],
+    ),
+    'Mempool': Needle(
+        ['^src/txmempool'],
+        ['^mempool', '^txmempool:'],
+    ),
+    'Mining': Needle(
+        ['^src/miner', '^src/rpc/mininig'],
+        ['^mining:'],
+    ),
+    'P2P': Needle(
+        ['^src/net', '^src/tor'],
+        ['^net:', '^p2p:'],
+    ),
+    'RPC/REST/ZMQ': Needle(
+        ['^src/rpc', '^src/rest', '^src/zmq', '^src/wallet/rpc', '^src/http'],
+        ['^rpc:', '^rest:', '^zmq:'],
+    ),
+    'Scripts and tools': Needle(
+        ['^contrib/'],
+        ['^contrib:'],
+    ),
+    'Tests': Needle(
+        ['^src/test', '^src/qt/test', '^test', '^src/wallet/test'],
+        ['^qa:', '^tests?:'],
+    ),
+    'Docs': Needle(
+        ['^doc/', '.*.md$'],
+        ['^docs?:'],
+    ),
 }
-LABELS = {l: [re.compile(r) for r in LABELS[l]] for l in LABELS}
+LABELS = {l: Needle([re.compile(r) for r in LABELS[l].file], [re.compile(r) for r in LABELS[l].title]) for l in LABELS}
 
 
 def main():
@@ -54,12 +103,16 @@ def main():
             match = False
             for l in LABELS:
                 for f in modified_files:
-                    for r in LABELS[l]:
+                    for r in LABELS[l].file:
                         match = r.search(f)
                         if match:
                             break  # No need to check other regexes
                     if match:
                         break  # No need to check other files
+                for r in LABELS[l].title:
+                    match = r.search(issue.title)
+                    if match:
+                        break  # No need to check other regexes
                 if match:
                     new_labels += [l]
                     match = False
