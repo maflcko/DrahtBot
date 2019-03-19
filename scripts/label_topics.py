@@ -71,8 +71,16 @@ LABELS = {
         ['^doc/', '.*.md$'],
         ['^docs?:'],
     ),
+    'Refactoring': Needle(
+        [],
+        ['^refactor(ing)?:', '^move-?only:', '^scripted-diff:'],
+    ),
 }
-LABELS = {l: Needle([re.compile(r) for r in LABELS[l].file], [re.compile(r) for r in LABELS[l].title]) for l in LABELS}
+LABELS = {l: Needle(
+    [re.compile(r, flags=re.IGNORECASE) for r in LABELS[l].file],
+    [re.compile(r, flags=re.IGNORECASE) for r in LABELS[l].title],
+)
+          for l in LABELS}
 
 
 def main():
@@ -102,6 +110,7 @@ def main():
             new_labels = []
             match = False
             for l in LABELS:
+                # Maybe this label matches the file
                 for f in modified_files:
                     for r in LABELS[l].file:
                         match = r.search(f)
@@ -109,10 +118,11 @@ def main():
                             break  # No need to check other regexes
                     if match:
                         break  # No need to check other files
-                for r in LABELS[l].title:
-                    match = r.search(issue.title)
-                    if match:
-                        break  # No need to check other regexes
+                if not match:  # Maybe this label matches the title
+                    for r in LABELS[l].title:
+                        match = r.search(issue.title)
+                        if match:
+                            break  # No need to check other regexes
                 if match:
                     new_labels += [l]
                     match = False
