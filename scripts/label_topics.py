@@ -9,7 +9,7 @@ from util.util import return_with_pull_metadata
 LABELS = {
     'Build system': ['^configure', 'Makefile', '\.in$', '^depends', '^contrib/gitian'],
     'TX fees and policy': ['^src/policy/'],
-    'Utils/log/libs': ['^src/util/'],
+    'Utils/log/libs': ['^src/util/', '^src/crypto', '^src/key'],
     'UTXO Db and Indexes': ['^src/txdb', '^src/index/', '^src/coins', '^src/leveldb', '^src/db'],
     'Validation': ['^src/validation', '^src/chain'],
     'Wallet': ['^src/wallet/', '^src/interfaces/wallet'],
@@ -55,7 +55,7 @@ def main():
             for l in LABELS:
                 for f in modified_files:
                     for r in LABELS[l]:
-                        match = r.match(f)
+                        match = r.search(f)
                         if match:
                             break  # No need to check other regexes
                     if match:
