@@ -37,7 +37,7 @@ def main():
     github_repo = github_api.get_repo(args.github_repo)
 
     print('Get labels ...')
-    labels = {l: github_repo.get_label(l) for l in LABELS}
+    {l: github_repo.get_label(l) for l in LABELS}
 
     print('Get open pulls ...')
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
@@ -61,11 +61,11 @@ def main():
                     if match:
                         break  # No need to check other files
                 if match:
-                    new_labels += [labels[l]]
+                    new_labels += [l]
                     match = False
-            print('{}\n    .add_to_labels({})'.format(p, ', '.join([l.name for l in new_labels])))
+            print('{}\n    .add_to_labels({})'.format(p, ', '.join(new_labels)))
             if not args.dry_run:
-                issue.add_to_labels(label_needs_rebase)
+                issue.add_to_labels(*set(new_labels))
 
 
 if __name__ == '__main__':
