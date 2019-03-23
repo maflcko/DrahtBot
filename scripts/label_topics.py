@@ -71,6 +71,10 @@ LABELS = {
         ['^doc/', '.*.md$'],
         ['^docs?:'],
     ),
+    'Backport': Needle(
+        [],
+        ['^backport:'],
+    ),
     'Refactoring': Needle(
         [],
         ['^refactor(ing)?:', '^move-?only:', '^scripted-diff:'],
