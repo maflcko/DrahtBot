@@ -64,7 +64,7 @@ LABELS = {
         ['^contrib:'],
     ),
     'Tests': Needle(
-        ['^src/test', '^src/qt/test', '^test', '^src/wallet/test'],
+        ['^src/test', '^src/qt/test', '^test', '^src/wallet/test', '^.travis'],
         ['^qa:', '^tests?:'],
     ),
     'Docs': Needle(
