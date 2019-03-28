@@ -48,7 +48,7 @@ LABELS = {
         ['^mempool', '^txmempool:'],
     ),
     'Mining': Needle(
-        ['^src/miner', '^src/rpc/mininig'],
+        ['^src/miner', '^src/rpc/mining'],
         ['^mining:'],
     ),
     'P2P': Needle(
