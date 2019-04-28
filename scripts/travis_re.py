@@ -35,23 +35,12 @@ def main():
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
         if p.mergeable:
-            if p.number in [9719, 13446]:
-                # Abuse detected on these pulls, no re-trigger possible
-                continue
-            html_source_commits = urllib.request.urlopen('https://github.com/{}/pull/{}/commits'.format(args.github_repo, p.number)).read().decode()
-            build_finish = datetime.datetime.min
-            for build_id in html_source_commits.split('https://travis-ci.org/bitcoin/bitcoin/builds/')[1:]:
-                build_id = int(re.search('\d+', build_id).group(0))
-                build_finished = travis_api.build(build_id).finished_at
-                if not build_finished:
-                    # Try next build
-                    continue
-                parsed = datetime.datetime.strptime(build_finished, "%Y-%m-%dT%H:%M:%SZ")
-                if build_finish < parsed:
-                    build_finish = parsed
-            if build_finish == datetime.datetime.min:
+            commit = next(c for c in p.get_commits() if c.sha == p.head.sha)
+            status = [s for s in commit.get_combined_status().statuses if s.context == 'continuous-integration/travis-ci/pr']
+            if not status:
                 # No travis result in any build or no builds
                 continue
+            build_finish = status[0].updated_at
             delta = datetime.datetime.utcnow() - build_finish
             if delta < datetime.timedelta(days=50):
                 continue
