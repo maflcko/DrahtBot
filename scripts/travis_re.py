@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
+    parser.add_argument('--delta_days', help='After how many days a result is stale.', default='250', type=int)
     args = parser.parse_args()
 
     github_api = Github(args.github_access_token)
@@ -42,7 +43,7 @@ def main():
                 continue
             build_finish = status[0].updated_at
             delta = datetime.datetime.utcnow() - build_finish
-            if delta < datetime.timedelta(days=50):
+            if delta < datetime.timedelta(days=args.delta_days):
                 continue
 
             issue = p.as_issue()
