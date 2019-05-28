@@ -1,13 +1,13 @@
 diff --git a/bin/gbuild b/bin/gbuild
-index 24e4e2a78..e9d28d615 100755
+index 7ad397f..5589789 100755
 --- a/bin/gbuild
 +++ b/bin/gbuild
-@@ -287,7 +287,7 @@ build_desc["remotes"].each do |remote|
-   unless File.exist?("inputs/#{dir}")
-       system!("git init inputs/#{dir}")
+@@ -293,7 +293,7 @@ build_desc["remotes"].each do |remote|
+     system!("git init inputs/#{dir}")
    end
--  system!("cd inputs/#{dir} && git fetch --update-head-ok #{sanitize_path(remote["url"], remote["url"])} +refs/tags/*:refs/tags/* +refs/heads/*:refs/heads/*")
-+  system!("cd inputs/#{dir} && git fetch --update-head-ok #{sanitize_path(remote["url"], remote["url"])} +refs/tags/*:refs/tags/* +refs/heads/*:refs/heads/* +refs/pull/*:refs/remotes/upstream-pull/*")
-   commit = sanitize(remote["commit"], remote["commit"])
-   commit = `cd inputs/#{dir} && git log --format=%H -1 #{commit}`.strip
-   raise "error looking up commit for tag #{remote["commit"]}" unless $?.exitstatus == 0
+   if !@options[:skip_fetch]
+-    system!("cd inputs/#{dir} && git fetch --update-head-ok #{sanitize_path(remote["url"], remote["url"])} +refs/tags/*:refs/tags/* +refs/heads/*:refs/heads/*")
++    system!("cd inputs/#{dir} && git fetch --update-head-ok #{sanitize_path(remote["url"], remote["url"])} +refs/tags/*:refs/tags/* +refs/heads/*:refs/heads/* +refs/pull/*:refs/remotes/upstream-pull/*")
+     system!("cd inputs/#{dir} && git checkout -q #{commit}")
+     system!("cd inputs/#{dir} && git submodule update --init --recursive --force")
+   end
