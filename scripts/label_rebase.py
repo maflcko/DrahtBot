@@ -27,6 +27,9 @@ def main():
 
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
+        if p.mergeable_state == 'draft':
+            # Exclude draft pull requests
+            continue
         issue = p.as_issue()
         if p.mergeable and label_needs_rebase in issue.get_labels():
             print('{}\n    .remove_from_labels({})'.format(p, label_needs_rebase))
