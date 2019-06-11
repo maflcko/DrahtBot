@@ -231,7 +231,7 @@ def main():
     parser.add_argument('--remote_url', help='The remote url of the hosted html reports.', default='https://drahtbot.github.io/reports')
     parser.add_argument('--make_jobs', help='The number of make jobs.', default='2', type=int)
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
-    parser.add_argument('--scratch_dir', help='The local dir used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch_coverage'))
+    parser.add_argument('--scratch_dir', help='The local dir used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'coverage'))
     parser.add_argument('--ssh_key', help='The ssh key for "repo_report"', default=os.path.join(THIS_FILE_PATH, '..', 'ssh_env', 'id_rsa_drahtbot'))
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
     args = parser.parse_args()

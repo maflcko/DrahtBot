@@ -19,7 +19,7 @@ def main():
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
-    parser.add_argument('--gitian_folder', help='The local scratch folder for temp gitian results', default=os.path.join(THIS_FILE_PATH, '..', 'scratch_gitian'))
+    parser.add_argument('--gitian_folder', help='The local scratch folder for temp gitian results', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'gitian'))
     parser.add_argument('--gitian_jobs', help='The number of jobs', default=2)
     parser.add_argument('--gitian_mem', help='The memory to use', default=2000)
     parser.add_argument('--domain', help='Where the assets are reachable', default='http://127.0.0.1')

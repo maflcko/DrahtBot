@@ -63,7 +63,7 @@ def main():
     parser = argparse.ArgumentParser(description='Determine conflicting pull requests.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--pull_id', type=int, help='Update the conflict comment and label for this pull request.', default=0)
     parser.add_argument('--update_comments', action='store_true', help='Update all conflicts comments and labels.', default=False)
-    parser.add_argument('--git_repo', help='The locally cloned git repo used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch_conflicts'))
+    parser.add_argument('--git_repo', help='The locally cloned git repo used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'conflicts'))
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
