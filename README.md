@@ -7,6 +7,7 @@ source ./env_3/bin/activate
 pip install pygithub
 pip install github3.py
 pip install travispy
+pip install grip  # md2html
 ```
 
 example cmd
