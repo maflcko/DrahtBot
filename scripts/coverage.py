@@ -156,21 +156,24 @@ def pull_needs_update(pull):
 def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_run, slug, remote_url):
     print('Start docker process ...')
     os.makedirs(dir_cov_report, exist_ok=True)
-    docker_id = subprocess.check_output([
-        'podman',
-        'run',
-        '-idt',
-        #'--rm', # Doesn't work with podman
-        '--volume={}:{}:rw,z'.format(dir_code, dir_code),
-        '--volume={}:{}:rw,z'.format(dir_cov_report, dir_cov_report),
-        #'--mount', # Doesn't work with fedora (needs rw,z)
-        #'type=bind,src={},dst={}'.format(dir_code, dir_code),
-        #'--mount',
-        #'type=bind,src={},dst={}'.format(dir_cov_report, dir_cov_report),
-        '-e',
-        'LC_ALL=C.UTF-8',
-        'ubuntu:18.04',
-    ], universal_newlines=True).strip()
+    docker_id = subprocess.check_output(
+        [
+            'podman',
+            'run',
+            '-idt',
+            #'--rm', # Doesn't work with podman
+            '--volume={}:{}:rw,z'.format(dir_code, dir_code),
+            '--volume={}:{}:rw,z'.format(dir_cov_report, dir_cov_report),
+            #'--mount', # Doesn't work with fedora (needs rw,z)
+            #'type=bind,src={},dst={}'.format(dir_code, dir_code),
+            #'--mount',
+            #'type=bind,src={},dst={}'.format(dir_cov_report, dir_cov_report),
+            '-e',
+            'LC_ALL=C.UTF-8',
+            'debian:unstable-slim',  # Use debian 11 for lcov 1.14
+        ],
+        universal_newlines=True,
+    ).strip()
 
     docker_exec = lambda cmd: subprocess.check_output(['podman', 'exec', docker_id, 'bash', '-c', 'cd {} && {}'.format(os.getcwd(), cmd)], universal_newlines=True)
 
@@ -279,7 +282,7 @@ def main():
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
     repo_code = github_api.get_repo(args.repo_code)
-    pulls = return_with_pull_metadata(lambda: [p for p in repo_code.get_pulls(state='open')][:9])
+    pulls = return_with_pull_metadata(lambda: [p for p in repo_code.get_pulls(state='open')])
     call_git(['fetch', '--quiet', '--all'])  # Do it again just to be safe
     call_git(['fetch', 'origin', '{}'.format(args.base_name), '--quiet'])
     pulls = [p for p in pulls if p.base.ref == args.base_name]
