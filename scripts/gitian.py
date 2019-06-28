@@ -13,6 +13,17 @@ ID_GITIAN_COMMENT = '<!--a722867cd34abeea1fadc8d60700f111-->'
 UPSTREAM_PULL = 'upstream-pull'
 
 
+def calculate_diffs(folder_1, folder_2):
+    EXTENSIONS = ['.yml', '.log']
+    files = set(os.listdir(folder_1)).intersection(set(os.listdir(folder_2)))
+    files = [f for f in files if any(f.endswith(e) for e in EXTENSIONS)]
+    for f in files:
+        os.chdir(folder_2)
+        file_1 = str(os.path.join(folder_1, f))
+        file_2 = str(os.path.join(folder_2, f))
+        subprocess.call('diff --color {} {} > {}.diff'.format(file_1, file_2, f), shell=True)
+
+
 def main():
     THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Gitian build and create an issue comment to share the results.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -147,6 +158,8 @@ def main():
             print('Moving results of {} to {}'.format(base_commit, GITIAN_WWW_FOLDER))
             shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, commit), ignore_errors=True)
             commit_folder = shutil.move(src=commit_folder, dst=GITIAN_WWW_FOLDER)
+
+        calculate_diffs(base_folder, commit_folder)
 
         text = ID_GITIAN_COMMENT
         text += '\n'
