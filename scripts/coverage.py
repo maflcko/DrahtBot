@@ -282,10 +282,9 @@ def main():
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
     repo_code = github_api.get_repo(args.repo_code)
-    pulls = return_with_pull_metadata(lambda: [p for p in repo_code.get_pulls(state='open')])
+    pulls = return_with_pull_metadata(lambda: [p for p in repo_code.get_pulls(state='open', base=args.base_name)])
     call_git(['fetch', '--quiet', '--all'])  # Do it again just to be safe
     call_git(['fetch', 'origin', '{}'.format(args.base_name), '--quiet'])
-    pulls = [p for p in pulls if p.base.ref == args.base_name]
 
     print('Open {}-pulls: {}'.format(args.base_name, len(pulls)))
     pulls_mergeable = [p for p in pulls if p.mergeable]

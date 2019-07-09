@@ -109,11 +109,10 @@ def main():
     os.chdir(git_repo_dir)
     call_git(['fetch', '--quiet', '--all'])
     print('Get open, mergeable {} pulls ...'.format(args.base_name))
-    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
+    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open', base=args.base_name)])
     call_git(['fetch', '--quiet', '--all'])  # Do it again just to be safe
     call_git(['fetch', '--quiet', 'origin'])
     base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
-    pulls = [p for p in pulls if p.base.ref == args.base_name]
     pulls = [p for p in pulls if p.mergeable]
 
     print('Num: {}'.format(len(pulls)))
