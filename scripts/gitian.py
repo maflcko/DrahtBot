@@ -46,6 +46,7 @@ def main():
     print('sudo chown -R www-data:www-data /var/www')
     print('sudo chmod -R g+rw /var/www')
     print('mv /var/www/html/index.html /tmp/')
+    print('# Then reboot')
     print()
     url = 'https://github.com/{}'.format(args.github_repo)
     GITIAN_WWW_FOLDER = '/var/www/html/gitian/{}/'.format(args.github_repo)
