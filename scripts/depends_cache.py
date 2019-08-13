@@ -61,7 +61,7 @@ def main():
     for entry in entries:
         print(' ... entry = {}'.format(entry))
         if not args.dry_run:
-            os.replace(src=os.path.join(source_dir, entry), dst=os.path.join(WWW_FOLDER_DEPENDS_CACHES, entry))
+            shutil.copyfile(src=os.path.join(source_dir, entry), dst=os.path.join(WWW_FOLDER_DEPENDS_CACHES, entry))
 
 
 if __name__ == '__main__':
