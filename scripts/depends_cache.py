@@ -13,7 +13,7 @@ def main():
     THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Fetch depends and move them to /var/www/.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
-    parser.add_argument('--git_ref', help='The git ref to checkout and fetch the depends from.', default='master')
+    parser.add_argument('--git_ref', help='The git ref to checkout and fetch the depends from.', default='origin/master')
     parser.add_argument('--scratch_dir', help='The local scratch folder for temp downloads', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'depends_cache'))
     parser.add_argument('--dry_run', help='Print changes/edits instead of moving the files.', action='store_true', default=False)
     args = parser.parse_args()
