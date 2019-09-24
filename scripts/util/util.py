@@ -1,6 +1,8 @@
 import subprocess
 from enum import Enum, unique
 
+UPSTREAM_PULL = 'upstream-pull'
+
 
 @unique
 class IdComment(Enum):

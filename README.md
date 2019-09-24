@@ -8,6 +8,7 @@ pip install pygithub
 pip install github3.py
 pip install travispy
 pip install grip  # md2html
+pip install mwclient
 ```
 
 example cmd
