@@ -1,6 +1,7 @@
 import mwclient
 import argparse
 import os
+import time
 import glob
 
 from util.util import get_git, call_git, UPSTREAM_PULL
@@ -63,6 +64,7 @@ def main():
         print(edit_summary)
         if not args.dry_run:
             page.save('{{bip}}\n' + '{{BipMoved|' + file_name + '}}\n\n' + content, edit_summary)
+            time.sleep(5)
 
 
 if __name__ == '__main__':
