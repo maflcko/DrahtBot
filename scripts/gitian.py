@@ -126,7 +126,10 @@ def main():
         call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_copy_from_target.patch')])
         inputs_folder = os.path.join(temp_dir, 'gitian-builder', 'inputs', '')
         os.makedirs(inputs_folder, exist_ok=True)
+        # Bitcoin Core before 0.20.0
         subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), inputs_folder])
+        # Bitcoin Core after and including 0.20.0
+        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.14.sdk.tar.gz'), inputs_folder])
 
     for i in [p.as_issue() for p in pulls]:
         if label_needs_gitian in i.get_labels():
