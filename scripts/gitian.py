@@ -123,7 +123,6 @@ def main():
         call_gitian_build(['--setup'], commit=base_commit)
         os.chdir(os.path.join(temp_dir, 'gitian-builder'))
         call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_gbuild.patch')])
-        call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_copy_from_target.patch')])
         inputs_folder = os.path.join(temp_dir, 'gitian-builder', 'inputs', '')
         os.makedirs(inputs_folder, exist_ok=True)
         # Bitcoin Core before 0.20.0
