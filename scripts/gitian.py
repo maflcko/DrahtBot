@@ -1,5 +1,6 @@
 from github import Github, GithubException
 import time
+import itertools
 import shutil
 import argparse
 import os
@@ -50,7 +51,7 @@ def main():
     print()
     url = 'https://github.com/{}'.format(args.github_repo)
     GITIAN_WWW_FOLDER = '/var/www/html/gitian/{}/'.format(args.github_repo)
-    EXTERNAL_URL = '{}/gitian/{}/'.format(args.domain, args.github_repo)
+    external_url = '{}/gitian/{}/'.format(args.domain, args.github_repo)
 
     if not args.dry_run:
         print('Clean gitian folder of old files')
@@ -165,17 +166,12 @@ def main():
 
         text = ID_GITIAN_COMMENT
         text += '\n'
-        text += 'Gitian builds for commit {} ({}):\n'.format(base_commit, args.base_name)
+        text += '### Gitian builds\n\n'
+        text += '| for commit {} ({}) '.format(base_commit, args.base_name)
+        text += '| for commit {} ({} and this pull) |\n'.format(commit, args.base_name)
+        text += '|--|--|\n'
 
-        for f in sorted(os.listdir(base_folder)):
-            os.chdir(base_folder)
-            text += ' * `{}...` [{}]({}{}/{})\n'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:32], f, EXTERNAL_URL, base_commit, f)
-
-        text += '\n\n'
-        text += 'Gitian builds for commit {} ({}):\n'.format(commit, 'master and this pull')
-        for f in sorted(os.listdir(commit_folder)):
-            os.chdir(commit_folder)
-            text += ' * `{}...` [{}]({}{}/{})\n'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:32], f, EXTERNAL_URL, commit, f)
+        text += calculate_table(base_folder, commit_folder, external_url, base_commit, commit)
 
         print('{}\n    .remove_from_labels({})'.format(p, label_needs_gitian))
         print('    .create_comment({})'.format(text))
@@ -183,6 +179,24 @@ def main():
         if not args.dry_run:
             issue.create_comment(text)
             issue.remove_from_labels(label_needs_gitian)
+
+
+def calculate_table(base_folder, commit_folder, external_url, base_commit, commit):
+    left = []
+    for f in sorted(os.listdir(base_folder)):
+        os.chdir(base_folder)
+        left.append('`{}...` [{}]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], f, external_url, base_commit, f))
+
+    right = []
+    for f in sorted(os.listdir(commit_folder)):
+        os.chdir(commit_folder)
+        right.append('`{}...` [{}]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], f, external_url, commit, f))
+
+    text = ''
+    for l in itertools.zip_longest(left, right, fillvalue=''):
+        text += '| {} | {} |\n'.format(l[0], l[1])
+    text += '\n'
+    return text
 
 
 if __name__ == '__main__':
