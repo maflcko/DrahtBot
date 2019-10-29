@@ -1,6 +1,7 @@
 from github import Github, GithubException
 import time
 import itertools
+from collections import defaultdict
 import shutil
 import argparse
 import os
@@ -167,9 +168,11 @@ def main():
         text = ID_GITIAN_COMMENT
         text += '\n'
         text += '### Gitian builds\n\n'
-        text += '| for commit {} ({}) '.format(base_commit, args.base_name)
-        text += '| for commit {} ({} and this pull) |\n'.format(commit, args.base_name)
-        text += '|--|--|\n'
+        text += '| File '
+        text += '| commit {} ({}) '.format(base_commit, args.base_name)
+        text += '| commit {} ({} and this pull) '.format(commit, args.base_name)
+        text += '|\n'
+        text += '|--|--|--|\n'
 
         text += calculate_table(base_folder, commit_folder, external_url, base_commit, commit)
 
@@ -182,19 +185,22 @@ def main():
 
 
 def calculate_table(base_folder, commit_folder, external_url, base_commit, commit):
-    left = []
+    rows = defaultdict(lambda: ['', ''])  # map from file name to list of links
     for f in sorted(os.listdir(base_folder)):
         os.chdir(base_folder)
-        left.append('`{}...` [{}]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], f, external_url, base_commit, f))
+        left = rows[f]
+        left[0] = '[`{}...`]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], external_url, base_commit, f)
+        rows[f] = left
 
-    right = []
     for f in sorted(os.listdir(commit_folder)):
         os.chdir(commit_folder)
-        right.append('`{}...` [{}]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], f, external_url, commit, f))
+        right = rows[f]
+        right[1] = '[`{}...`]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], external_url, commit, f)
+        rows[f] = right
 
     text = ''
-    for l in itertools.zip_longest(left, right, fillvalue=''):
-        text += '| {} | {} |\n'.format(l[0], l[1])
+    for f in rows:
+        text += '| {} | {} | {} |\n'.format(f, rows[f][0], rows[f][1])
     text += '\n'
     return text
 
