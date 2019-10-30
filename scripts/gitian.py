@@ -169,8 +169,8 @@ def main():
         text += '\n'
         text += '### Gitian builds\n\n'
         text += '| File '
-        text += '| commit {} ({}) '.format(base_commit, args.base_name)
-        text += '| commit {} ({} and this pull) '.format(commit, args.base_name)
+        text += '| commit {}<br>({}) '.format(base_commit, args.base_name)
+        text += '| commit {}<br>({} and this pull) '.format(commit, args.base_name)
         text += '|\n'
         text += '|--|--|--|\n'
 
