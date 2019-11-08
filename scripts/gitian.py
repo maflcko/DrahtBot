@@ -83,18 +83,6 @@ def main():
             commit,
         ] + args_fwd)
 
-    if args.build_one_commit:
-        print('Starting gitian build for one commit ({}) ...'.format(args.build_one_commit))
-        call_gitian_build(['--build', '--commit'], commit=args.build_one_commit)
-        print('See folder:\n{}'.format(os.path.join(temp_dir, 'bitcoin-binaries', args.build_one_commit)))
-        print('Exit')
-        return
-
-    github_api = Github(args.github_access_token)
-    github_repo = github_api.get_repo(args.github_repo)
-
-    label_needs_gitian = github_repo.get_label('Needs gitian build')
-
     if not os.path.isdir(git_repo_dir):
         print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
         os.chdir(temp_dir)
@@ -111,6 +99,19 @@ def main():
     print('Fetch upsteam pulls')
     os.chdir(git_repo_dir)
     call_git(['fetch', '--quiet', '--all'])
+
+    if args.build_one_commit:
+        print('Starting gitian build for one commit ({}) ...'.format(args.build_one_commit))
+        call_gitian_build(['--build', '--commit'], commit=args.build_one_commit)
+        print('See folder:\n{}'.format(os.path.join(temp_dir, 'bitcoin-binaries', args.build_one_commit)))
+        print('Exit')
+        return
+
+    github_api = Github(args.github_access_token)
+    github_repo = github_api.get_repo(args.github_repo)
+
+    label_needs_gitian = github_repo.get_label('Needs gitian build')
+
     print('Get open, mergeable {} pulls ...'.format(args.base_name))
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open', base=args.base_name)])
     call_git(['fetch', '--quiet', '--all'])  # Do it again just to be safe
