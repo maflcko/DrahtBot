@@ -65,6 +65,11 @@ def main():
         if not args.dry_run:
             page.save('{{bip}}\n' + '{{BipMoved|' + file_name + '}}\n\n' + content, edit_summary)
             time.sleep(5)
+            site.pages['bip-{:04d}.mediawiki'.format(bip_number)].save(
+                '#REDIRECT [[BIP {:04d}]]'.format(bip_number),
+                'Create redirect from [[bip-{:04d}.mediawiki]] to [[BIP {:04d}]]'.format(bip_number, bip_number),
+            )
+            time.sleep(5)
 
 
 if __name__ == '__main__':
