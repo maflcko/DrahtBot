@@ -100,6 +100,18 @@ def main():
     os.chdir(git_repo_dir)
     call_git(['fetch', '--quiet', '--all'])
 
+    if not os.path.isdir(os.path.join(temp_dir, 'gitian-builder')):
+        print('Setting up docker gitian ...')
+        call_gitian_build(['--setup'], commit='HEAD')
+        os.chdir(os.path.join(temp_dir, 'gitian-builder'))
+        call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_gbuild.patch')])
+        inputs_folder = os.path.join(temp_dir, 'gitian-builder', 'inputs', '')
+        os.makedirs(inputs_folder, exist_ok=True)
+        # Bitcoin Core before 0.20.0
+        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), inputs_folder])
+        # Bitcoin Core after and including 0.20.0
+        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.14.sdk.tar.gz'), inputs_folder])
+
     if args.build_one_commit:
         print('Starting gitian build for one commit ({}) ...'.format(args.build_one_commit))
         call_gitian_build(['--build', '--commit'], commit=args.build_one_commit)
@@ -120,18 +132,6 @@ def main():
     pulls = [p for p in pulls if p.mergeable]
 
     print('Num: {}'.format(len(pulls)))
-
-    if not os.path.isdir(os.path.join(temp_dir, 'gitian-builder')):
-        print('Setting up docker gitian ...')
-        call_gitian_build(['--setup'], commit=base_commit)
-        os.chdir(os.path.join(temp_dir, 'gitian-builder'))
-        call_git(['apply', os.path.join(THIS_FILE_PATH, 'gitian_builder_gbuild.patch')])
-        inputs_folder = os.path.join(temp_dir, 'gitian-builder', 'inputs', '')
-        os.makedirs(inputs_folder, exist_ok=True)
-        # Bitcoin Core before 0.20.0
-        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), inputs_folder])
-        # Bitcoin Core after and including 0.20.0
-        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.14.sdk.tar.gz'), inputs_folder])
 
     for i in [p.as_issue() for p in pulls]:
         if label_needs_gitian in i.get_labels():
