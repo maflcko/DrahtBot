@@ -46,7 +46,7 @@ def main():
                 issue.add_to_labels(label_needs_rebase)
                 if issue.number not in AVOID_COMMENT_ISSUES:
                     text = ID_NEEDS_REBASE_COMMENT
-                    text += '\n🐙 This pull request conflicts with the target branch and [needs rebase](https://github.com/bitcoin/bitcoin/blob/fa733bbd78add587e19f0175ab9c127a8c27e024/CONTRIBUTING.md#rebasing-changes).'
+                    text += '\n🐙 This pull request conflicts with the target branch and [needs rebase](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#rebasing-changes).'
                     issue.create_comment(text)
             continue
 
