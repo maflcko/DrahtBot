@@ -146,7 +146,7 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
             'podman',
             'run',
             '-idt',
-            #'--rm', # Doesn't work with podman
+            '--rm',
             '--volume={}:{}:rw,z'.format(dir_code, dir_code),
             '--volume={}:{}:rw,z'.format(dir_cov_report, dir_cov_report),
             #'--mount', # Doesn't work with fedora (needs rw,z)
