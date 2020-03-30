@@ -77,11 +77,10 @@ def parse_perc(html_path):
     )
 
 
-def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache_base=False):
+def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs):
     print('Generate coverage for {} in {} (ref: {}).'.format(dir_code, dir_result, git_ref))
     os.chdir(dir_code)
     dir_build = os.path.join(dir_code, 'build')
-    dir_cache = os.path.join(dir_code, 'cache_base')
 
     print('Clear previous build and result folders')
 
@@ -93,7 +92,6 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
 
     clear_dir(dir_build)
     clear_dir(dir_result)
-    clear_dir(dir_cache) if cache_base else None
 
     print('Make coverage data in docker ...')
     os.chdir(dir_code)
@@ -110,19 +108,6 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs, *, cache
         f.write('/usr/bin/genhtml $@')
     docker_exec('chmod +x {}'.format(os.path.join(wrapper_dir, 'genhtml')))
     docker_exec('PATH={}:{} ../configure --enable-zmq --with-incompatible-bdb --enable-lcov --enable-lcov-branch-coverage --disable-bench'.format(wrapper_dir, '${PATH}'))
-    if cache_base:
-        print('Cache compiled obj files of {} in {} ...'.format(git_ref, dir_cache))
-        docker_exec('make -j{}'.format(make_jobs))
-        docker_exec('rmdir {}'.format(dir_cache))
-        docker_exec('mv {} {}'.format(dir_build, dir_cache))
-
-    print('Restore compiled obj files from cache ...')
-    clear_dir(dir_build)
-    os.chdir(dir_cache)  # Change to a dir that exists
-    docker_exec('rmdir {}'.format(dir_build))
-    docker_exec('cp -r {} {}'.format(dir_cache, dir_build))
-    print('re-make ...')
-    os.chdir(dir_build)
     docker_exec('make -j{}'.format(make_jobs))
 
     print('Make coverage ...')
@@ -187,7 +172,7 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
     os.chdir(dir_code)
     base_git_ref = get_git(['log', '--format=%H', '-1', base_branch])
     dir_result_base = os.path.join(dir_cov_report, '{}'.format(base_branch))
-    res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_git_ref, make_jobs, cache_base=True)
+    res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_git_ref, make_jobs)
 
     for i, pull in enumerate(pulls):
         print('{}/{} Calculating coverage ... '.format(i, len(pulls)))
