@@ -52,14 +52,16 @@ def main():
     url = 'https://github.com/{}'.format(args.github_repo)
     guix_www_folder = '/var/www/html/guix/{}/'.format(args.github_repo)
     external_url = '{}/guix/{}/'.format(args.domain, args.github_repo)
+    temp_dir = os.path.normpath(os.path.join(args.guix_folder, ''))
 
-    if not args.dry_run:
+    if args.dry_run:
+        guix_www_folder = os.path.join(temp_dir, 'guix_www_output')
+    else:
         print('Clean guix folder of old files')
         subprocess.check_call('find {} -mindepth 1 -maxdepth 1 -type d -ctime +{} | xargs rm -rf'.format(guix_www_folder, 15), shell=True)
-        os.makedirs(guix_www_folder, exist_ok=True)
 
-    temp_dir = os.path.normpath(os.path.join(args.guix_folder, ''))
-    os.makedirs(temp_dir, exist_ok=True)
+    os.makedirs(guix_www_folder, exist_ok=True)
+
     git_repo_dir = os.path.join(temp_dir, args.github_repo)
     depends_sources_dir = os.path.join(temp_dir, 'depends_sources')
     depends_cache_dir = os.path.join(temp_dir, 'depends_cache')
@@ -182,10 +184,10 @@ def main():
 
     print('Starting guix build for base branch ...')
     base_folder = call_guix_build(commit=base_commit)
-    if not args.dry_run:
-        print('Moving results of {} to {}'.format(base_folder, guix_www_folder))
-        shutil.rmtree(os.path.join(guix_www_folder, base_commit), ignore_errors=True)
-        base_folder = shutil.move(src=base_folder, dst=os.path.join(guix_www_folder, base_commit))
+
+    print('Moving results of {} to {}'.format(base_folder, guix_www_folder))
+    shutil.rmtree(os.path.join(guix_www_folder, base_commit), ignore_errors=True)
+    base_folder = shutil.move(src=base_folder, dst=os.path.join(guix_www_folder, base_commit))
 
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
@@ -194,10 +196,10 @@ def main():
         os.chdir(git_repo_dir)
         commit = get_git(['log', '-1', '--format=%H', '{}/{}/merge'.format(UPSTREAM_PULL, p.number)])
         commit_folder = call_guix_build(commit=commit)
-        if not args.dry_run:
-            print('Moving results of {} to {}'.format(commit, guix_www_folder))
-            shutil.rmtree(os.path.join(guix_www_folder, commit), ignore_errors=True)
-            commit_folder = shutil.move(src=commit_folder, dst=os.path.join(guix_www_folder, commit))
+
+        print('Moving results of {} to {}'.format(commit, guix_www_folder))
+        shutil.rmtree(os.path.join(guix_www_folder, commit), ignore_errors=True)
+        commit_folder = shutil.move(src=commit_folder, dst=os.path.join(guix_www_folder, commit))
 
         calculate_diffs(base_folder, commit_folder)
 
