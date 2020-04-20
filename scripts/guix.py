@@ -149,6 +149,7 @@ def main():
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
         os.makedirs(depends_cache_subdir, exist_ok=True)
         docker_exec("mv {}/depends/built {}/built".format(git_repo_dir, depends_cache_subdir))
+        docker_exec("mv {}/contrib/guix {}/output/contrib_guix".format(git_repo_dir, git_repo_dir))
 
     if args.build_one_commit:
         print('Starting guix build for one commit ({}) ...'.format(args.build_one_commit))
