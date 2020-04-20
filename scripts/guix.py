@@ -172,13 +172,13 @@ def main():
     base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
     pulls = [p for p in pulls if p.mergeable]
 
-    print('Num: {}'.format(len(pulls)))
-
     pulls = [p.as_issue() for p in pulls]
     pulls = [i for i in pulls if label_needs_guix in i.get_labels()]
     if not pulls:
         print('Nothing tagged with {}. Exiting...'.format(label_needs_guix.name))
         return
+
+    print('Num: {}'.format(len(pulls)))
 
     print('Starting guix build for base branch ...')
     base_folder = call_guix_build(commit=base_commit)

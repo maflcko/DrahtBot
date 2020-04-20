@@ -132,13 +132,13 @@ def main():
     base_commit = get_git(['log', '-1', '--format=%H', 'origin/{}'.format(args.base_name)])
     pulls = [p for p in pulls if p.mergeable]
 
-    print('Num: {}'.format(len(pulls)))
-
     pulls = [p.as_issue() for p in pulls]
     pulls = [i for i in pulls if label_needs_gitian in i.get_labels()]
     if not pulls:
         print('Nothing tagged with {}. Exiting...'.format(label_needs_gitian.name))
         return
+
+    print('Num: {}'.format(len(pulls)))
 
     print('Starting gitian build for base branch ...')
     call_gitian_build(['--build', '--commit'], commit=base_commit)
