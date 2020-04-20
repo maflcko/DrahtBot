@@ -134,10 +134,9 @@ def main():
 
     print('Num: {}'.format(len(pulls)))
 
-    for i in [p.as_issue() for p in pulls]:
-        if label_needs_gitian in i.get_labels():
-            break
-    else:
+    pulls = [p.as_issue() for p in pulls]
+    pulls = [i for i in pulls if label_needs_gitian in i.get_labels()]
+    if not pulls:
         print('Nothing tagged with {}. Exiting...'.format(label_needs_gitian.name))
         return
 
@@ -151,9 +150,6 @@ def main():
 
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
-        issue = p.as_issue()
-        if label_needs_gitian not in issue.get_labels():
-            continue
 
         print('Starting gitian build ...')
         os.chdir(git_repo_dir)
@@ -161,7 +157,7 @@ def main():
         call_gitian_build(['--build', '--commit'], commit=commit)
         commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
         if not args.dry_run:
-            print('Moving results of {} to {}'.format(base_commit, GITIAN_WWW_FOLDER))
+            print('Moving results of {} to {}'.format(commit, GITIAN_WWW_FOLDER))
             shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, commit), ignore_errors=True)
             commit_folder = shutil.move(src=commit_folder, dst=GITIAN_WWW_FOLDER)
 
