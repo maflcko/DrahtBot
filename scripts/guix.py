@@ -15,9 +15,8 @@ ID_GUIX_COMMENT = '<!--9cd9c72976c961c55c7acef8f6ba82cd-->'
 UPSTREAM_PULL = 'upstream-pull'
 
 
-###################################
 def calculate_diffs(folder_1, folder_2):
-    EXTENSIONS = ['.yml', '.log']
+    EXTENSIONS = ['.log']
     files = set(os.listdir(folder_1)).intersection(set(os.listdir(folder_2)))
     files = [f for f in files if any(f.endswith(e) for e in EXTENSIONS)]
     for f in files:
@@ -25,7 +24,6 @@ def calculate_diffs(folder_1, folder_2):
         file_1 = str(os.path.join(folder_1, f))
         file_2 = str(os.path.join(folder_2, f))
         subprocess.call('diff --color {} {} > {}.diff'.format(file_1, file_2, f), shell=True)
-#####################################
 
 
 def main():
@@ -145,23 +143,26 @@ def main():
         docker_exec("cp -r {}/built {}/depends/".format(depends_cache_subdir, git_repo_dir))
         docker_exec("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/guix/)")
         docker_exec("sed -i -e 's/DISTSRC}\/doc\/README.md/DISTSRC}\/..\/doc\/README.md/g' ./contrib/guix/libexec/build.sh") # TEMPORARY
-        docker_exec("( guix-daemon --build-users-group=guixbuild & ) && (export MAX_JOBS={} && export SOURCES_PATH={} && ./contrib/guix/guix-build.sh)".format(args.guix_jobs, depends_sources_dir))
+        docker_exec("( guix-daemon --build-users-group=guixbuild & ) && (export V=1 && export VERBOSE=1 && export MAX_JOBS={} && export SOURCES_PATH={} && ./contrib/guix/guix-build.sh > {}/outerr 2>&1 )".format(args.guix_jobs, depends_sources_dir, git_repo_dir))
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
         os.makedirs(depends_cache_subdir, exist_ok=True)
         docker_exec("mv {}/depends/built {}/built".format(git_repo_dir, depends_cache_subdir))
         docker_exec("mv {}/contrib/guix {}/output/contrib_guix".format(git_repo_dir, git_repo_dir))
+        docker_exec("mv {}/outerr {}/output/guix_build.log".format(git_repo_dir, git_repo_dir))
+        docker_exec("mv {}/output/src/* {}/output/".format(git_repo_dir, git_repo_dir))
+        return os.path.join(git_repo_dir, 'output')
 
     if args.build_one_commit:
         print('Starting guix build for one commit ({}) ...'.format(args.build_one_commit))
-        call_guix_build(commit=args.build_one_commit)
-        print('See folder:\n{}'.format(os.path.join(git_repo_dir, 'output')))
+        output_dir = call_guix_build(commit=args.build_one_commit)
+        print('See folder:\n{}'.format(output_dir))
         print('Exit')
         return
 
     github_api = Github(args.github_access_token)
     github_repo = github_api.get_repo(args.github_repo)
 
-    label_needs_gitian = github_repo.get_label('Needs gitian build')
+    label_needs_guix = github_repo.get_label('Needs guix build')
 
     print('Get open, mergeable {} pulls ...'.format(args.base_name))
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open', base=args.base_name)])
