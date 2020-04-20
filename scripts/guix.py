@@ -104,7 +104,7 @@ def main():
             #'type=bind,src={},dst={}'.format(dir_code, dir_code),
             #'-e',
             #'LC_ALL=C.UTF-8',
-            'ubuntu:focal',  
+            'ubuntu:focal',
         ],
         universal_newlines=True,
     ).strip()
@@ -120,11 +120,11 @@ def main():
 
     os.chdir(temp_dir)
     if not os.listdir(guix_store_dir):
-       print('Install guix')
-       docker_exec('wget https://ftp.gnu.org/gnu/guix/guix-binary-1.1.0.x86_64-linux.tar.xz')
-       docker_exec('echo "eae0b8b4ee8ba97e7505dbb85d61ab2ce7f0195b824d3a660076248d96cdaece  ./guix-binary-1.1.0.x86_64-linux.tar.xz" | sha256sum -c')
-       docker_exec('tar -xf ./guix-binary-1.1.0.x86_64-linux.tar.xz')
-       docker_exec('mv var/guix/* /var/guix && mv gnu/* /gnu/')
+        print('Install guix')
+        docker_exec('wget https://ftp.gnu.org/gnu/guix/guix-binary-1.1.0.x86_64-linux.tar.xz')
+        docker_exec('echo "eae0b8b4ee8ba97e7505dbb85d61ab2ce7f0195b824d3a660076248d96cdaece  ./guix-binary-1.1.0.x86_64-linux.tar.xz" | sha256sum -c')
+        docker_exec('tar -xf ./guix-binary-1.1.0.x86_64-linux.tar.xz')
+        docker_exec('mv var/guix/* /var/guix && mv gnu/* /gnu/')
 
     docker_exec('mkdir -p /config_guix/')
     docker_exec('ls -lh /config_guix/')
@@ -140,11 +140,11 @@ def main():
         os.chdir(git_repo_dir)
         call_git(['clean', '-dfx'])
         call_git(['checkout', '--quiet', '--force', commit])
-        depends_compiler_hash = get_git(['rev-parse','{}:./contrib/guix'.format(commit)])
+        depends_compiler_hash = get_git(['rev-parse', '{}:./contrib/guix'.format(commit)])
         depends_cache_subdir = os.path.join(depends_cache_dir, depends_compiler_hash)
         docker_exec("cp -r {}/built {}/depends/".format(depends_cache_subdir, git_repo_dir))
         docker_exec("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/guix/)")
-        docker_exec("sed -i -e 's/DISTSRC}\/doc\/README.md/DISTSRC}\/..\/doc\/README.md/g' ./contrib/guix/libexec/build.sh") # TEMPORARY
+        docker_exec("sed -i -e 's/DISTSRC}\/doc\/README.md/DISTSRC}\/..\/doc\/README.md/g' ./contrib/guix/libexec/build.sh")  # TEMPORARY
         docker_exec("( guix-daemon --build-users-group=guixbuild & ) && (export V=1 && export VERBOSE=1 && export MAX_JOBS={} && export SOURCES_PATH={} && ./contrib/guix/guix-build.sh > {}/outerr 2>&1 )".format(args.guix_jobs, depends_sources_dir, git_repo_dir))
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
         os.makedirs(depends_cache_subdir, exist_ok=True)
