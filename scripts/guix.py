@@ -85,7 +85,7 @@ def main():
         call_git(['config', 'user.name', 'none'])
     print('Fetch upsteam pulls')
     os.chdir(git_repo_dir)
-   #call_git(['fetch', '--quiet', '--all'])
+    call_git(['fetch', '--quiet', '--all'])
 
     print('Start docker process ...')
     docker_id = subprocess.check_output(
@@ -147,7 +147,6 @@ def main():
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
         os.makedirs(depends_cache_subdir, exist_ok=True)
         docker_exec("mv {}/depends/built {}/built".format(git_repo_dir, depends_cache_subdir))
-        docker_exec("mv {}/contrib/guix {}/output/contrib_guix".format(git_repo_dir, git_repo_dir))
         docker_exec("mv {}/outerr {}/output/guix_build.log".format(git_repo_dir, git_repo_dir))
         docker_exec("mv {}/output/src/* {}/output/".format(git_repo_dir, git_repo_dir))
         return os.path.join(git_repo_dir, 'output')
@@ -173,42 +172,36 @@ def main():
 
     print('Num: {}'.format(len(pulls)))
 
-    for i in [p.as_issue() for p in pulls]:
-        if label_needs_gitian in i.get_labels():
-            break
-    else:
-        print('Nothing tagged with {}. Exiting...'.format(label_needs_gitian.name))
+    pulls = [p.as_issue() for p in pulls]
+    pulls = [i for i in pulls if label_needs_guix in i.get_labels()]
+    if not pulls:
+        print('Nothing tagged with {}. Exiting...'.format(label_needs_guix.name))
         return
 
-    print('Starting gitian build for base branch ...')
-    call_gitian_build(['--build', '--commit'], commit=base_commit)
-    base_folder = os.path.join(temp_dir, 'bitcoin-binaries', base_commit)
+    print('Starting guix build for base branch ...')
+    base_folder = call_guix_build(commit=base_commit)
     if not args.dry_run:
-        print('Moving results of {} to {}'.format(base_commit, GITIAN_WWW_FOLDER))
-        shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, base_commit), ignore_errors=True)
-        base_folder = shutil.move(src=base_folder, dst=GITIAN_WWW_FOLDER)
+        print('Moving results of {} to {}'.format(base_folder, guix_www_folder))
+        shutil.rmtree(os.path.join(guix_www_folder, base_commit), ignore_errors=True)
+        base_folder = shutil.move(src=base_folder, dst=os.path.join(guix_www_folder, base_commit))
 
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
-        issue = p.as_issue()
-        if label_needs_gitian not in issue.get_labels():
-            continue
 
-        print('Starting gitian build ...')
+        print('Starting guix build ...')
         os.chdir(git_repo_dir)
         commit = get_git(['log', '-1', '--format=%H', '{}/{}/merge'.format(UPSTREAM_PULL, p.number)])
-        call_gitian_build(['--build', '--commit'], commit=commit)
-        commit_folder = os.path.join(temp_dir, 'bitcoin-binaries', commit)
+        commit_folder = call_guix_build(commit=commit)
         if not args.dry_run:
-            print('Moving results of {} to {}'.format(base_commit, GITIAN_WWW_FOLDER))
-            shutil.rmtree(os.path.join(GITIAN_WWW_FOLDER, commit), ignore_errors=True)
-            commit_folder = shutil.move(src=commit_folder, dst=GITIAN_WWW_FOLDER)
+            print('Moving results of {} to {}'.format(commit, guix_www_folder))
+            shutil.rmtree(os.path.join(guix_www_folder, commit), ignore_errors=True)
+            commit_folder = shutil.move(src=commit_folder, dst=os.path.join(guix_www_folder, commit))
 
         calculate_diffs(base_folder, commit_folder)
 
-        text = ID_GITIAN_COMMENT
+        text = ID_GUIX_COMMENT
         text += '\n'
-        text += '### Gitian builds\n\n'
+        text += '### Guix builds\n\n'
         text += '| File '
         text += '| commit {}<br>({}) '.format(base_commit, args.base_name)
         text += '| commit {}<br>({} and this pull) '.format(commit, args.base_name)
@@ -217,12 +210,12 @@ def main():
 
         text += calculate_table(base_folder, commit_folder, external_url, base_commit, commit)
 
-        print('{}\n    .remove_from_labels({})'.format(p, label_needs_gitian))
+        print('{}\n    .remove_from_labels({})'.format(p, label_needs_guix))
         print('    .create_comment({})'.format(text))
 
         if not args.dry_run:
             issue.create_comment(text)
-            issue.remove_from_labels(label_needs_gitian)
+            issue.remove_from_labels(label_needs_guix)
 
 
 def calculate_table(base_folder, commit_folder, external_url, base_commit, commit):
