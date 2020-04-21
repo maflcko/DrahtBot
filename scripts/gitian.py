@@ -179,8 +179,8 @@ def main():
         print('    .create_comment({})'.format(text))
 
         if not args.dry_run:
-            issue.create_comment(text)
-            issue.remove_from_labels(label_needs_gitian)
+            p.create_comment(text)
+            p.remove_from_labels(label_needs_gitian)
 
 
 def calculate_table(base_folder, commit_folder, external_url, base_commit, commit):
