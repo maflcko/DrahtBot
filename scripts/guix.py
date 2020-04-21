@@ -138,6 +138,7 @@ def main():
 
     def call_guix_build(*, commit):
         os.chdir(git_repo_dir)
+        docker_exec("chown -R root:root ./")
         docker_exec("git clean -dfx")
         docker_exec("git checkout --quiet --force {}".format(commit))
         depends_compiler_hash = get_git(['rev-parse', '{}:./contrib/guix'.format(commit)])
