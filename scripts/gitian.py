@@ -1,15 +1,15 @@
 from github import Github, GithubException
 import time
 import itertools
-from collections import defaultdict
 import shutil
 import argparse
 import os
+import re
 import sys
 import tempfile
 import subprocess
 
-from util.util import return_with_pull_metadata, call_git, get_git
+from util.util import return_with_pull_metadata, call_git, get_git, calculate_table
 
 ID_GITIAN_COMMENT = '<!--a722867cd34abeea1fadc8d60700f111-->'
 UPSTREAM_PULL = 'upstream-pull'
@@ -181,27 +181,6 @@ def main():
         if not args.dry_run:
             p.create_comment(text)
             p.remove_from_labels(label_needs_gitian)
-
-
-def calculate_table(base_folder, commit_folder, external_url, base_commit, commit):
-    rows = defaultdict(lambda: ['', ''])  # map from file name to list of links
-    for f in sorted(os.listdir(base_folder)):
-        os.chdir(base_folder)
-        left = rows[f]
-        left[0] = '[`{}...`]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], external_url, base_commit, f)
-        rows[f] = left
-
-    for f in sorted(os.listdir(commit_folder)):
-        os.chdir(commit_folder)
-        right = rows[f]
-        right[1] = '[`{}...`]({}{}/{})'.format(subprocess.check_output(['sha256sum', f], universal_newlines=True)[:16], external_url, commit, f)
-        rows[f] = right
-
-    text = ''
-    for f in rows:
-        text += '| {} | {} | {} |\n'.format(f, rows[f][0], rows[f][1])
-    text += '\n'
-    return text
 
 
 if __name__ == '__main__':
