@@ -64,8 +64,8 @@ LABELS = {
         ['^contrib:'],
     ),
     'Tests': Needle(
-        ['^src/test', '^src/qt/test', '^test', '^src/wallet/test', '^.travis'],
-        ['^qa:', '^tests?:'],
+        ['^src/test', '^src/bench', '^src/qt/test', '^test', '^.appveyor', '^.cirrus', '^ci/', '^src/wallet/test', '^.travis'],
+        ['^qa:', '^tests?:', '^ci:'],
     ),
     'Docs': Needle(
         ['^doc/', '.*.md$'],
