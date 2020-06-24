@@ -109,8 +109,10 @@ def main():
         os.makedirs(inputs_folder, exist_ok=True)
         # Bitcoin Core before 0.20.0
         subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.11.sdk.tar.gz'), inputs_folder])
-        # Bitcoin Core after and including 0.20.0
+        # Bitcoin Core 0.20.0
         subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'MacOSX10.14.sdk.tar.gz'), inputs_folder])
+        # Bitcoin Core after and including 0.21.0
+        subprocess.check_call(['cp', os.path.join(THIS_FILE_PATH, 'Xcode-11.3.1-11C505-extracted-SDK-with-libcxx-headers.tar.gz'), inputs_folder])
 
     if args.build_one_commit:
         print('Starting gitian build for one commit ({}) ...'.format(args.build_one_commit))
