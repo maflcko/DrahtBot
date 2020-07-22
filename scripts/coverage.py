@@ -132,6 +132,8 @@ def pull_needs_update(pull):
     if not text:
         return True
 
+    return True  # for now
+
     updated_at = text.split('<sup>Updated at: ', 1)[1].split('.</sup>', 1)[0]
     updated_at = datetime.datetime.fromisoformat(updated_at)
     delta = datetime.datetime.utcnow() - updated_at
