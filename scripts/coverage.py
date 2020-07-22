@@ -261,10 +261,8 @@ def main():
     call_git(['checkout', 'master'])
     call_git(['pull', '--ff-only', 'origin', 'master'])
     os.chdir(report_dir)
-    call_git(['fetch', '--quiet', '--all'])
-    call_git(['reset', '--hard', 'HEAD'])
-    call_git(['checkout', 'master'])
-    call_git(['reset', '--hard', 'origin/master'])
+    call_git(['switch', '--discard-changes', 'master'])
+    call_git(['reset', '--hard', 'eca440855fdf3c43f106f68fe8c6a4febece2aa5'])  # Delete all previous reports
 
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
