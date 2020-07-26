@@ -5,7 +5,6 @@ import argparse
 from util.util import return_with_pull_metadata, IdComment
 
 ID_NEEDS_REBASE_COMMENT = IdComment.NEEDS_REBASE.value
-AVOID_COMMENT_ISSUES = [10973, 10102]
 
 
 def main():
@@ -44,10 +43,10 @@ def main():
             print('{}\n    .add_to_labels({})'.format(p, label_needs_rebase))
             if not args.dry_run:
                 issue.add_to_labels(label_needs_rebase)
-                if issue.number not in AVOID_COMMENT_ISSUES:
-                    text = ID_NEEDS_REBASE_COMMENT
-                    text += '\n🐙 This pull request conflicts with the target branch and [needs rebase](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#rebasing-changes).'
-                    issue.create_comment(text)
+                text = ID_NEEDS_REBASE_COMMENT
+                text += '\n🐙 This pull request conflicts with the target branch and [needs rebase](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#rebasing-changes).\n'
+                text += '\n<sub>Want to unsubscribe from rebase notifications on this pull request? Just convert this pull request to a "draft".</sub>'
+                issue.create_comment(text)
             continue
 
 
