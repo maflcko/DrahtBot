@@ -10,6 +10,7 @@ from util.util import return_with_pull_metadata
 Needle = namedtuple('Needle', ['file', 'title'])
 
 LABEL_NAME_TESTS = 'Tests'
+LABEL_NAME_BACKPORT = 'Backport'
 
 # Map from label name to Needle
 LABELS = {
@@ -73,7 +74,7 @@ LABELS = {
         ['^doc/', '.*.md$'],
         ['^docs?:'],
     ),
-    'Backport': Needle(
+    LABEL_NAME_BACKPORT: Needle(
         [],
         ['^backport:'],
     ),
@@ -110,36 +111,39 @@ def main():
     for i, p in enumerate(pulls):
         print('{}/{}'.format(i, len(pulls)))
         issue = p.as_issue()
+        new_labels = []
         if not len([l for l in issue.get_labels()]):
-            modified_files = [f.filename for f in p.get_files()]
-            print('{}: {}'.format(p.title, ', '.join(modified_files)))
-            new_labels = []
-            match = False
-            for l in LABELS:
-                # Maybe this label matches the file
-                for f in modified_files:
-                    for r in LABELS[l].file:
-                        match = r.search(f)
+            if p.base.ref != github_repo.default_branch:
+                new_labels = [LABEL_NAME_BACKPORT]  # Backports don't get topic labels
+            else:
+                modified_files = [f.filename for f in p.get_files()]
+                print('{}: {}'.format(p.title, ', '.join(modified_files)))
+                match = False
+                for l in LABELS:
+                    # Maybe this label matches the file
+                    for f in modified_files:
+                        for r in LABELS[l].file:
+                            match = r.search(f)
+                            if match:
+                                break  # No need to check other regexes
                         if match:
-                            break  # No need to check other regexes
+                            break  # No need to check other files
+                    if not match:  # Maybe this label matches the title
+                        for r in LABELS[l].title:
+                            match = r.search(issue.title)
+                            if match:
+                                break  # No need to check other regexes
                     if match:
-                        break  # No need to check other files
-                if not match:  # Maybe this label matches the title
-                    for r in LABELS[l].title:
-                        match = r.search(issue.title)
-                        if match:
-                            break  # No need to check other regexes
-                if match:
-                    if l == LABEL_NAME_TESTS and new_labels:
-                        pass  # Avoid test label if there are already other labels
-                    else:
-                        new_labels += [l]
-                    match = False
-            if not new_labels:
-                continue
-            print('{}\n    .add_to_labels({})'.format(p, ', '.join(new_labels)))
-            if not args.dry_run:
-                issue.add_to_labels(*set(new_labels))
+                        if l == LABEL_NAME_TESTS and new_labels:
+                            pass  # Avoid test label if there are already other labels
+                        else:
+                            new_labels += [l]
+                        match = False
+        if not new_labels:
+            continue
+        print('{}\n    .add_to_labels({})'.format(p, ', '.join(new_labels)))
+        if not args.dry_run:
+            issue.add_to_labels(*set(new_labels))
 
 
 if __name__ == '__main__':
