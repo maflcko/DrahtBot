@@ -76,9 +76,9 @@ def main():
 
     url = 'https://github.com/{}'.format(args.github_repo)
     if not os.path.isdir(repo_dir):
-        print('Clone {} repo to {}/bitcoin'.format(url, args.scratch_dir))
+        print('Clone {} repo to {}'.format(url, repo_dir))
         os.chdir(args.scratch_dir)
-        call_git(['clone', '--quiet', url, 'bitcoin'])
+        call_git(['clone', '--quiet', url, repo_dir])
         print('Set git metadata')
         os.chdir(repo_dir)
         with open(os.path.join(repo_dir, '.git', 'config'), 'a') as f:
