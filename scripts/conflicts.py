@@ -88,6 +88,7 @@ def main():
             f.flush()
         call_git(['config', 'user.email', 'no@ne.nl'])
         call_git(['config', 'user.name', 'none'])
+        call_git(['config', 'gc.auto', '0'])
 
     print('Fetching diffs ...')
     os.chdir(args.git_repo)
