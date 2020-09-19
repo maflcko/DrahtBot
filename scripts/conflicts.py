@@ -63,25 +63,25 @@ def main():
     parser = argparse.ArgumentParser(description='Determine conflicting pull requests.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--pull_id', type=int, help='Update the conflict comment and label for this pull request.', default=0)
     parser.add_argument('--update_comments', action='store_true', help='Update all conflicts comments and labels.', default=False)
-    parser.add_argument('--scratch_dir', help='The locally cloned git repo used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'conflicts'))
+    parser.add_argument('--scratch_dir', help='The local dir used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'conflicts'))
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bitcoin')
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
     args = parser.parse_args()
 
-    temp_dir = os.path.join(args.scratch_dir, '')
+    args.scratch_dir = os.path.join(args.scratch_dir, '')
     os.makedirs(args.scratch_dir, exist_ok=True)
-    args.scratch_dir = os.path.join(temp_dir, 'bitcoin')
+    repo_dir = os.path.join(args.scratch_dir, args.github_repo)
 
     url = 'https://github.com/{}'.format(args.github_repo)
-    if not os.path.isdir(args.scratch_dir):
-        print('Clone {} repo to {}/bitcoin'.format(url, temp_dir))
-        os.chdir(temp_dir)
+    if not os.path.isdir(repo_dir):
+        print('Clone {} repo to {}/bitcoin'.format(url, args.scratch_dir))
+        os.chdir(args.scratch_dir)
         call_git(['clone', '--quiet', url, 'bitcoin'])
         print('Set git metadata')
-        os.chdir(args.scratch_dir)
-        with open(os.path.join(args.scratch_dir, '.git', 'config'), 'a') as f:
+        os.chdir(repo_dir)
+        with open(os.path.join(repo_dir, '.git', 'config'), 'a') as f:
             f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
             f.write('    url = {}\n'.format(url))
             f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
@@ -91,7 +91,7 @@ def main():
         call_git(['config', 'gc.auto', '0'])
 
     print('Fetching diffs ...')
-    os.chdir(args.scratch_dir)
+    os.chdir(repo_dir)
     call_git(['fetch', '--quiet', '--all'])
 
     print('Fetching open pulls ...')
@@ -107,7 +107,7 @@ def main():
 
     with tempfile.TemporaryDirectory() as temp_git_work_tree:
         shutil.copytree(
-            os.path.join(args.scratch_dir, '.git'),
+            os.path.join(repo_dir, '.git'),
             os.path.join(temp_git_work_tree, '.git'),
         )
         os.chdir(temp_git_work_tree)
@@ -135,7 +135,7 @@ def main():
 
             update_comment(dry_run=args.dry_run, pull=pull_merge, pulls_conflict=conflicts)
 
-        os.chdir(args.scratch_dir)
+        os.chdir(repo_dir)
 
 
 if __name__ == '__main__':
