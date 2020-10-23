@@ -218,7 +218,7 @@ def main():
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--repo_code', help='The repo slug of the remote on GitHub for code.', default='bitcoin/bitcoin')
     parser.add_argument('--repo_report', help='The repo slug of the remote on GitHub for reports.', default='DrahtBot/reports')
-    parser.add_argument('--remote_url', help='The remote url of the hosted html reports.', default='https://drahtbot.github.io/reports')
+    parser.add_argument('--remote_url', help='The remote url of the hosted html reports.', default='https://drahtbot.space/host_reports/DrahtBot/reports')
     parser.add_argument('--make_jobs', help='The number of make jobs.', default='2', type=int)
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
     parser.add_argument('--scratch_dir', help='The local dir used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'coverage'))
