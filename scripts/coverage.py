@@ -267,6 +267,7 @@ def main():
     call_git(['reset', '--hard', 'origin/main'])
 
     print('Fetching open pulls ...')
+    os.chdir(code_dir)
     github_api = Github(args.github_access_token)
     repo_code = github_api.get_repo(args.repo_code)
     pulls = return_with_pull_metadata(lambda: [p for p in repo_code.get_pulls(state='open', base=args.base_name)])
