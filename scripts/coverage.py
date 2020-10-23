@@ -172,8 +172,8 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
 
     print('Generate base coverage')
     os.chdir(dir_code)
-    base_git_ref = get_git(['log', '--format=%H', '-1', base_branch])
-    dir_result_base = os.path.join(dir_cov_report, '{}'.format(base_branch))
+    base_git_ref = get_git(['log', '--format=%H', '-1', base_branch])[:16]
+    dir_result_base = os.path.join(dir_cov_report, f'{base_git_ref}')
     res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_git_ref, make_jobs)
 
     for i, pull in enumerate(pulls):
@@ -193,7 +193,7 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
         text += '| Branches  | {p_b:+.4f} %            | {m_b:.4f} %        |\n'
         text += '\n<sup>Updated at: {updated_at}.</sup>\n'
         text = text.format(
-            url_base='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, base_branch),
+            url_base='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, base_git_ref),
             url_pull='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, pull.number),
             base_name=base_branch,
             pull_id=pull.number,
