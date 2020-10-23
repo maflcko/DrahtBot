@@ -114,10 +114,10 @@ def gen_coverage(docker_exec, dir_code, dir_result, git_ref, make_jobs):
     docker_exec('make cov')
     docker_exec('mv {}/*coverage* {}/'.format(dir_build, dir_result))
     os.chdir(dir_result)
-    call_git(['checkout', 'master'])
+    call_git(['checkout', 'main'])
     call_git(['add', './'])
     call_git(['commit', '-m', 'Add coverage results for {}'.format(git_ref)])
-    call_git(['push', 'origin', 'master'])
+    call_git(['push', 'origin', 'main'])
 
     # Work around permission errors
     clear_dir(dir_result)
@@ -263,8 +263,8 @@ def main():
     os.chdir(report_dir)
     call_git(['fetch', '--quiet', '--all'])
     call_git(['reset', '--hard', 'HEAD'])
-    call_git(['checkout', 'master'])
-    call_git(['reset', '--hard', 'origin/master'])
+    call_git(['checkout', 'main'])
+    call_git(['reset', '--hard', 'origin/main'])
 
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
