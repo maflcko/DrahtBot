@@ -263,7 +263,6 @@ def main():
     os.chdir(report_dir)
     call_git(['switch', '--discard-changes', 'master'])
     call_git(['reset', '--hard', 'eca440855fdf3c43f106f68fe8c6a4febece2aa5'])  # Delete all previous reports
-    call_git(['push', 'origin', 'master', '-f'])
 
     print('Fetching open pulls ...')
     github_api = Github(args.github_access_token)
