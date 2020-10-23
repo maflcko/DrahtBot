@@ -54,7 +54,7 @@ def main():
     temp_dir = os.path.normpath(os.path.join(args.guix_folder, ''))
 
     if args.dry_run:
-        guix_www_folder = os.path.join(temp_dir, 'guix_www_output')
+        guix_www_folder = os.path.join(temp_dir, 'www_output')
     else:
         print('Clean guix folder of old files')
         subprocess.check_call('find {} -mindepth 1 -maxdepth 1 -type d -ctime +{} | xargs rm -rf'.format(guix_www_folder, 15), shell=True)
