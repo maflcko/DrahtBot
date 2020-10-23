@@ -29,7 +29,7 @@ def main():
     print('Fetch upsteam, checkout latest `main` branch')
     os.chdir(host_reports_www_folder)
     call_git(['fetch', '--quiet', '--all'])
-    call_git(['checkout', 'main'])
+    call_git(['checkout', 'origin/main'])
     call_git(['reset', '--hard', 'HEAD'])
 
 
