@@ -140,6 +140,7 @@ def main():
     os.chdir(code_dir)
     call_git(['fetch', '--quiet', '--all'])
     call_git(['checkout', args.git_ref_code])
+    call_git(['reset', '--hard', 'HEAD'])
     call_git(['clean', '-dfx'])
     subprocess.check_call(['sed', '-i', f's/DIR_FUZZ_SEED_CORPUS) -l DEBUG/DIR_FUZZ_SEED_CORPUS) {args.fuzz_targets} -l DEBUG/g', 'Makefile.am'])
     os.chdir(report_dir)
