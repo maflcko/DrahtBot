@@ -40,7 +40,7 @@ def gen_coverage(docker_exec, assets_dir, dir_code, dir_result, git_ref, make_jo
 
     print('Make coverage ...')
     docker_exec(f'make cov_fuzz DIR_FUZZ_SEED_CORPUS={assets_dir}/fuzz_seed_corpus')
-    docker_exec('mv {}/*coverage* {}/'.format(dir_build, dir_result))
+    docker_exec('mv {}/*coverage* {}/'.format(dir_build, dir_result))  # TODO need to overwrite?
     os.chdir(dir_result)
     call_git(['checkout', 'main'])
     call_git(['add', './'])
