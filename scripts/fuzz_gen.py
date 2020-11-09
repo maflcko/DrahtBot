@@ -21,7 +21,7 @@ def main():
 
     url_code = 'https://github.com/{}'.format('bitcoin/bitcoin')
     url_seed = 'https://github.com/{}'.format('bitcoin-core/qa-assets')
-    temp_dir = os.path.normpath(os.path.join(args.host_reports_folder, ''))
+    temp_dir = os.path.normpath(os.path.join(args.scratch_folder, ''))
     dir_code = os.path.join(temp_dir, 'code')
     dir_assets = os.path.join(temp_dir, 'assets')
     dir_generate_seeds = os.path.join(temp_dir, 'generate_seeds')
