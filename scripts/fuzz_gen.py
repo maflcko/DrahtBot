@@ -48,7 +48,7 @@ def main():
 
         os.chdir(dir_code)
         subprocess.check_call(f'./autogen.sh && CC=clang CXX=clang++ ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined && make clean && make -j {args.jobs}', shell=True)
-        shutil.rmtree(dir_generate_seeds)
+        shutil.rmtree(dir_generate_seeds, ignore_errors=True)
         subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', f'--m_dir={dir_assets}/fuzz_seed_corpus'])
         subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', '--generate'])
         subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_assets}/fuzz_seed_corpus', f'--m_dir={dir_generate_seeds}'])
