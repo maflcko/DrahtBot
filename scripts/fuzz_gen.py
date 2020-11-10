@@ -40,7 +40,7 @@ def main():
         call_git(['checkout', 'origin/master'])
         call_git(['reset', '--hard', 'HEAD'])
         call_git(['clean', '-dfx'])
-        subprocess.check_call(['sed', '-i', 's/runs=100000/use_value_profile=1","-max_total_time=600/g', 'test/fuzz/test_runner.py'])
+        subprocess.check_call(['sed', '-i', 's/runs=100000/use_value_profile=1","-max_total_time=6000/g', 'test/fuzz/test_runner.py'])
 
         os.chdir(dir_assets)
         call_git(['fetch', '--quiet', '--all'])
