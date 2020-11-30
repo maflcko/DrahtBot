@@ -10,6 +10,7 @@ UPSTREAM_PULL = 'upstream-pull'
 @unique
 class IdComment(Enum):
     NEEDS_REBASE = '<!--cf906140f33d8803c4a75a2196329ecb-->'
+    REVIEWERS_REQUESTED = '<!--4a62be1de6b64f3ed646cdc7932c8cf5-->'
     CLOSED = '<!--5fd3d806e98f4a0ca80977bb178665a0-->'
     METADATA = '<!--e57a25ab6845829454e8d69fc972939a-->'  # The "root" section
     SEC_CONFLICTS = '<!--174a7506f384e20aa4161008e828411d-->'
