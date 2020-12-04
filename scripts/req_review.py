@@ -6,7 +6,7 @@ import re
 from util.util import return_with_pull_metadata, IdComment
 
 ID_REVIEWERS_REQUESTED_COMMENT = IdComment.REVIEWERS_REQUESTED.value
-FILENAME_REVIEWERS = 'CODEOWNERS'
+FILENAME_REVIEWERS = 'REVIEWERS'
 BASE_BRANCH = 'master'
 
 
@@ -56,7 +56,7 @@ def main():
             if p.mergeable_state == 'draft':
                 # Exclude draft pull requests
                 continue
-            if p.number < 20530:
+            if p.number < 20523:
                 # Exclude old pull requests
                 continue
             issue = p.as_issue()
