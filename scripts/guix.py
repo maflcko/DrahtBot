@@ -148,7 +148,7 @@ def main():
         depends_compiler_hash = get_git(['rev-parse', '{}:./contrib/guix'.format(commit)])
         depends_cache_subdir = os.path.join(depends_cache_dir, depends_compiler_hash)
         docker_exec("cp -r {}/built {}/depends/ || true".format(depends_cache_subdir, git_repo_dir))
-        docker_exec("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/guix/)")
+        #docker_exec("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/guix/)")
         docker_exec("( guix-daemon --build-users-group=guixbuild & (export V=1 && export VERBOSE=1 && export MAX_JOBS={} && export SOURCES_PATH={} && ./contrib/guix/guix-build.sh > {}/outerr 2>&1 ) && kill %1 )".format(args.guix_jobs, depends_sources_dir, git_repo_dir), ignore_ret_code=True)
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
         os.makedirs(depends_cache_subdir, exist_ok=True)

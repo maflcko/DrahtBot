@@ -65,7 +65,7 @@ def main():
     def call_gitian_build(args_fwd, *, signer='none_signer', commit):
         os.chdir(git_repo_dir)
         call_git(['checkout', '--quiet', '--force', commit])
-        os.system("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/gitian-descriptors/)")
+        #os.system("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/gitian-descriptors/)")
         os.chdir(temp_dir)
         subprocess.check_call([
             sys.executable,
