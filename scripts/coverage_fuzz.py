@@ -53,7 +53,7 @@ def gen_coverage(docker_exec, assets_dir, dir_code, dir_result, git_ref, make_jo
     call_git(['reset', '--hard', 'HEAD'])
 
 
-def calc_coverage(assets_dir, dir_code, dir_cov_report, make_jobs, slug, remote_url):
+def calc_coverage(assets_dir, dir_code, dir_cov_report, make_jobs, args):
     print('Start docker process ...')
     os.makedirs(dir_cov_report, exist_ok=True)
     docker_id = subprocess.check_output(
@@ -89,6 +89,8 @@ def calc_coverage(assets_dir, dir_code, dir_cov_report, make_jobs, slug, remote_
     base_git_ref = get_git(['log', '--format=%H', '-1', 'HEAD'])[:16]
     dir_result_base = os.path.join(dir_cov_report, f'{base_git_ref}')
     gen_coverage(docker_exec, assets_dir, dir_code, dir_result_base, base_git_ref, make_jobs)
+
+    print(f'{args.remote_url}/coverage_fuzz/{args.repo_code}/{base_git_ref}/fuzz.coverage/index.html')
 
 
 def main():
@@ -139,7 +141,7 @@ def main():
     print('Fetching diffs ...')
     os.chdir(code_dir)
     call_git(['fetch', '--quiet', '--all'])
-    call_git(['checkout', args.git_ref_code])
+    call_git(['checkout', args.git_ref_code, '--force'])
     call_git(['reset', '--hard', 'HEAD'])
     call_git(['clean', '-dfx'])
     subprocess.check_call(['sed', '-i', f's/DIR_FUZZ_SEED_CORPUS) -l DEBUG/DIR_FUZZ_SEED_CORPUS) {args.fuzz_targets} -l DEBUG/g', 'Makefile.am'])
@@ -153,7 +155,7 @@ def main():
     call_git(['checkout', args.git_ref_qa_assets])
     call_git(['clean', '-dfx'])
 
-    calc_coverage(assets_dir=assets_dir, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage_fuzz', args.repo_code), make_jobs=args.make_jobs, slug=args.repo_code, remote_url=args.remote_url)
+    calc_coverage(assets_dir=assets_dir, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage_fuzz', args.repo_code), make_jobs=args.make_jobs, args=args)
 
 
 if __name__ == '__main__':
