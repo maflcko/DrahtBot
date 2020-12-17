@@ -36,7 +36,7 @@ def main():
     print('Fetch upsteam, checkout latest branch')
     os.chdir(dir_code)
     call_git(['fetch', '--quiet', '--all'])
-    call_git(['checkout', 'origin/master'])
+    call_git(['checkout', 'origin/master', '--force'])
     call_git(['reset', '--hard', 'HEAD'])
     call_git(['clean', '-dfx'])
     subprocess.check_call(['sed', '-i', 's/runs=100000/use_value_profile=1","-max_total_time=6000/g', 'test/fuzz/test_runner.py'])
