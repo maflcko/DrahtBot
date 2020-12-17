@@ -17,6 +17,9 @@ def main():
     print('''
     To prepare, install:
     sed git ccache llvm + Bitcoin Core deps
+    # wget https://apt.llvm.org/llvm.sh
+    # chmod +x llvm.sh
+    # ./llvm.sh 12
     ''')
 
     url_code = 'https://github.com/{}'.format('bitcoin/bitcoin')
@@ -39,14 +42,14 @@ def main():
     call_git(['checkout', 'origin/master', '--force'])
     call_git(['reset', '--hard', 'HEAD'])
     call_git(['clean', '-dfx'])
-    subprocess.check_call(['sed', '-i', 's/runs=100000/use_value_profile=1","-max_total_time=6000/g', 'test/fuzz/test_runner.py'])
+    subprocess.check_call(['sed', '-i', 's/runs=100000/use_value_profile=1","-entropic=1","-cross_over=1","-cross_over_uniform_dist=1","-max_total_time=6000/g', 'test/fuzz/test_runner.py'])
 
     os.chdir(dir_assets)
     call_git(['fetch', '--quiet', '--all'])
     call_git(['checkout', 'origin/master'])
 
     os.chdir(dir_code)
-    subprocess.check_call(f'./autogen.sh && CC=clang CXX=clang++ ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined && make clean && make -j {args.jobs}', shell=True)
+    subprocess.check_call(f'./autogen.sh && CC=clang-12 CXX=clang++-12 ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined && make clean && make -j {args.jobs}', shell=True)
     shutil.rmtree(dir_generate_seeds, ignore_errors=True)
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', f'--m_dir={dir_assets}/fuzz_seed_corpus'])
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', '--generate'])
