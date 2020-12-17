@@ -17,6 +17,9 @@ def main():
     print('''
     To prepare, install:
     sed git ccache llvm + Bitcoin Core deps
+    #
+    # https://apt.llvm.org/
+    #
     # wget https://apt.llvm.org/llvm.sh
     # chmod +x llvm.sh
     # ./llvm.sh 12
