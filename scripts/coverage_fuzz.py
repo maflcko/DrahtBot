@@ -139,7 +139,7 @@ def main():
 
     print('Fetching diffs ...')
     os.chdir(code_dir)
-    call_git(['fetch', '--quiet', args.git_ref_code])
+    call_git(['fetch', 'origin', '--quiet', args.git_ref_code])
     call_git(['checkout', args.git_ref_code, '--force'])
     call_git(['reset', '--hard', 'HEAD'])
     call_git(['clean', '-dfx'])
@@ -150,7 +150,7 @@ def main():
     call_git(['checkout', 'main'])
     call_git(['reset', '--hard', 'origin/main'])
     os.chdir(assets_dir)
-    call_git(['fetch', '--quiet', args.git_ref_qa_assets])
+    call_git(['fetch', 'origin', '--quiet', args.git_ref_qa_assets])
     call_git(['checkout', args.git_ref_qa_assets])
     call_git(['clean', '-dfx'])
 
