@@ -90,13 +90,12 @@ def calc_coverage(assets_dir, dir_code, dir_cov_report, make_jobs, args):
     dir_result_base = os.path.join(dir_cov_report, f'{base_git_ref}')
     gen_coverage(docker_exec, assets_dir, dir_code, dir_result_base, base_git_ref, make_jobs)
 
-    print(f'{args.remote_url}/coverage_fuzz/{args.repo_code}/{base_git_ref}/fuzz.coverage/index.html')
+    print(f'{args.remote_url}/coverage_fuzz/monotree/{base_git_ref}/fuzz.coverage/index.html')
 
 
 def main():
     THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Run fuzz coverage reports for one fuzz target.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--repo_code', help='The repo slug of the remote on GitHub for code.', default='MarcoFalke/bitcoin-core')
     parser.add_argument('--repo_report', help='The repo slug of the remote on GitHub for reports.', default='DrahtBot/reports')
     parser.add_argument('--remote_url', help='The remote url of the hosted html reports.', default='https://drahtbot.space/host_reports/DrahtBot/reports')
     parser.add_argument('--make_jobs', help='The number of make jobs.', default='2', type=int)
@@ -110,8 +109,8 @@ def main():
     args.scratch_dir = os.path.normpath(os.path.join(args.scratch_dir, ''))
     os.makedirs(args.scratch_dir, exist_ok=True)
 
-    code_dir = os.path.join(args.scratch_dir, 'code', args.repo_code)
-    code_url = 'https://github.com/{}'.format(args.repo_code)
+    code_dir = os.path.join(args.scratch_dir, 'code', 'monotree')
+    code_url = 'https://github.com/MarcoFalke/bitcoin-core'
     report_dir = os.path.join(args.scratch_dir, 'reports')
     report_url = 'git@github.com:{}.git'.format(args.repo_report)
     assets_dir = os.path.join(args.scratch_dir, 'assets')
@@ -140,7 +139,7 @@ def main():
 
     print('Fetching diffs ...')
     os.chdir(code_dir)
-    call_git(['fetch', '--quiet', '--all'])
+    call_git(['fetch', '--quiet', args.git_ref_code])
     call_git(['checkout', args.git_ref_code, '--force'])
     call_git(['reset', '--hard', 'HEAD'])
     call_git(['clean', '-dfx'])
@@ -151,11 +150,11 @@ def main():
     call_git(['checkout', 'main'])
     call_git(['reset', '--hard', 'origin/main'])
     os.chdir(assets_dir)
-    call_git(['fetch', '--quiet', '--all'])
+    call_git(['fetch', '--quiet', args.git_ref_qa_assets])
     call_git(['checkout', args.git_ref_qa_assets])
     call_git(['clean', '-dfx'])
 
-    calc_coverage(assets_dir=assets_dir, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage_fuzz', args.repo_code), make_jobs=args.make_jobs, args=args)
+    calc_coverage(assets_dir=assets_dir, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage_fuzz', 'monotree'), make_jobs=args.make_jobs, args=args)
 
 
 if __name__ == '__main__':
