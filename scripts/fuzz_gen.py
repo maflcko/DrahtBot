@@ -46,7 +46,8 @@ def main():
 
     os.chdir(dir_assets)
     call_git(['fetch', '--quiet', '--all'])
-    call_git(['commit', '-a', '--allow-empty', '-m', f'Add inputs {datetime.datetime.now(datetime.timezone.utc)}'])
+    call_git(['add', '--all'])
+    call_git(['commit', '--allow-empty', '-m', f'Add inputs {datetime.datetime.now(datetime.timezone.utc)}'])
     call_git(['merge', 'origin/master'])
 
     os.chdir(dir_code)
