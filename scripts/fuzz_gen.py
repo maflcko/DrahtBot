@@ -3,6 +3,7 @@ import os
 import sys
 import subprocess
 import shutil
+import datetime
 
 from util.util import call_git, ensure_init_git
 
@@ -45,7 +46,8 @@ def main():
 
     os.chdir(dir_assets)
     call_git(['fetch', '--quiet', '--all'])
-    call_git(['checkout', 'origin/master'])
+    call_git(['commit', '-a', '--allow-empty', '-m', f'Add inputs {datetime.datetime.now(datetime.timezone.utc)}'])
+    call_git(['merge', 'origin/master'])
 
     os.chdir(dir_code)
     subprocess.check_call(f'./autogen.sh && CC=clang-12 CXX=clang++-12 ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined && make clean && make -j {args.jobs}', shell=True)
