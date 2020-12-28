@@ -17,6 +17,23 @@ class IdComment(Enum):
     SEC_COVERAGE = '<!--2502f1a698b3751726fa55edcda76cd3-->'
 
 
+def ensure_init_git(*, folder, url, add_upstream_pulls_remote=False, user_email='no@ne.nl', user_name='none'):
+    if os.path.isdir(folder):
+        return
+    print(f'Clone {url} repo to {folder}')
+    call_git(['clone', '--quiet', url, folder])
+    print(f'Set git metadata for {folder}')
+    os.chdir(folder)
+    if add_upstream_pulls_remote:
+        with open(os.path.join(folder, '.git', 'config'), 'a') as f:
+            f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
+            f.write('    url = {}\n'.format(url))
+            f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
+            f.flush()
+    call_git(['config', 'user.email', user_email])
+    call_git(['config', 'user.name', user_name])
+
+
 def get_metadata_comment(sections):
     return ''.join([IdComment.METADATA.value + '\n\nThe following sections might be updated with supplementary metadata relevant to reviewers and maintainers.\n\n'] + sorted(sections))
 

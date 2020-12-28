@@ -4,7 +4,7 @@ import sys
 import subprocess
 import shutil
 
-from util.util import call_git
+from util.util import call_git, ensure_init_git
 
 
 def main():
@@ -32,12 +32,8 @@ def main():
     dir_assets = os.path.join(temp_dir, 'assets')
     dir_generate_seeds = os.path.join(temp_dir, 'generate_seeds')
 
-    if not os.path.isdir(dir_code):
-        print('Clone {} repo to {}'.format(url_code, dir_code))
-        call_git(['clone', '--quiet', url_code, dir_code])
-    if not os.path.isdir(dir_assets):
-        print('Clone {} repo to {}'.format(url_seed, dir_assets))
-        call_git(['clone', '--quiet', url_seed, dir_assets])
+    ensure_init_git(folder=dir_code, url=url_code)
+    ensure_init_git(folder=dir_assets, url=url_seed)
 
     print('Fetch upsteam, checkout latest branch')
     os.chdir(dir_code)
