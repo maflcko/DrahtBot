@@ -157,7 +157,7 @@ def main():
         os.makedirs(depends_cache_subdir, exist_ok=True)
         docker_exec("mv {}/depends/built {}/built".format(git_repo_dir, depends_cache_subdir))
         docker_exec("mv {}/outerr {}/output/guix_build.log".format(git_repo_dir, git_repo_dir))
-        docker_exec("mv {}/output/src/* {}/output/".format(git_repo_dir, git_repo_dir))
+        docker_exec("( mv {}/output/src/* {}/output/ || true )".format(git_repo_dir, git_repo_dir))
         docker_exec("rmdir {}/output/src".format(git_repo_dir))
         return os.path.join(git_repo_dir, 'output')
 
