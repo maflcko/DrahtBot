@@ -34,6 +34,10 @@ LABELS = {
         ['^src/validation', '^src/chain'],
         ['^validation:'],
     ),
+    'interfaces': Needle(
+        ['src/interfaces/'],
+        ['^interfaces'],
+    ),
     'Wallet': Needle(
         ['^src/wallet/', '^src/interfaces/wallet'],
         ['^wallet:'],
