@@ -48,7 +48,7 @@ def main():
     call_git(['fetch', '--quiet', '--all'])
     call_git(['add', '--all'])
     call_git(['commit', '--allow-empty', '-m', f'Add inputs {datetime.datetime.now(datetime.timezone.utc)}'])
-    call_git(['merge', '--no-edit', 'origin/master'])
+    call_git(['merge', '--no-edit', 'origin/main'])
 
     os.chdir(dir_code)
     subprocess.check_call(f'./autogen.sh && CC=clang-12 CXX=clang++-12 ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined,integer && make clean && make -j {args.jobs}', shell=True)
