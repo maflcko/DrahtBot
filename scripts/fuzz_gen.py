@@ -51,7 +51,7 @@ def main():
     call_git(['merge', '--no-edit', 'origin/main'])
 
     os.chdir(dir_code)
-    subprocess.check_call(f'./autogen.sh && CC=clang-12 CXX=clang++-12 ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined,integer && make clean && make -j {args.jobs}', shell=True)
+    subprocess.check_call(f'./autogen.sh && CC=clang-13 CXX=clang++-13 ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined,integer && make clean && make -j {args.jobs}', shell=True)
     shutil.rmtree(dir_generate_seeds, ignore_errors=True)
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', f'--m_dir={dir_assets}/fuzz_seed_corpus'])
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', '--generate'])
