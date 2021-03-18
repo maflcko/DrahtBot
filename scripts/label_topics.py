@@ -9,6 +9,7 @@ from util.util import return_with_pull_metadata
 # Tuple of arrays of regexes
 Needle = namedtuple('Needle', ['file', 'title'])
 
+LABEL_NAME_DOCS = 'Docs'
 LABEL_NAME_TESTS = 'Tests'
 LABEL_NAME_BACKPORT = 'Backport'
 
@@ -74,7 +75,7 @@ LABELS = {
         ['^src/test', '^src/bench', '^src/qt/test', '^test', '^.appveyor', '^.cirrus', '^ci/', '^src/wallet/test', '^.travis'],
         ['^qa:', '^tests?:', '^ci:'],
     ),
-    'Docs': Needle(
+    LABEL_NAME_DOCS: Needle(
         ['^doc/', '.*.md$'],
         ['^docs?:'],
     ),
@@ -138,8 +139,8 @@ def main():
                             if match:
                                 break  # No need to check other regexes
                     if match:
-                        if l == LABEL_NAME_TESTS and new_labels:
-                            pass  # Avoid test label if there are already other labels
+                        if (l == LABEL_NAME_TESTS or l == LABEL_NAME_DOCS) and new_labels:
+                            pass  # Avoid this label if there are already other labels
                         else:
                             new_labels += [l]
                         match = False
