@@ -102,7 +102,7 @@ def main():
     parser.add_argument('--scratch_dir', help='The local dir used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'coverage_fuzz'))
     parser.add_argument('--ssh_key', help='The ssh key for "repo_report"', default=os.path.join(THIS_FILE_PATH, '..', 'ssh_env', 'id_rsa_drahtbot'))
     parser.add_argument('--git_ref_code', help='Which git ref in the code repo to build.', default='master')
-    parser.add_argument('--git_ref_qa_assets', help='Which git ref in the qa-assets repo to use.', default='master')
+    parser.add_argument('--git_ref_qa_assets', help='Which git ref in the qa-assets repo to use.', default='main')
     parser.add_argument('--fuzz_targets', help='Which targets to build.', default='')
     args = parser.parse_args()
 
