@@ -13,6 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description='Generate fuzz seeds until a crash.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--scratch_folder', help='The local scratch folder', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'fuzz_gen'))
     parser.add_argument('--jobs', help='The number of jobs', default=1)
+    parser.add_argument('--sanitizers', help='The sanitizers to enable (must include fuzzer)', default='address,fuzzer,undefined,integer')
     args = parser.parse_args()
 
     print('''
@@ -51,7 +52,7 @@ def main():
     call_git(['merge', '--no-edit', 'origin/main'])
 
     os.chdir(dir_code)
-    subprocess.check_call(f'./autogen.sh && CC=clang-13 CXX=clang++-13 ./configure --enable-fuzz --with-sanitizers=address,fuzzer,undefined,integer && make clean && make -j {args.jobs}', shell=True)
+    subprocess.check_call(f'./autogen.sh && CC=clang-13 CXX=clang++-13 ./configure --enable-fuzz --with-sanitizers={args.sanitizers} && make clean && make -j {args.jobs}', shell=True)
     shutil.rmtree(dir_generate_seeds, ignore_errors=True)
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', f'--m_dir={dir_assets}/fuzz_seed_corpus'])
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', '--generate'])
