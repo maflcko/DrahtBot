@@ -40,8 +40,12 @@ LABELS = {
         ['^interfaces'],
     ),
     'Wallet': Needle(
-        ['^src/wallet/', '^src/interfaces/wallet'],
+        ['^src/wallet', '^src/interfaces/wallet'],
         ['^wallet:'],
+    ),
+    'Descriptors': Needle(
+        ['^src/script/descriptor'],
+        ['^descriptors:'],
     ),
     'Consensus': Needle(
         ['^src/versionbits', '^src/script/(bitcoin|interpreter|script|sigcache)'],
@@ -95,6 +99,15 @@ LABELS = {l: Needle(
           for l in LABELS}
 
 
+def MaybeClean(labels):
+    labels_set = set(labels)
+    labels_secondary = {LABEL_NAME_TESTS, LABEL_NAME_DOCS}
+    labels_primary = labels_set - labels_secondary
+    if labels_primary:
+        return labels_primary
+    return labels
+
+
 def main():
     parser = argparse.ArgumentParser(description='Update the pull request with missing labels.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
@@ -139,13 +152,11 @@ def main():
                             if match:
                                 break  # No need to check other regexes
                     if match:
-                        if (l == LABEL_NAME_TESTS or l == LABEL_NAME_DOCS) and new_labels:
-                            pass  # Avoid this label if there are already other labels
-                        else:
-                            new_labels += [l]
+                        new_labels += [l]
                         match = False
         if not new_labels:
             continue
+        new_labels = MaybeClean(new_labels)
         print('{}\n    .add_to_labels({})'.format(p, ', '.join(new_labels)))
         if not args.dry_run:
             issue.add_to_labels(*set(new_labels))
