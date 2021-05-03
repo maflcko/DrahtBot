@@ -56,6 +56,8 @@ def main():
             if p.mergeable_state == 'draft':
                 # Exclude draft pull requests
                 continue
+            if not p.mergeable:
+                continue
             if p.number < 20653:
                 # Exclude old pull requests
                 continue
