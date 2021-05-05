@@ -13,6 +13,8 @@ from util.util import return_with_pull_metadata, call_git, get_git, calculate_ta
 ID_GUIX_COMMENT = '<!--9cd9c72976c961c55c7acef8f6ba82cd-->'
 UPSTREAM_PULL = 'upstream-pull'
 
+CURRENT_XCODE_FILENAME = 'Xcode-12.1-12A7403-extracted-SDK-with-libcxx-headers.tar.gz'
+
 
 def calculate_diffs(folder_1, folder_2):
     EXTENSIONS = ['.log']
@@ -147,18 +149,18 @@ def main():
         docker_exec("git checkout --quiet --force {}".format(commit))
         depends_compiler_hash = get_git(['rev-parse', '{}:./contrib/guix'.format(commit)])
         depends_cache_subdir = os.path.join(depends_cache_dir, depends_compiler_hash)
-        docker_exec("cp -r {}/built {}/depends/ || true".format(depends_cache_subdir, git_repo_dir))
+        docker_exec(f"cp -r {depends_cache_subdir}/built {git_repo_dir}/depends/", ignore_ret_code=True)
         docker_exec("mkdir -p {}/depends/SDKs/".format(git_repo_dir))
-        shutil.copy(src=os.path.join(THIS_FILE_PATH, 'Xcode-11.3.1-11C505-extracted-SDK-with-libcxx-headers.tar.gz'), dst=temp_dir)
-        docker_exec("tar -xf {}/{} --directory {}/depends/SDKs/".format(temp_dir, 'Xcode-11.3.1-11C505-extracted-SDK-with-libcxx-headers.tar.gz', git_repo_dir))
+        shutil.copy(src=os.path.join(THIS_FILE_PATH, CURRENT_XCODE_FILENAME), dst=temp_dir)
+        docker_exec(f"tar -xf {temp_dir}/{CURRENT_XCODE_FILENAME} --directory {git_repo_dir}/depends/SDKs/")
         #docker_exec("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/guix/)")
-        docker_exec("( guix-daemon --build-users-group=guixbuild & (export V=1 && export VERBOSE=1 && export MAX_JOBS={} && export SOURCES_PATH={} && ./contrib/guix/guix-build > {}/outerr 2>&1 ) && kill %1 )".format(args.guix_jobs, depends_sources_dir, git_repo_dir), ignore_ret_code=True)
+        docker_exec(f"( guix-daemon --build-users-group=guixbuild & (export V=1 && export VERBOSE=1 && export MAX_JOBS={args.guix_jobs} && export SOURCES_PATH={depends_sources_dir} && ./contrib/guix/guix-build > {git_repo_dir}/outerr 2>&1 ) && kill %1 )", ignore_ret_code=True)
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
         os.makedirs(depends_cache_subdir, exist_ok=True)
-        docker_exec("mv {}/depends/built {}/built || true".format(git_repo_dir, depends_cache_subdir))
-        docker_exec("mv {}/outerr {}/output/guix_build.log".format(git_repo_dir, git_repo_dir))
-        docker_exec("( mv {}/output/src/* {}/output/ || true )".format(git_repo_dir, git_repo_dir))
-        docker_exec("( rmdir {}/output/src || true )".format(git_repo_dir))
+        docker_exec(f"mv {git_repo_dir}/depends/built {depends_cache_subdir}/built")
+        docker_exec(f"mv {git_repo_dir}/outerr {git_repo_dir}/output/guix_build.log")
+        docker_exec(f"mv {git_repo_dir}/output/src/* {git_repo_dir}/output/", ignore_ret_code=True)
+        docker_exec(f"rmdir {git_repo_dir}/output/src", ignore_ret_code=True)
         return os.path.join(git_repo_dir, 'output')
 
     if args.build_one_commit:
