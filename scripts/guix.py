@@ -158,10 +158,12 @@ def main():
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
         os.makedirs(depends_cache_subdir, exist_ok=True)
         docker_exec(f"mv {git_repo_dir}/depends/built {depends_cache_subdir}/built")
-        docker_exec(f"mv {git_repo_dir}/outerr {git_repo_dir}/output/guix_build.log")
-        docker_exec(f"mv {git_repo_dir}/output/src/* {git_repo_dir}/output/", ignore_ret_code=True)
-        docker_exec(f"rmdir {git_repo_dir}/output/src", ignore_ret_code=True)
-        return os.path.join(git_repo_dir, 'output')
+        output_dir = os.path.join(git_repo_dir, 'guix-build-output')
+        docker_exec(f"mv {git_repo_dir}/guix-build-*/output {output_dir}")
+        docker_exec(f"mv {git_repo_dir}/outerr {output_dir}/guix_build.log")
+        docker_exec(f"mv {output_dir}/dist-archive/* {output_dir}/", ignore_ret_code=True)
+        docker_exec(f"rmdir {output_dir}/dist-archive", ignore_ret_code=True)
+        return output_dir
 
     if args.build_one_commit:
         print('Starting guix build for one commit ({}) ...'.format(args.build_one_commit))
