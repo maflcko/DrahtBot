@@ -161,7 +161,7 @@ def main():
         output_dir = os.path.join(git_repo_dir, 'guix-build-output')
         docker_exec(f"mv {git_repo_dir}/guix-build-*/output {output_dir}")
         docker_exec(f"mv {git_repo_dir}/outerr {output_dir}/guix_build.log")
-        docker_exec(f"mv {output_dir}/*/* {output_dir}/", ignore_ret_code=True)
+        docker_exec(f"for i in {output_dir}/* ; do mv $i/* {output_dir}/ ; done", ignore_ret_code=True)
         docker_exec(f"for i in {output_dir}/* ; do rmdir $i ; done", ignore_ret_code=True)
         return output_dir
 
