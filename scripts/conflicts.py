@@ -50,7 +50,7 @@ def update_comment(dry_run, pull, pulls_conflict):
         return
 
     text += 'Reviewers, this pull request conflicts with the following ones:\n'
-    text += ''.join(['\n* #{} ({} by {})'.format(p.number, p.title.strip(), p.user.login) for p in pulls_conflict])
+    text += ''.join([f'\n* #{p.number} by {p.user.login}' for p in pulls_conflict])
     text += '\n\n'
     text += 'If you consider this pull request important, please also help to review the conflicting pull requests. '
     text += 'Ideally, start with the one that should be merged first.'
