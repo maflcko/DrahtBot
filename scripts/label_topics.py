@@ -31,6 +31,10 @@ LABELS = {
         ['^src/txdb', '^src/index/', '^src/coins', '^src/leveldb', '^src/db'],
         [],
     ),
+    'Block storage': Needle(
+        ['^src/node/blockstorage'],
+        ['^blockstorage:'],
+    ),
     'Validation': Needle(
         ['^src/validation', '^src/chain'],
         ['^validation:'],
