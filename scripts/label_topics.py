@@ -68,7 +68,7 @@ LABELS = {
         ['^mining:'],
     ),
     'P2P': Needle(
-        ['^src/net', '^src/tor', '^src/protocol'],
+        ['^src/addrman', '^src/net', '^src/tor', '^src/protocol'],
         ['^net:', '^p2p:'],
     ),
     'RPC/REST/ZMQ': Needle(
