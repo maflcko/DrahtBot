@@ -175,7 +175,7 @@ def main():
     github_api = Github(args.github_access_token)
     github_repo = github_api.get_repo(args.github_repo)
 
-    label_needs_guix = github_repo.get_label('Needs guix build')
+    label_needs_guix = github_repo.get_label('DrahtBot Guix build requested')
 
     print('Get open, mergeable {} pulls ...'.format(args.base_name))
     pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open', base=args.base_name)])
