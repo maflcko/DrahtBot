@@ -19,7 +19,7 @@ def main():
 
         print(f'Get closed pulls for repo {github_repo.owner.login}/{github_repo.name} ...')
 
-        for i, p in enumerate(github_repo.get_pulls(state='closed', direction='asc', sort='created')):
+        for i, p in enumerate(github_repo.get_pulls(state='closed', direction='asc', sort='updated')):
             print(f'Checking pull number #{p.number} from year {p.updated_at.year} against {args.year}')
             if p.updated_at.year > args.year:
                 # Too recent
