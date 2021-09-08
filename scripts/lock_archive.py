@@ -22,10 +22,11 @@ def main():
         for i, p in enumerate(github_repo.get_pulls(state='closed', direction='asc', sort='updated')):
             print(f'Checking pull number #{p.number} from year {p.updated_at.year} against {args.year}')
             if p.updated_at.year > args.year:
-                # Too recent
-                continue
+                print(f'All done up to year {args.year}')
+                break
             issue = p.as_issue()
             if issue.locked:
+                print('Already locked')
                 continue
             print(f'{p}\n    .lock({LOCK_REASON})')
             if not args.dry_run:
