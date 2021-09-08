@@ -11,7 +11,7 @@ def main():
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='Comma separated list of repo slugs of the remotes on GitHub.', default='bitcoin-core/gui,bitcoin/bitcoin')
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
-    parser.add_argument('--year', help='Archive all pull requests from this year (and previous years).', type=int, default=2019)
+    parser.add_argument('--year', help='Archive all pull requests from this year (and previous years).', type=int, default=2018)
     args = parser.parse_args()
 
     github_api = Github(args.github_access_token)
