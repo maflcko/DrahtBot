@@ -29,7 +29,7 @@ LABELS = {
     ),
     'Utils/log/libs': Needle(
         ['^src/util/', '^src/crypto', '^src/key', '^src/bitcoin-', '^src/univalue', '^src/secp256k1', '^src/leveldb', '^src/crc32c', '^src/compat'],
-        ['^log:'],
+        ['^log:', '^util:'],
     ),
     'UTXO Db and Indexes': Needle(
         ['^src/txdb', '^src/index/', '^src/coins', '^src/leveldb', '^src/db'],
