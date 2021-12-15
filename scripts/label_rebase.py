@@ -5,6 +5,7 @@ import argparse
 from util.util import return_with_pull_metadata, IdComment
 
 ID_NEEDS_REBASE_COMMENT = IdComment.NEEDS_REBASE.value
+ID_STALE_COMMENT = IdComment.STALE.value
 
 
 def main():
@@ -32,7 +33,7 @@ def main():
             issue = p.as_issue()
             if p.mergeable and label_needs_rebase in issue.get_labels():
                 print('{}\n    .remove_from_labels({})'.format(p, label_needs_rebase))
-                comments = [c for c in issue.get_comments() if c.body.startswith(ID_NEEDS_REBASE_COMMENT)]
+                comments = [c for c in issue.get_comments() if c.body.startswith(ID_NEEDS_REBASE_COMMENT) or c.body.startswith(ID_STALE_COMMENT)]
                 print('    + delete {} comments'.format(len(comments)))
                 if not args.dry_run:
                     issue.remove_from_labels(label_needs_rebase)
