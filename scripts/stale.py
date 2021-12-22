@@ -52,7 +52,7 @@ def main():
                     continue  # Should rarely happen
 
                 delta = datetime.datetime.utcnow() - p.updated_at
-                if delta < datetime.timedelta(days=30 * 3):
+                if delta < datetime.timedelta(days=30 * 4):
                     continue  # Too recent
                 text = ID_STALE_COMMENT
                 text += "There hasn't been much activity lately and the patch still needs rebase. What is the status here?\n"
