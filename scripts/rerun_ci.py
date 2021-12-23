@@ -6,7 +6,7 @@ import json
 from util.util import return_with_pull_metadata
 
 
-def rerun(*, task, dry_run):
+def rerun(*, task, token, dry_run):
     t_id = task["id"]
     raw_data = f"""
                     {{
@@ -33,7 +33,7 @@ def rerun(*, task, dry_run):
                 "-X",
                 "POST",
                 "-H",
-                "Cookie: cirrusUserId=5103017154576384; cirrusAuthToken=dnsd12gbqgcne78r1hat70i9ko95u0abd8a15i",
+                f"Authorization: Bearer {token}",
                 "--data-raw",
                 raw_data,
             ],
@@ -53,7 +53,7 @@ def main():
     parser.add_argument(
         "--github_repos",
         help="The comma-separated list of repo slugs of the remotes on GitHub.",
-        default="bitcoin-core/gui,bitcoin/bitcoin",
+        default="bitcoin-core/gui:cirrus_org_token,bitcoin/bitcoin:cirrus_org_token",
     )
     parser.add_argument(
         "--dry_run",
@@ -64,7 +64,8 @@ def main():
     args = parser.parse_args()
 
     github_api = Github(args.github_access_token)
-    for slug in args.github_repos.split(","):
+    for repo_str in args.github_repos.split(","):
+        slug, token = repo_str.split(":")
         github_repo = github_api.get_repo(slug)
         repo_owner, repo_name = slug.split("/")
 
@@ -115,9 +116,9 @@ def main():
                 lint = [t for t in tasks if "lint" in t["name"]]
                 prvr = [t for t in tasks if "previous releases" in t["name"]]
                 if lint:
-                    rerun(task=lint[0], dry_run=args.dry_run)
+                    rerun(task=lint[0], token=token, dry_run=args.dry_run)
                 if prvr:
-                    rerun(task=prvr[0], dry_run=args.dry_run)
+                    rerun(task=prvr[0], token=token, dry_run=args.dry_run)
 
 
 if __name__ == "__main__":
