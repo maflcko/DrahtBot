@@ -127,9 +127,9 @@ def main():
     os.chdir(temp_dir)
     if not os.listdir(guix_store_dir):
         print('Install guix')
-        docker_exec('wget https://ftp.gnu.org/gnu/guix/guix-binary-1.1.0.x86_64-linux.tar.xz')
-        docker_exec('echo "eae0b8b4ee8ba97e7505dbb85d61ab2ce7f0195b824d3a660076248d96cdaece  ./guix-binary-1.1.0.x86_64-linux.tar.xz" | sha256sum -c')
-        docker_exec('tar -xf ./guix-binary-1.1.0.x86_64-linux.tar.xz')
+        docker_exec('wget https://ftp.gnu.org/gnu/guix/guix-binary-1.3.0.x86_64-linux.tar.xz')
+        docker_exec('echo "c5f7efb48947545e49d2daf48d0f832f35d2a8d19f65daaf6079425ac327c050  ./guix-binary-1.3.0.x86_64-linux.tar.xz" | sha256sum -c')
+        docker_exec('tar -xf ./guix-binary-1.3.0.x86_64-linux.tar.xz')
         docker_exec('mv var/guix/* /var/guix && mv gnu/* /gnu/')
 
     docker_exec('mkdir -p /config_guix/')
