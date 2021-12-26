@@ -2,6 +2,7 @@ from github import Github
 import argparse
 import subprocess
 import json
+import time
 
 from util.util import return_with_pull_metadata
 
@@ -119,6 +120,7 @@ def main():
                     rerun(task=lint[0], token=token, dry_run=args.dry_run)
                 if prvr:
                     rerun(task=prvr[0], token=token, dry_run=args.dry_run)
+                time.sleep(60 * 55)  # sleep 55 min
 
 
 if __name__ == "__main__":
