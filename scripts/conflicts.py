@@ -22,15 +22,15 @@ ID_CONFLICTS_SEC = IdComment.SEC_CONFLICTS.value
 
 def calc_conflicts(pulls_mergeable, num, base_branch):
     conflicts = []
-    base_id = get_git(["log", "-1", "--format=%H", "origin/{}".format(base_branch)])
+    base_id = get_git(["log", "-1", "--format=%H", f"origin/{base_branch}"])
     call_git(["checkout", base_id, "--quiet"])
     call_git(
         [
             "merge",
             "--quiet",
-            "{}/{}/head".format(UPSTREAM_PULL, num),
+            f"{UPSTREAM_PULL}/{num}/head",
             "-m",
-            "Prepare base for {}".format(num),
+            f"Prepare base for {num}",
         ],
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
@@ -44,9 +44,9 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
             call_git(
                 [
                     "merge",
-                    "{}/{}/head".format(UPSTREAM_PULL, pull_other.number),
+                    f"{UPSTREAM_PULL}/{pull_other.number}/head",
                     "-m",
-                    "Merge base_{}+{}".format(num, pull_other.number),
+                    f"Merge base_{num}+{pull_other.number}",
                     "--quiet",
                 ],
                 stdout=subprocess.DEVNULL,
@@ -127,17 +127,17 @@ def main():
     for slug in args.github_repos.split(","):
         repo_dir = os.path.join(args.scratch_dir, slug)
 
-        url = "https://github.com/{}".format(slug)
+        url = f"https://github.com/{slug}"
         if not os.path.isdir(repo_dir):
-            print("Clone {} repo to {}".format(url, repo_dir))
+            print(f"Clone {url} repo to {repo_dir}")
             os.chdir(args.scratch_dir)
             call_git(["clone", "--quiet", url, repo_dir])
             print("Set git metadata")
             os.chdir(repo_dir)
             with open(os.path.join(repo_dir, ".git", "config"), "a") as f:
-                f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
-                f.write("    url = {}\n".format(url))
-                f.write("    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n")
+                f.write(f'[remote "{UPSTREAM_PULL}"]\n')
+                f.write(f"    url = {url}\n")
+                f.write(f"    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n")
                 f.flush()
             call_git(["config", "user.email", "no@ne.nl"])
             call_git(["config", "user.name", "none"])
@@ -155,7 +155,7 @@ def main():
             lambda: [p for p in github_repo.get_pulls(state="open", base=base_name)]
         )
         call_git(["fetch", "--quiet", "--all"])  # Do it again just to be safe
-        call_git(["fetch", "origin", "{}".format(base_name), "--quiet"])
+        call_git(["fetch", "origin", base_name, "--quiet"])
 
         print(f"Open {base_name}-pulls for {slug}: {len(pulls)}")
         pulls_mergeable = [p for p in pulls if p.mergeable]
@@ -171,13 +171,7 @@ def main():
             if args.update_comments:
                 for i, pull_update in enumerate(pulls_mergeable):
                     print(
-                        "{}/{} Checking for conflicts {} <> {} <> {} ... ".format(
-                            i,
-                            len(pulls_mergeable),
-                            base_name,
-                            pull_update.number,
-                            "other_pulls",
-                        )
+                        f"{i}/{len(pulls_mergeable)} Checking for conflicts {base_name} <> {pull_update.number} <> other_pulls ... "
                     )
                     pulls_conflict = calc_conflicts(
                         pulls_mergeable=pulls_mergeable,
@@ -195,15 +189,13 @@ def main():
 
                 if not pull_merge:
                     print(
-                        "{} not found in all {} open {} pulls".format(
-                            args.pull_id, len(pulls), base_name
-                        )
+                        f"{args.pull_id} not found in all {len(pulls)} open {base_name} pulls"
                     )
                     sys.exit(-1)
                 pull_merge = pull_merge[0]
 
                 if not pull_merge.mergeable:
-                    print("{} is not mergeable".format(pull_merge.number))
+                    print(f"{pull_merge.number} is not mergeable")
                     sys.exit(-1)
 
                 print(
