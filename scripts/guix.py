@@ -13,7 +13,8 @@ from util.util import return_with_pull_metadata, call_git, get_git, calculate_ta
 ID_GUIX_COMMENT = '<!--9cd9c72976c961c55c7acef8f6ba82cd-->'
 UPSTREAM_PULL = 'upstream-pull'
 
-CURRENT_XCODE_FILENAME = 'Xcode-12.1-12A7403-extracted-SDK-with-libcxx-headers.tar.gz'
+# wget https://bitcoincore.org/depends-sources/sdks/Xcode-12.2-12B45b-extracted-SDK-with-libcxx-headers.tar.gz
+CURRENT_XCODE_FILENAME = "Xcode-12.2-12B45b-extracted-SDK-with-libcxx-headers.tar.gz"
 
 
 def calculate_diffs(folder_1, folder_2):
