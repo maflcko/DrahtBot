@@ -54,7 +54,6 @@ def main():
 
     print('Download dependencies ...')
     os.chdir(os.path.join(GIT_REPO_DIR, 'depends'))
-    os.environ['RAPIDCHECK'] = "1"
     subprocess.check_call(['make', 'download'])
     source_dir = os.path.join(GIT_REPO_DIR, 'depends', 'sources')
     print('Merging results of {} to {}'.format(source_dir, WWW_FOLDER_DEPENDS_CACHES))
