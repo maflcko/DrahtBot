@@ -84,7 +84,7 @@ def main():
                     {{
                         "query":"query
                         {{
-                            githubRepository(owner: \\"{repo_owner}\\", name: \\"{repo_name}\\") {{
+                            ownerRepository(platform: \\"github\\", owner: \\"{repo_owner}\\", name: \\"{repo_name}\\") {{
                               viewerPermission
                               builds(last: 1, branch: \\"pull/{p.number}\\") {{
                                 edges {{
@@ -111,7 +111,7 @@ def main():
                     ],
                     stderr=subprocess.DEVNULL,
                 )
-                tasks = json.loads(tasks)["data"]["githubRepository"]["builds"][
+                tasks = json.loads(tasks)["data"]["ownerRepository"]["builds"][
                     "edges"
                 ][0]["node"]["tasks"]
                 lint = [t for t in tasks if "lint" in t["name"]]
