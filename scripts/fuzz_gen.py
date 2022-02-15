@@ -24,7 +24,7 @@ def main():
     #
     # wget https://apt.llvm.org/llvm.sh
     # chmod +x llvm.sh
-    # ./llvm.sh 14
+    # ./llvm.sh 15
     ''')
 
     url_code = 'https://github.com/{}'.format('bitcoin/bitcoin')
@@ -52,7 +52,7 @@ def main():
     call_git(['merge', '--no-edit', 'origin/main'])
 
     os.chdir(dir_code)
-    subprocess.check_call(f'./autogen.sh && CC=clang-14 CXX=clang++-14 ./configure --enable-fuzz --with-sanitizers={args.sanitizers} && make clean && make -j {args.jobs}', shell=True)
+    subprocess.check_call(f'./autogen.sh && CC=clang-15 CXX=clang++-15 ./configure --enable-fuzz --with-sanitizers={args.sanitizers} && make clean && make -j {args.jobs}', shell=True)
     shutil.rmtree(dir_generate_seeds, ignore_errors=True)
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', f'--m_dir={dir_assets}/fuzz_seed_corpus'])
     subprocess.check_call([sys.executable, 'test/fuzz/test_runner.py', '-l=DEBUG', f'--par={args.jobs}', f'{dir_generate_seeds}', '--generate'])
