@@ -17,7 +17,7 @@ LABEL_NAME_BACKPORT = 'Backport'
 LABELS = {
     'Build system': Needle(
         ['^configure', 'Makefile', '\.in$', '^depends', '^contrib/gitian'],
-        ['^build:', '^depends:'],
+        ['^guix:', '^build:', '^depends:'],
     ),
     'TX fees and policy': Needle(
         ['^src/policy/'],
