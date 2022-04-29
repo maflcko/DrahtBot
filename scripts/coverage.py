@@ -135,7 +135,7 @@ def pull_needs_update(pull):
     return delta > datetime.timedelta(days=3)
 
 
-def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_run, slug, remote_url):
+def calc_coverage(pulls, base_ref, dir_code, dir_cov_report, make_jobs, dry_run, slug, remote_url):
     print('Start docker process ...')
     os.makedirs(dir_cov_report, exist_ok=True)
     docker_id = subprocess.check_output(
@@ -167,9 +167,10 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
 
     print('Generate base coverage')
     os.chdir(dir_code)
-    base_git_ref = get_git(['log', '--format=%H', '-1', base_branch])[:16]
+    base_git_ref = get_git(['log', '--format=%H', '-1', base_ref])[:16]
     dir_result_base = os.path.join(dir_cov_report, f'{base_git_ref}')
     res_base = gen_coverage(docker_exec, dir_code, dir_result_base, base_git_ref, make_jobs)
+    print(f'{remote_url}/coverage/{slug}/{base_git_ref}/total.coverage/index.html')
 
     for i, pull in enumerate(pulls):
         print('{}/{} Calculating coverage ... '.format(i, len(pulls)))
@@ -190,7 +191,7 @@ def calc_coverage(pulls, base_branch, dir_code, dir_cov_report, make_jobs, dry_r
         text = text.format(
             url_base='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, base_git_ref),
             url_pull='{}/{}/{}/{}/total.coverage/index.html'.format(remote_url, 'coverage', slug, pull.number),
-            base_name=base_branch,
+            base_name=base_ref,
             pull_id=pull.number,
             p_l=res_pull.lin - res_base.lin,
             p_f=res_pull.fun - res_base.fun,
@@ -274,7 +275,7 @@ def main():
     print('Open mergeable {}-pulls: {}'.format(args.base_name, len(pulls_mergeable)))
 
     if args.update_comments:
-        calc_coverage(pulls=pulls_mergeable, base_branch=args.base_name, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage', args.repo_code), make_jobs=args.make_jobs, dry_run=args.dry_run, slug=args.repo_code, remote_url=args.remote_url)
+        calc_coverage(pulls=pulls_mergeable, base_ref=args.base_name, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage', args.repo_code), make_jobs=args.make_jobs, dry_run=args.dry_run, slug=args.repo_code, remote_url=args.remote_url)
 
     if args.pull_id:
         pull_update_id = [p for p in pulls if p.number == args.pull_id]
@@ -288,7 +289,7 @@ def main():
             print('{} is not mergeable'.format(pull_update_id.number))
             sys.exit(-1)
 
-        calc_coverage(pulls=[pull_update_id], base_branch=args.base_name, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage', args.repo_code), make_jobs=args.make_jobs, dry_run=args.dry_run, slug=args.repo_code, remote_url=args.remote_url)
+        calc_coverage(pulls=[pull_update_id], base_ref=args.base_name, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage', args.repo_code), make_jobs=args.make_jobs, dry_run=args.dry_run, slug=args.repo_code, remote_url=args.remote_url)
 
 
 if __name__ == '__main__':
