@@ -209,6 +209,7 @@ def calc_coverage(pulls, base_ref, dir_code, dir_cov_report, make_jobs, dry_run,
 def main():
     THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Run coverage reports for all pull requests.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--commit_only', help='Generate the coverage for this commit and exit.', default='')
     parser.add_argument('--pull_id', type=int, help='Update the comment for this pull request.', default=0)
     parser.add_argument('--update_comments', action='store_true', help='Update all comments.', default=False)
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
@@ -261,6 +262,12 @@ def main():
     call_git(['reset', '--hard', 'HEAD'])
     call_git(['checkout', 'main'])
     call_git(['reset', '--hard', 'origin/main'])
+
+    if args.commit_only:
+        os.chdir(code_dir)
+        call_git(['fetch', 'origin', args.commit_only, '--quiet'])
+        calc_coverage(pulls=[], base_ref=args.commit_only, dir_code=code_dir, dir_cov_report=os.path.join(report_dir, 'coverage', args.repo_code), make_jobs=args.make_jobs, dry_run=args.dry_run, slug=args.repo_code, remote_url=args.remote_url)
+        return
 
     print('Fetching open pulls ...')
     os.chdir(code_dir)
