@@ -113,7 +113,7 @@ def main():
 
     def docker_exec(cmd, *, ignore_ret_code=False):
         scall = subprocess.call if ignore_ret_code else subprocess.check_call
-        scall(['docker', 'exec', docker_id, 'bash', '-c', 'export TMPDIR=/guix_temp_dir/ && {} && cd {} && {}'.format(docker_bash_prefix[0], os.getcwd(), cmd)], universal_newlines=True)
+        scall(['docker', 'exec', docker_id, 'bash', '-c', 'export FORCE_DIRTY_WORKTREE=1 && export TMPDIR=/guix_temp_dir/ && {} && cd {} && {}'.format(docker_bash_prefix[0], os.getcwd(), cmd)], universal_newlines=True)
 
     docker_exec('mkdir /guix_temp_dir/')
 
