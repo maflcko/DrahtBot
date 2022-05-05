@@ -41,7 +41,7 @@ LABELS = {
         ['^blockstorage:'],
     ),
     'Validation': Needle(
-        ['^src/validation', '^src/chain'],
+        ['^src/validation', '^src/chain', '^src/kernel'],
         ['^validation:'],
     ),
     'interfaces': Needle(
