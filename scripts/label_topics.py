@@ -12,6 +12,7 @@ Needle = namedtuple('Needle', ['file', 'title'])
 LABEL_NAME_DOCS = 'Docs'
 LABEL_NAME_TESTS = 'Tests'
 LABEL_NAME_BACKPORT = 'Backport'
+LABEL_NAME_REFACTORING = 'Refactoring'
 
 # Map from label name to Needle
 LABELS = {
@@ -95,7 +96,7 @@ LABELS = {
         [],
         ['^backport:'],
     ),
-    'Refactoring': Needle(
+    LABEL_NAME_REFACTORING: Needle(
         [],
         ['^refactor(ing)?:', '^move-?only:', '^scripted-diff:'],
     ),
@@ -109,6 +110,8 @@ LABELS = {l: Needle(
 
 def MaybeClean(labels):
     labels_set = set(labels)
+    if len(labels_set) >= 4:
+        return {LABEL_NAME_REFACTORING}
     labels_secondary = {LABEL_NAME_TESTS, LABEL_NAME_DOCS}
     labels_primary = labels_set - labels_secondary
     if labels_primary:
