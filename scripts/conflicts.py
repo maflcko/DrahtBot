@@ -27,6 +27,7 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
     call_git(
         [
             "merge",
+            "--strategy=recursive",
             "--quiet",
             f"{UPSTREAM_PULL}/{num}/head",
             "-m",
@@ -44,10 +45,11 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
             call_git(
                 [
                     "merge",
+                    "--strategy=recursive",
+                    "--quiet",
                     f"{UPSTREAM_PULL}/{pull_other.number}/head",
                     "-m",
                     f"Merge base_{num}+{pull_other.number}",
-                    "--quiet",
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
