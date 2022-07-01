@@ -25,7 +25,7 @@ LABELS = {
         ['^policy:'],
     ),
     'Upstream': Needle(
-        ['^src/univalue', '^src/secp256k1', '^src/leveldb', '^src/crc32c'],
+        ['^src/secp256k1', '^src/leveldb', '^src/crc32c'],
         [],
     ),
     'Utils/log/libs': Needle(
@@ -34,7 +34,7 @@ LABELS = {
     ),
     'UTXO Db and Indexes': Needle(
         ['^src/txdb', '^src/index/', '^src/coins', '^src/leveldb', '^src/db'],
-        [],
+        ['^index:', '^indexes:'],
     ),
     'Block storage': Needle(
         ['^src/node/blockstorage'],
@@ -77,8 +77,8 @@ LABELS = {
         ['^net:', '^p2p:'],
     ),
     'RPC/REST/ZMQ': Needle(
-        ['^src/rpc', '^src/rest', '^src/zmq', '^src/wallet/rpc', '^src/http'],
-        ['^rpc:', '^rest:', '^zmq:'],
+        ['^src/univalue', '^src/rpc', '^src/rest', '^src/zmq', '^src/wallet/rpc', '^src/http'],
+        ['^univalue:', '^rpc:', '^rest:', '^zmq:'],
     ),
     'Scripts and tools': Needle(
         ['^contrib/'],
@@ -144,27 +144,23 @@ def main():
         if not len([l for l in issue.get_labels()]):
             if p.base.ref != github_repo.default_branch:
                 new_labels = [LABEL_NAME_BACKPORT]  # Backports don't get topic labels
-            else:
+            if not new_labels:
+                for l in LABELS:
+                    if any(r.search(issue.title) for r in LABELS[l].title):
+                        new_labels = [l]
+                        break  # no need to check other labels
+            if not new_labels:
                 modified_files = [f.filename for f in p.get_files()]
                 print('{}: {}'.format(p.title, ', '.join(modified_files)))
-                match = False
                 for l in LABELS:
+                    match = False
                     # Maybe this label matches the file
                     for f in modified_files:
-                        for r in LABELS[l].file:
-                            match = r.search(f)
-                            if match:
-                                break  # No need to check other regexes
-                        if match:
+                        if any(r.search(f) for r in LABELS[l].file):
+                            match = True
                             break  # No need to check other files
-                    if not match:  # Maybe this label matches the title
-                        for r in LABELS[l].title:
-                            match = r.search(issue.title)
-                            if match:
-                                break  # No need to check other regexes
                     if match:
                         new_labels += [l]
-                        match = False
         if not new_labels:
             continue
         new_labels = MaybeClean(new_labels)
