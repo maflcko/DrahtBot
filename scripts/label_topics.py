@@ -40,6 +40,10 @@ LABELS = {
         ['^src/node/blockstorage'],
         ['^blockstorage:'],
     ),
+    'PSBT': Needle(
+        ['^src/psbt'],
+        ['^psbt:'],
+    ),
     'Validation': Needle(
         ['^src/validation', '^src/chain', '^src/kernel'],
         ['^validation:'],
