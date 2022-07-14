@@ -58,9 +58,11 @@ def main():
                 continue
             if not p.mergeable:
                 continue
-            if p.number < 20653:
+            if p.number < 25613:
                 # Exclude old pull requests
                 continue
+            # check for match from REVIEWERS file and add comment for reviewers
+            pull_files = [p.filename for p in p.get_files()]
             requested_reviewers = reviewers_for_files(file_match_to_reviewer, pull_files)
             if not requested_reviewers:
                 continue
@@ -74,8 +76,6 @@ def main():
             discard_set = [issue.user.login]  # remove author from set if included
             discard_set += [c.user.login for c in comments]
             discard_set += [c.user.login for c in p.get_review_comments()]
-            # check for match from REVIEWERS file and add comment for reviewers
-            pull_files = [p.filename for p in p.get_files()]
             for discard in set(discard_set):
                 requested_reviewers.discard('@' + discard)
             if requested_reviewers:
