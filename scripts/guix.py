@@ -153,7 +153,7 @@ def main():
         docker_exec(f"cp -r {depends_cache_subdir}/built {git_repo_dir}/depends/", ignore_ret_code=True)
         docker_exec("mkdir -p {}/depends/SDKs/".format(git_repo_dir))
         shutil.copy(src=os.path.join(THIS_FILE_PATH, CURRENT_XCODE_FILENAME), dst=temp_dir)
-        docker_exec(f"tar -xf {temp_dir}/{CURRENT_XCODE_FILENAME} --directory {git_repo_dir}/depends/SDKs/")
+        docker_exec(f"tar -xvf {temp_dir}/{CURRENT_XCODE_FILENAME} --directory {git_repo_dir}/depends/SDKs/")
         docker_exec("sed -i -e 's/--disable-bench //g' $(git grep -l disable-bench ./contrib/guix/)")
         docker_exec(f"( guix-daemon --build-users-group=guixbuild & (export V=1 && export VERBOSE=1 && export MAX_JOBS={args.guix_jobs} && export SOURCES_PATH={depends_sources_dir} && ./contrib/guix/guix-build > {git_repo_dir}/outerr 2>&1 ) && kill %1 )", ignore_ret_code=True)
         docker_exec("rm -rf {}/*".format(depends_cache_dir))
