@@ -47,13 +47,14 @@ def main():
         for i, p in enumerate(pulls):
             print("{}/{}".format(i, len(pulls)))
             if not p.mergeable:
+                delta = datetime.datetime.utcnow() - p.updated_at
+                if delta < datetime.timedelta(days=30 * 4):
+                    continue  # Too recent
+
                 issue = p.as_issue()
                 if label_needs_rebase not in issue.get_labels():
                     continue  # Should rarely happen
 
-                delta = datetime.datetime.utcnow() - p.updated_at
-                if delta < datetime.timedelta(days=30 * 4):
-                    continue  # Too recent
                 text = ID_STALE_COMMENT
                 text += "There hasn't been much activity lately and the patch still needs rebase. What is the status here?\n"
                 text += "\n"
