@@ -1,17 +1,18 @@
 from github import Github, GithubException, PullRequest
 import argparse
+import datetime
 
 from util.util import return_with_pull_metadata
 
 LOCK_REASON = 'resolved'
 
+DAYS=365
 
 def main():
     parser = argparse.ArgumentParser(description='Lock discussion on archived issues and pull requests.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--github_access_token', help='The access token for GitHub.', default='')
     parser.add_argument('--github_repo', help='Comma separated list of repo slugs of the remotes on GitHub.', default='bitcoin-core/gui,bitcoin/bitcoin')
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
-    parser.add_argument('--year', help='Archive all pull requests from this year (and previous years).', type=int, default=2020)
     args = parser.parse_args()
 
     github_api = Github(args.github_access_token)
@@ -21,9 +22,10 @@ def main():
             print(f'{getter.__name__} (closed) for repo {github_repo.owner.login}/{github_repo.name} ...')
 
             for el in getter(state='closed', direction='asc', sort='updated'):
-                print(f'Checking number #{el.number} from year {el.updated_at.year} against {args.year}')
-                if el.updated_at.year > args.year:
-                    print(f'All done up to year {args.year}')
+                delta = datetime.datetime.utcnow() - el.updated_at
+                print(f'Checking number #{el.number} with age {delta.days} days')
+                if delta < datetime.timedelta(days=365):
+                    print(f'All done up to {DAYS} days old')
                     break
                 issue = el.as_issue() if type(el) is PullRequest.PullRequest else el
                 if issue.locked:
