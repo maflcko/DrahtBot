@@ -140,7 +140,6 @@ def main():
     docker_exec('groupadd --system guixbuild')
     docker_exec('for i in `seq -w 1 10`; do useradd -g guixbuild -G guixbuild -d /var/empty -s `which nologin` -c "Guix build user $i" --system guixbuilder$i; done')
 
-    docker_exec('wget -qO- "https://guix.carldong.io/signing-key.pub" | guix archive --authorize')
     docker_exec('guix archive --authorize < /config_guix/current/share/guix/ci.guix.info.pub')
 
     def call_guix_build(*, commit):
