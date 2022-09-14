@@ -16,6 +16,7 @@ from util.util import (
     get_section_text,
 )
 
+MERGE_STRATEGY = "ort"  # https://github.blog/changelog/2022-09-12-merge-commits-now-created-using-the-merge-ort-strategy/
 UPSTREAM_PULL = "upstream-pull"
 ID_CONFLICTS_SEC = IdComment.SEC_CONFLICTS.value
 
@@ -27,7 +28,7 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
     call_git(
         [
             "merge",
-            "--strategy=recursive",
+            f"--strategy={MERGE_STRATEGY}",
             "--quiet",
             f"{UPSTREAM_PULL}/{num}/head",
             "-m",
@@ -45,7 +46,7 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
             call_git(
                 [
                     "merge",
-                    "--strategy=recursive",
+                    f"--strategy={MERGE_STRATEGY}",
                     "--quiet",
                     f"{UPSTREAM_PULL}/{pull_other.number}/head",
                     "-m",
