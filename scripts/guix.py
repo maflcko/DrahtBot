@@ -142,8 +142,6 @@ def main():
 
     docker_exec('guix archive --authorize < /config_guix/current/share/guix/ci.guix.info.pub')
 
-    docker_exec('( guix-daemon --build-users-group=guixbuild & ( guix pull ) && kill %1 )')
-
     def call_guix_build(*, commit):
         os.chdir(git_repo_dir)
         docker_exec("chown -R root:root ./")
