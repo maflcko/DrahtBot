@@ -21,25 +21,30 @@ UPSTREAM_PULL = "upstream-pull"
 ID_CONFLICTS_SEC = IdComment.SEC_CONFLICTS.value
 
 
-def calc_conflicts(pulls_mergeable, num, base_branch):
-    conflicts = []
+def calc_merged(pulls_mergeable, base_branch):
     base_id = get_git(["log", "-1", "--format=%H", f"origin/{base_branch}"])
-    call_git(["checkout", base_id, "--quiet"])
-    call_git(
-        [
-            "merge",
-            f"--strategy={MERGE_STRATEGY}",
-            "--quiet",
-            f"{UPSTREAM_PULL}/{num}/head",
-            "-m",
-            f"Prepare base for {num}",
-        ],
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
-    base_id = get_git(["log", "-1", "--format=%H", "HEAD"])
+    for p in pulls_mergeable:
+        call_git(["checkout", base_id, "--quiet"])
+        call_git(  # May fail intermittently, if the GitHub metadata is temporarily inconsistent
+            [
+                "merge",
+                f"--strategy={MERGE_STRATEGY}",
+                "--quiet",
+                f"{p.CON_commit}",
+                "-m",
+                f"Prepare base for {p.CON_id}",
+            ],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        p.CON_merge_id = get_git(["log", "-1", "--format=%H", "HEAD"])
+
+
+def calc_conflicts(pulls_mergeable, pull_check):
+    conflicts = []
+    base_id = get_git(["log", "-1", "--format=%H", pull_check.CON_merge_id])
     for i, pull_other in enumerate(pulls_mergeable):
-        if num == pull_other.number:
+        if pull_check.CON_id == pull_other.CON_id:
             continue
         call_git(["checkout", base_id, "--quiet"])
         try:
@@ -48,9 +53,9 @@ def calc_conflicts(pulls_mergeable, num, base_branch):
                     "merge",
                     f"--strategy={MERGE_STRATEGY}",
                     "--quiet",
-                    f"{UPSTREAM_PULL}/{pull_other.number}/head",
+                    f"{pull_other.CON_commit}",
                     "-m",
-                    f"Merge base_{num}+{pull_other.number}",
+                    f"Merge base_{pull_check.CON_id}+{pull_other.CON_id}",
                 ],
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
@@ -75,7 +80,7 @@ def update_comment(dry_run, pull, pulls_conflict):
     text += "Reviewers, this pull request conflicts with the following ones:\n"
     text += "".join(
         [
-            f"\n* [#{p.number}]({p.html_url}) ({p.title.strip()} by {p.user.login})"
+            f"\n* [#{p.CON_id.removeprefix(p.CON_slug)}]({p.html_url}) ({p.title.strip()} by {p.user.login})"
             for p in pulls_conflict
         ]
     )
@@ -94,9 +99,8 @@ def main():
     )
     parser.add_argument(
         "--pull_id",
-        type=int,
-        help="Update the conflict comment and label for this pull request.",
-        default=0,
+        help="Update the conflict comment and label for this pull request. Format: slug/number.",
+        default="",
     )
     parser.add_argument(
         "--update_comments",
@@ -114,7 +118,7 @@ def main():
     )
     parser.add_argument(
         "--github_repos",
-        help="The comma-separated repo slugs of the remotes on GitHub.",
+        help="The comma-separated repo slugs of the monotree remotes on GitHub.",
         default="bitcoin-core/gui,bitcoin/bitcoin",
     )
     parser.add_argument(
@@ -127,18 +131,18 @@ def main():
 
     args.scratch_dir = os.path.join(args.scratch_dir, "")
     os.makedirs(args.scratch_dir, exist_ok=True)
-    for slug in args.github_repos.split(","):
-        repo_dir = os.path.join(args.scratch_dir, slug)
-
-        url = f"https://github.com/{slug}"
-        if not os.path.isdir(repo_dir):
+    repo_dir = os.path.join(args.scratch_dir, args.github_repos.replace("/", "_"))
+    if not os.path.isdir(repo_dir):
+        for slug in args.github_repos.split(","):
+            url = f"https://github.com/{slug}"
             print(f"Clone {url} repo to {repo_dir}")
             os.chdir(args.scratch_dir)
-            call_git(["clone", "--quiet", url, repo_dir])
+            if not os.path.isdir(repo_dir):
+                call_git(["clone", "--quiet", url, repo_dir])
             print("Set git metadata")
             os.chdir(repo_dir)
             with open(os.path.join(repo_dir, ".git", "config"), "a") as f:
-                f.write(f'[remote "{UPSTREAM_PULL}"]\n')
+                f.write(f'[remote "{UPSTREAM_PULL}/{slug}"]\n')
                 f.write(f"    url = {url}\n")
                 f.write(f"    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n")
                 f.flush()
@@ -146,75 +150,86 @@ def main():
             call_git(["config", "user.name", "none"])
             call_git(["config", "gc.auto", "0"])
 
-        print(f"Fetching diffs for {slug} ...")
-        os.chdir(repo_dir)
-        call_git(["fetch", "--quiet", "--all"])
+    print(f"Fetching diffs for {args.github_repos} ...")
+    os.chdir(repo_dir)
+    call_git(["fetch", "--quiet", "--all"])
 
+    github_api = Github(args.github_access_token)
+    pull_blobs = []
+    for slug in args.github_repos.split(","):
         print(f"Fetching open pulls for {slug} ...")
-        github_api = Github(args.github_access_token)
         github_repo = github_api.get_repo(slug)
         base_name = github_repo.default_branch
         pulls = return_with_pull_metadata(
             lambda: [p for p in github_repo.get_pulls(state="open", base=base_name)]
         )
-        call_git(["fetch", "--quiet", "--all"])  # Do it again just to be safe
-        call_git(["fetch", "origin", base_name, "--quiet"])
 
         print(f"Open {base_name}-pulls for {slug}: {len(pulls)}")
         pulls_mergeable = [p for p in pulls if p.mergeable]
         print(f"Open mergeable {base_name}-pulls for {slug}: {len(pulls_mergeable)}")
+        pull_blobs.append(pulls_mergeable)
 
-        with tempfile.TemporaryDirectory() as temp_git_work_tree:
-            shutil.copytree(
-                os.path.join(repo_dir, ".git"),
-                os.path.join(temp_git_work_tree, ".git"),
+    mono_pulls_mergeable = []
+    for slug, ps in zip(args.github_repos.split(","), pull_blobs):
+        print(f"Store diffs for {slug}")
+        call_git(["fetch", "--quiet", f"{UPSTREAM_PULL}/{slug}"])
+        for p in ps:
+            p.CON_commit = get_git(
+                ["log", "-1", "--format=%H", f"{UPSTREAM_PULL}/{p.number}/head"]
             )
-            os.chdir(temp_git_work_tree)
+            p.CON_slug = slug + "/"
+            p.CON_id = f"{slug}/{p.number}"
+    mono_pulls_mergeable.extend(ps)
+    call_git(["fetch", "origin", base_name, "--quiet"])
 
-            if args.update_comments:
-                for i, pull_update in enumerate(pulls_mergeable):
-                    print(
-                        f"{i}/{len(pulls_mergeable)} Checking for conflicts {base_name} <> {pull_update.number} <> other_pulls ... "
-                    )
-                    pulls_conflict = calc_conflicts(
-                        pulls_mergeable=pulls_mergeable,
-                        num=pull_update.number,
-                        base_branch=base_name,
-                    )
-                    update_comment(
-                        dry_run=args.dry_run,
-                        pull=pull_update,
-                        pulls_conflict=pulls_conflict,
-                    )
+    with tempfile.TemporaryDirectory() as temp_git_work_tree:
+        shutil.copytree(
+            os.path.join(repo_dir, ".git"),
+            os.path.join(temp_git_work_tree, ".git"),
+        )
+        os.chdir(temp_git_work_tree)
 
-            if args.pull_id:
-                pull_merge = [p for p in pulls if p.number == args.pull_id]
+        print("Calculate merged pulls")
+        calc_merged(pulls_mergeable=mono_pulls_mergeable, base_branch=base_name)
 
-                if not pull_merge:
-                    print(
-                        f"{args.pull_id} not found in all {len(pulls)} open {base_name} pulls"
-                    )
-                    sys.exit(-1)
-                pull_merge = pull_merge[0]
-
-                if not pull_merge.mergeable:
-                    print(f"{pull_merge.number} is not mergeable")
-                    sys.exit(-1)
-
+        if args.update_comments:
+            for i, pull_update in enumerate(mono_pulls_mergeable):
                 print(
-                    f"Checking for conflicts {base_name} <> {pull_merge.number} <> other_pulls ... "
+                    f"{i}/{len(mono_pulls_mergeable)} Checking for conflicts {base_name} <> {pull_update.CON_id} <> other_pulls ... "
                 )
-                conflicts = calc_conflicts(
-                    pulls_mergeable=pulls_mergeable,
-                    num=pull_merge.number,
-                    base_branch=base_name,
+                pulls_conflict = calc_conflicts(
+                    pulls_mergeable=mono_pulls_mergeable,
+                    pull_check=pull_update,
                 )
-
                 update_comment(
-                    dry_run=args.dry_run, pull=pull_merge, pulls_conflict=conflicts
+                    dry_run=args.dry_run,
+                    pull=pull_update,
+                    pulls_conflict=pulls_conflict,
                 )
 
-            os.chdir(repo_dir)
+        if args.pull_id:
+            pull_merge = [p for p in mono_pulls_mergeable if p.CON_id == args.pull_id]
+
+            if not pull_merge:
+                print(
+                    f"{args.pull_id} not found in all {len(mono_pulls_mergeable)} open, mergeable {base_name} pulls"
+                )
+                sys.exit(-1)
+            pull_merge = pull_merge[0]
+
+            print(
+                f"Checking for conflicts {base_name} <> {pull_merge.CON_id} <> other_pulls ... "
+            )
+            conflicts = calc_conflicts(
+                pulls_mergeable=pulls_mergeable,
+                pull_check=pull_merge,
+            )
+
+            update_comment(
+                dry_run=args.dry_run, pull=pull_merge, pulls_conflict=conflicts
+            )
+
+        os.chdir(repo_dir)
 
 
 if __name__ == "__main__":
