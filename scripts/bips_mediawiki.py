@@ -34,15 +34,6 @@ def main():
         print('Clone {} repo to {}'.format(url, folder))
         os.chdir(args.scratch_dir)
         call_git(['clone', '--quiet', url, folder])
-        print('Set git metadata')
-        os.chdir(folder)
-        with open(os.path.join(folder, '.git', 'config'), 'a') as f:
-            f.write('[remote "{}"]\n'.format(UPSTREAM_PULL))
-            f.write('    url = {}\n'.format(url))
-            f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
-            f.flush()
-        call_git(['config', 'user.email', '39886733+DrahtBot@users.noreply.github.com'])
-        call_git(['config', 'user.name', 'DrahtBot'])
 
     create_scratch_dir(code_dir, code_url)
 
