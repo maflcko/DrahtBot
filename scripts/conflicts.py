@@ -80,7 +80,7 @@ def update_comment(dry_run, pull, pulls_conflict):
     text += "Reviewers, this pull request conflicts with the following ones:\n"
     text += "".join(
         [
-            f"\n* [#{p.CON_id.removeprefix(p.CON_slug)}]({p.html_url}) ({p.title.strip()} by {p.user.login})"
+            f"\n* [#{p.CON_id.removeprefix(pull.CON_slug)}]({p.html_url}) ({p.title.strip()} by {p.user.login})"
             for p in pulls_conflict
         ]
     )
@@ -179,7 +179,7 @@ def main():
             )
             p.CON_slug = slug + "/"
             p.CON_id = f"{slug}/{p.number}"
-    mono_pulls_mergeable.extend(ps)
+        mono_pulls_mergeable.extend(ps)
     call_git(["fetch", "origin", base_name, "--quiet"])
 
     with tempfile.TemporaryDirectory() as temp_git_work_tree:
@@ -221,7 +221,7 @@ def main():
                 f"Checking for conflicts {base_name} <> {pull_merge.CON_id} <> other_pulls ... "
             )
             conflicts = calc_conflicts(
-                pulls_mergeable=pulls_mergeable,
+                pulls_mergeable=mono_pulls_mergeable,
                 pull_check=pull_merge,
             )
 
