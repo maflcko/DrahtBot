@@ -32,9 +32,15 @@ struct Args {
     /// The access token for GitHub.
     #[arg(long)]
     github_access_token: Option<String>,
-    /// The list of repo slugs of the remotes on GitHub. Format: owner/repo:cirrus_org_token
+    /// The repo slugs of the remotes on GitHub. Format: owner/repo:cirrus_org_token
     #[arg(long)]
-    github_repos: Vec<SlugTok>,
+    github_repo: Vec<SlugTok>,
+    /// The task names to re-run.
+    #[arg(long)]
+    task: Vec<String>,
+    /// How many minutes to sleep between pulls.
+    #[arg(long, default_value_t = 55)]
+    sleep_min: u64,
     /// Print changes/edits instead of calling the GitHub/CI API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
@@ -62,7 +68,7 @@ fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
                          }}
                      "#
     );
-    println!("Re-run task \"{t_name}\" (id: {t_id})");
+    println!("Re-run task {t_name} (id: {t_id})");
     if !dry_run {
         let out = std::process::Command::new("curl")
             .arg("https://api.cirrus-ci.com/graphql")
@@ -76,7 +82,6 @@ fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
             .expect("curl error");
         //println!("{}", String::from_utf8_lossy(&out.stdout));
         assert!(out.status.success());
-        println!();
     }
 }
 async fn get_pull_mergeable(
@@ -86,15 +91,8 @@ async fn get_pull_mergeable(
     // https://docs.github.com/en/rest/guides/getting-started-with-the-git-database-api#checking-mergeability-of-pull-requests
     loop {
         let pull = api.get(number).await?;
-        match pull.state {
-            None => {
-                panic!();
-            }
-            Some(ref s) => {
-                if s != &octocrab::models::IssueState::Open {
-                    return Ok(None);
-                }
-            }
+        if pull.state.as_ref().unwrap() != &octocrab::models::IssueState::Open {
+            return Ok(None);
         }
         if pull.mergeable.is_none() {
             std::thread::sleep(std::time::Duration::from_secs(3));
@@ -119,7 +117,7 @@ async fn main() -> octocrab::Result<()> {
         owner,
         repo,
         ci_token,
-    } in cli.github_repos
+    } in cli.github_repo
     {
         println!("Get open pulls for {}/{} ...", owner, repo);
         let pulls_api = github.pulls(owner.clone(), repo.clone());
@@ -134,7 +132,14 @@ async fn main() -> octocrab::Result<()> {
             .await?;
         println!("Open pulls: {}", pulls.len());
         for (i, pull) in pulls.iter().enumerate() {
-            println!("{}/{}", i, pulls.len());
+            println!(
+                "{}/{} (Pull: {}/{}#{})",
+                i,
+                pulls.len(),
+                owner,
+                repo,
+                pull.number
+            );
             let pull = get_pull_mergeable(&pulls_api, pull.number).await?;
             let pull = match pull {
                 None => {
@@ -146,7 +151,6 @@ async fn main() -> octocrab::Result<()> {
                 continue;
             }
             let pull_num = pull.number;
-            println!("{}", pull.number);
             let raw_data = format!(
                 r#"
                     {{
@@ -177,9 +181,7 @@ async fn main() -> octocrab::Result<()> {
                 .arg(raw_data)
                 .output()
                 .expect("curl error");
-            if !output.status.success() {
-                panic!();
-            }
+            assert!(output.status.success());
             let json_parsed = serde_json::from_slice::<serde_json::value::Value>(&output.stdout)
                 .expect("json parse error");
             let fmt = "json format error";
@@ -200,35 +202,23 @@ async fn main() -> octocrab::Result<()> {
                 .expect(fmt)
                 .as_array()
                 .expect(fmt);
-            let lint = tasks
-                .iter()
-                .filter(|t| {
-                    t.get("name")
-                        .expect(fmt)
-                        .as_str()
-                        .expect(fmt)
-                        .contains("lint")
-                })
-                .next();
-            let prvr = tasks
-                .iter()
-                .filter(|t| {
-                    t.get("name")
-                        .expect(fmt)
-                        .as_str()
-                        .expect(fmt)
-                        .contains("previous release")
-                })
-                .next();
-            if lint.is_some() {
-                rerun(lint.unwrap(), &ci_token, cli.dry_run)
+            for task_name in &cli.task {
+                let found = tasks
+                    .iter()
+                    .filter(|t| {
+                        t.get("name")
+                            .expect(fmt)
+                            .as_str()
+                            .expect(fmt)
+                            .contains(task_name)
+                    })
+                    .next();
+                if found.is_some() {
+                    rerun(found.unwrap(), &ci_token, cli.dry_run)
+                }
             }
-            if prvr.is_some() {
-                rerun(prvr.unwrap(), &ci_token, cli.dry_run)
-            }
-            std::thread::sleep(std::time::Duration::from_secs(55 * 60));
+            std::thread::sleep(std::time::Duration::from_secs(cli.sleep_min * 60));
         }
     }
-    println!("{}", github.ratelimit().get().await?.rate.used);
     Ok(())
 }
