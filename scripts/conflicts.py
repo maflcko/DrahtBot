@@ -21,7 +21,7 @@ UPSTREAM_PULL = "upstream-pull"
 ID_CONFLICTS_SEC = IdComment.SEC_CONFLICTS.value
 
 
-def calc_merged(pulls_mergeable, base_branch):
+def calc_mergeable(pulls_mergeable, base_branch):
     base_id = get_git(["log", "-1", "--format=%H", f"origin/{base_branch}"])
     for p in pulls_mergeable:
         call_git(["checkout", base_id, "--quiet"])
@@ -189,8 +189,8 @@ def main():
         )
         os.chdir(temp_git_work_tree)
 
-        print("Calculate merged pulls")
-        calc_merged(pulls_mergeable=mono_pulls_mergeable, base_branch=base_name)
+        print("Calculate mergeable pulls")
+        calc_mergeable(pulls_mergeable=mono_pulls_mergeable, base_branch=base_name)
 
         if args.update_comments:
             for i, pull_update in enumerate(mono_pulls_mergeable):
