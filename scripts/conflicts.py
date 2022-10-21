@@ -146,6 +146,7 @@ def main():
                 f.write(f"    url = {url}\n")
                 f.write(f"    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n")
                 f.flush()
+            call_git(["config", "fetch.showForcedUpdates", "false"])
             call_git(["config", "user.email", "no@ne.nl"])
             call_git(["config", "user.name", "none"])
             call_git(["config", "gc.auto", "0"])
