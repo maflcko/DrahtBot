@@ -80,7 +80,7 @@ fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
             .arg(raw_data)
             .output()
             .expect("curl error");
-        //println!("{}", String::from_utf8_lossy(&out.stdout));
+        println!("{}", String::from_utf8_lossy(&out.stdout));
         assert!(out.status.success());
     }
 }
