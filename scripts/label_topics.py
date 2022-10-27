@@ -4,8 +4,6 @@ import argparse
 import re
 from collections import namedtuple
 
-from util.util import return_with_pull_metadata
-
 # Tuple of arrays of regexes
 Needle = namedtuple('Needle', ['title'])
 
@@ -111,7 +109,7 @@ def main():
     {l: github_repo.get_label(l) for l in LABELS}
 
     print('Get open pulls ...')
-    pulls = return_with_pull_metadata(lambda: [p for p in github_repo.get_pulls(state='open')])
+    pulls = [p for p in github_repo.get_pulls(state='open')]
 
     print('Open pulls: {}'.format(len(pulls)))
 
