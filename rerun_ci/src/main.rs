@@ -8,16 +8,16 @@ struct SlugTok {
 }
 
 impl std::str::FromStr for SlugTok {
-    type Err = std::string::String;
+    type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // Format: a/b:c
-        let err = "Wrong format, see --help.".to_string();
+        let err = "Wrong format, see --help.";
         let mut it = s.split(':');
-        let mut it_slug = it.next().ok_or(err.clone())?.split('/');
+        let mut it_slug = it.next().ok_or(err)?.split('/');
         let res = Self {
-            owner: it_slug.next().ok_or(err.clone())?.to_string(),
-            repo: it_slug.next().ok_or(err.clone())?.to_string(),
-            ci_token: it.next().ok_or(err.clone())?.to_string(),
+            owner: it_slug.next().ok_or(err)?.to_string(),
+            repo: it_slug.next().ok_or(err)?.to_string(),
+            ci_token: it.next().ok_or(err)?.to_string(),
         };
         if it.next().is_none() && it_slug.next().is_none() {
             return Ok(res);
@@ -120,7 +120,7 @@ async fn main() -> octocrab::Result<()> {
     } in cli.github_repo
     {
         println!("Get open pulls for {}/{} ...", owner, repo);
-        let pulls_api = github.pulls(owner.clone(), repo.clone());
+        let pulls_api = github.pulls(&owner, &repo);
         let pulls = github
             .all_pages(
                 pulls_api

@@ -16,5 +16,5 @@ example cmd
 -----------
 
 ```
-while sleep 3600; do ./gitian.sh --gitian_jobs 1 --gitian_mem 2000 --domain https://drahtbot.space; done
+( cd rerun_ci && cargo run -- --help )
 ```
