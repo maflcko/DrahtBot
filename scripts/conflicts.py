@@ -80,7 +80,7 @@ def update_comment(dry_run, pull, pulls_conflict):
     text += "Reviewers, this pull request conflicts with the following ones:\n"
     text += "".join(
         [
-            f"\n* [#{p.CON_id.removeprefix(pull.CON_slug)}]({p.html_url}) ({p.title.strip()} by {p.user.login})"
+            f"\n* {p.html_url} by {p.user.login}"
             for p in pulls_conflict
         ]
     )
