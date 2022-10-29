@@ -125,7 +125,7 @@ async fn main() -> octocrab::Result<()> {
                 }
                 Some(p) => p,
             };
-            let issue = issues_api.get(pull.number).await?;
+            // let issue = issues_api.get(pull.number).await?;
             let mut labels = github
                 .all_pages(issues_api.list_labels_for_issue(pull.number).send().await?)
                 .await?;
