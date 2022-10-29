@@ -1,3 +1,25 @@
+pub enum IdComment {
+    NeedsRebase,
+    ReviewersRequested,
+    Stale,
+    Metadata, // The "root" section
+    SecConflicts,
+    SecCoverage,
+}
+
+impl IdComment {
+    pub fn str(self: Self) -> &'static str {
+        match self {
+            Self::NeedsRebase => "<!--cf906140f33d8803c4a75a2196329ecb-->",
+            Self::ReviewersRequested => "<!--4a62be1de6b64f3ed646cdc7932c8cf5-->",
+            Self::Stale => "<!--13523179cfe9479db18ec6c5d236f789-->",
+            Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",
+            Self::SecConflicts => "<!--174a7506f384e20aa4161008e828411d-->",
+            Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",
+        }
+    }
+}
+
 pub async fn get_pull_mergeable(
     api: &octocrab::pulls::PullRequestHandler<'_>,
     number: u64,

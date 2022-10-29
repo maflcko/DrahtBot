@@ -23,28 +23,6 @@ impl std::str::FromStr for Slug {
     }
 }
 
-enum IdComment {
-    NeedsRebase,
-    ReviewersRequested,
-    Stale,
-    Metadata, // The "root" section
-    SecConflicts,
-    SecCoverage,
-}
-
-impl IdComment {
-    fn str(self: Self) -> &'static str {
-        match self {
-            Self::NeedsRebase => "<!--cf906140f33d8803c4a75a2196329ecb-->",
-            Self::ReviewersRequested => "<!--4a62be1de6b64f3ed646cdc7932c8cf5-->",
-            Self::Stale => "<!--13523179cfe9479db18ec6c5d236f789-->",
-            Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",
-            Self::SecConflicts => "<!--174a7506f384e20aa4161008e828411d-->",
-            Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",
-        }
-    }
-}
-
 #[derive(clap::Parser)]
 #[command(about = "Update the label that indicates a rebase is required.", long_about = None)]
 struct Args {
@@ -59,28 +37,10 @@ struct Args {
     dry_run: bool,
 }
 
-async fn get_pull_mergeable(
-    api: &octocrab::pulls::PullRequestHandler<'_>,
-    number: u64,
-) -> octocrab::Result<Option<octocrab::models::pulls::PullRequest>> {
-    // https://docs.github.com/en/rest/guides/getting-started-with-the-git-database-api#checking-mergeability-of-pull-requests
-    loop {
-        let pull = api.get(number).await?;
-        if pull.state.as_ref().unwrap() != &octocrab::models::IssueState::Open {
-            return Ok(None);
-        }
-        if pull.mergeable.is_none() {
-            std::thread::sleep(std::time::Duration::from_secs(3));
-            continue;
-        }
-        return Ok(Some(pull));
-    }
-}
-
 #[tokio::main]
 async fn main() -> octocrab::Result<()> {
-    let id_needs_rebase_comment = IdComment::NeedsRebase.str();
-    let id_stale_comment = IdComment::Stale.str();
+    let id_needs_rebase_comment = util::IdComment::NeedsRebase.str();
+    let id_stale_comment = util::IdComment::Stale.str();
 
     let label_needs_rebase = "Needs rebase";
 
@@ -118,7 +78,7 @@ async fn main() -> octocrab::Result<()> {
                 repo,
                 pull.number
             );
-            let pull = get_pull_mergeable(&pulls_api, pull.number).await?;
+            let pull = util::get_pull_mergeable(&pulls_api, pull.number).await?;
             let pull = match pull {
                 None => {
                     continue;
