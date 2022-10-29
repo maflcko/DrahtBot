@@ -125,7 +125,6 @@ async fn main() -> octocrab::Result<()> {
                 }
                 Some(p) => p,
             };
-            let issue = issues_api.get(pull.number).await?;
             let mut labels = github
                 .all_pages(issues_api.list_labels_for_issue(pull.number).send().await?)
                 .await?;
@@ -161,12 +160,20 @@ async fn main() -> octocrab::Result<()> {
                 if !found_label_rebase {
                     println!("... add label '{}'", label_needs_rebase);
                     if !args.dry_run {
-                        issues_api
+                        labels = issues_api
                             .add_labels(pull.number, &[label_needs_rebase.to_string()])
                             .await?;
-                        let text =id_needs_rebase_comment.to_owned() 
-                        + "\n🐙 This pull request conflicts with the target branch and [needs rebase](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#rebasing-changes).\n";
-                        issues_api.create_comment(pull.number, text)
+                        let text = format!(
+                            "{} \n\
+                            🐙 This pull request conflicts with \
+                            the target branch and [needs rebase]\
+                            (https://github.com/{}/{}/blob/master\
+                            /CONTRIBUTING.md#rebasing-changes).",
+                            id_needs_rebase_comment.to_owned(),
+                            &owner,
+                            &repo
+                        );
+                        issues_api.create_comment(pull.number, text).await?;
                     }
                 }
             }
