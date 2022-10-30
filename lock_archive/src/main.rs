@@ -23,7 +23,7 @@ async fn main() -> octocrab::Result<()> {
 
     let github = util::get_octocrab(args.github_access_token)?;
 
-    let cutoff = (chrono::Utc::now() - chrono::Duration::days(args.inactive_days)).format("%F");
+    let cutoff = { chrono::Utc::now() - chrono::Duration::days(args.inactive_days) }.format("%F");
     println!("Locking before date {} ...", cutoff);
 
     for util::Slug { owner, repo } in args.github_repo {
