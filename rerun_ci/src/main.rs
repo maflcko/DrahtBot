@@ -87,7 +87,7 @@ fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
 
 #[tokio::main]
 async fn main() -> octocrab::Result<()> {
-    let cli = Args::parse();
+    let args = Args::parse();
 
     let github = util::get_octocrab(args.github_access_token)?;
 
@@ -95,7 +95,7 @@ async fn main() -> octocrab::Result<()> {
         owner,
         repo,
         ci_token,
-    } in cli.github_repo
+    } in args.github_repo
     {
         println!("Get open pulls for {}/{} ...", owner, repo);
         let pulls_api = github.pulls(&owner, &repo);
@@ -180,7 +180,7 @@ async fn main() -> octocrab::Result<()> {
                 .expect(fmt)
                 .as_array()
                 .expect(fmt);
-            for task_name in &cli.task {
+            for task_name in &args.task {
                 let found = tasks
                     .iter()
                     .filter(|t| {
@@ -192,10 +192,10 @@ async fn main() -> octocrab::Result<()> {
                     })
                     .next();
                 if found.is_some() {
-                    rerun(found.unwrap(), &ci_token, cli.dry_run)
+                    rerun(found.unwrap(), &ci_token, args.dry_run)
                 }
             }
-            std::thread::sleep(std::time::Duration::from_secs(cli.sleep_min * 60));
+            std::thread::sleep(std::time::Duration::from_secs(args.sleep_min * 60));
         }
     }
     Ok(())
