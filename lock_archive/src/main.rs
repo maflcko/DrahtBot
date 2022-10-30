@@ -21,14 +21,7 @@ struct Args {
 async fn main() -> octocrab::Result<()> {
     let args = Args::parse();
 
-    let github = {
-        let build = octocrab::Octocrab::builder();
-        match args.github_access_token {
-            Some(tok) => build.personal_token(tok),
-            None => build,
-        }
-        .build()?
-    };
+    let github = util::get_octocrab(args.github_access_token)?;
 
     let cutoff = (chrono::Utc::now() - chrono::Duration::days(args.inactive_days)).format("%F");
     println!("Locking before date {} ...", cutoff);

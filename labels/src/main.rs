@@ -23,14 +23,7 @@ async fn main() -> octocrab::Result<()> {
 
     let args = Args::parse();
 
-    let github = {
-        let build = octocrab::Octocrab::builder();
-        match args.github_access_token {
-            Some(tok) => build.personal_token(tok),
-            None => build,
-        }
-        .build()?
-    };
+    let github = util::get_octocrab(args.github_access_token)?;
 
     for util::Slug { owner, repo } in args.github_repo {
         println!("Get open pulls for {}/{} ...", owner, repo);

@@ -21,6 +21,15 @@ impl std::str::FromStr for Slug {
     }
 }
 
+pub fn get_octocrab(token: Option<String>) -> octocrab::Result<octocrab::Octocrab> {
+    let build = octocrab::Octocrab::builder();
+    match token {
+        Some(tok) => build.personal_token(tok),
+        None => build,
+    }
+    .build()
+}
+
 pub enum IdComment {
     NeedsRebase,
     ReviewersRequested,

@@ -88,14 +88,9 @@ fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
 #[tokio::main]
 async fn main() -> octocrab::Result<()> {
     let cli = Args::parse();
-    let github = {
-        let build = octocrab::Octocrab::builder();
-        match cli.github_access_token {
-            Some(tok) => build.personal_token(tok),
-            None => build,
-        }
-        .build()?
-    };
+
+    let github = util::get_octocrab(args.github_access_token)?;
+
     for SlugTok {
         owner,
         repo,
