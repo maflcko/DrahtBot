@@ -1,28 +1,5 @@
 use clap::Parser;
 
-#[derive(Clone)]
-struct Slug {
-    owner: String,
-    repo: String,
-}
-
-impl std::str::FromStr for Slug {
-    type Err = &'static str;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Format: a/b
-        let err = "Wrong format, see --help.";
-        let mut it_slug = s.split('/');
-        let res = Self {
-            owner: it_slug.next().ok_or(err)?.to_string(),
-            repo: it_slug.next().ok_or(err)?.to_string(),
-        };
-        if it_slug.next().is_none() {
-            return Ok(res);
-        }
-        Err(err)
-    }
-}
-
 #[derive(clap::Parser)]
 #[command(about = "Update the label that indicates a rebase is required.", long_about = None)]
 struct Args {
@@ -31,7 +8,7 @@ struct Args {
     github_access_token: Option<String>,
     /// The repo slugs of the remotes on GitHub. Format: owner/repo
     #[arg(long)]
-    github_repo: Vec<Slug>,
+    github_repo: Vec<util::Slug>,
     /// Print changes/edits instead of calling the GitHub API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
@@ -55,7 +32,7 @@ async fn main() -> octocrab::Result<()> {
         .build()?
     };
 
-    for Slug { owner, repo } in args.github_repo {
+    for util::Slug { owner, repo } in args.github_repo {
         println!("Get open pulls for {}/{} ...", owner, repo);
         let issues_api = github.issues(&owner, &repo);
         let pulls_api = github.pulls(&owner, &repo);

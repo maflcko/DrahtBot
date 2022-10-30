@@ -1,3 +1,26 @@
+#[derive(Clone)]
+pub struct Slug {
+    pub owner: String,
+    pub repo: String,
+}
+
+impl std::str::FromStr for Slug {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // Format: a/b
+        let err = "Wrong format, see --help.";
+        let mut it_slug = s.split('/');
+        let res = Self {
+            owner: it_slug.next().ok_or(err)?.to_string(),
+            repo: it_slug.next().ok_or(err)?.to_string(),
+        };
+        if it_slug.next().is_none() {
+            return Ok(res);
+        }
+        Err(err)
+    }
+}
+
 pub enum IdComment {
     NeedsRebase,
     ReviewersRequested,
