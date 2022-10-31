@@ -22,23 +22,19 @@ struct Config {
     inactive_rebase_days: i64,
 }
 
-#[tokio::main]
-async fn main() -> octocrab::Result<()> {
+async fn stale(
+    github: &octocrab::Octocrab,
+    config: &Config,
+    github_repo: &Vec<util::Slug>,
+    dry_run: bool,
+) -> octocrab::Result<()> {
     let id_stale_comment = util::IdComment::Stale.str();
-
-    let args = Args::parse();
-    let config: Config = serde_yaml::from_reader(
-        std::fs::File::open(args.config_file).expect("config file path error"),
-    )
-    .expect("yaml error");
-
-    let github = util::get_octocrab(args.github_access_token)?;
 
     let cutoff =
         { chrono::Utc::now() - chrono::Duration::days(config.inactive_rebase_days) }.format("%F");
     println!("Mark stale before date {} ...", cutoff);
 
-    for util::Slug { owner, repo } in args.github_repo {
+    for util::Slug { owner, repo } in github_repo {
         println!("Get stale pull requests for {owner}/{repo} ...");
         let items = github
             .all_pages(
@@ -51,7 +47,7 @@ async fn main() -> octocrab::Result<()> {
                     .await?,
             )
             .await?;
-        let issues_api = github.issues(&owner, &repo);
+        let issues_api = github.issues(owner, repo);
         for (i, item) in items.iter().enumerate() {
             println!(
                 "{}/{} (Item: {}/{}#{})",
@@ -67,12 +63,27 @@ async fn main() -> octocrab::Result<()> {
                 + "* Is it still relevant? ➡️ Please solve the conflicts to make it ready for review and to ensure the CI passes.\n"
                 + "* Is it no longer relevant? ➡️ Please close.\n"
                 + "* Did the author lose interest or time to work on this? ➡️ Please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.\n";
-            if !args.dry_run {
+            if !dry_run {
                 issues_api
                     .create_comment(item.number.try_into().unwrap(), text)
                     .await?;
             }
         }
     }
+    Ok(())
+}
+
+#[tokio::main]
+async fn main() -> octocrab::Result<()> {
+    let args = Args::parse();
+    let config: Config = serde_yaml::from_reader(
+        std::fs::File::open(args.config_file).expect("config file path error"),
+    )
+    .expect("yaml error");
+
+    let github = util::get_octocrab(args.github_access_token)?;
+
+    stale(&github, &config, &args.github_repo, args.dry_run).await?;
+
     Ok(())
 }
