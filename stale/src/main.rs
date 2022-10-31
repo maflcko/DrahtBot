@@ -25,7 +25,7 @@ struct Args {
 struct Config {
     inactive_rebase_days: i64,
     inactive_rebase_comment: String,
-    label_needs_rebase: String,
+    needs_rebase_label: String,
     needs_rebase_comment: String,
 }
 
@@ -47,7 +47,7 @@ async fn stale(
             "repo:{owner}/{repo} is:open is:pr label:\"{label}\" updated:<={cutoff}",
             owner = owner,
             repo = repo,
-            label = config.label_needs_rebase,
+            label = config.needs_rebase_label,
             cutoff = cutoff
         );
         let items = github
@@ -124,11 +124,11 @@ async fn rebase_label(
                 .await?;
             let found_label_rebase = labels
                 .iter()
-                .find(|l| l.name == config.label_needs_rebase)
+                .find(|l| l.name == config.needs_rebase_label)
                 .is_some();
             if pull.mergeable.unwrap() {
                 if found_label_rebase {
-                    println!("... remove label '{}')", config.label_needs_rebase);
+                    println!("... remove label '{}')", config.needs_rebase_label);
                     let all_comments = github
                         .all_pages(issues_api.list_comments(pull.number).send().await?)
                         .await?;
@@ -143,7 +143,7 @@ async fn rebase_label(
                     println!("... delete {} comments", comments.len());
                     if !dry_run {
                         labels = issues_api
-                            .remove_label(pull.number, &config.label_needs_rebase)
+                            .remove_label(pull.number, &config.needs_rebase_label)
                             .await?;
                         for c in comments {
                             issues_api.delete_comment(c.id).await?;
@@ -152,10 +152,10 @@ async fn rebase_label(
                 }
             } else {
                 if !found_label_rebase {
-                    println!("... add label '{}'", config.label_needs_rebase);
+                    println!("... add label '{}'", config.needs_rebase_label);
                     if !dry_run {
                         labels = issues_api
-                            .add_labels(pull.number, &[config.label_needs_rebase.to_string()])
+                            .add_labels(pull.number, &[config.needs_rebase_label.to_string()])
                             .await?;
                         let text = format!(
                             "{}\n{}",

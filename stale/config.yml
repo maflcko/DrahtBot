@@ -7,7 +7,7 @@ inactive_rebase_comment: |
   * Is it no longer relevant? ➡️ Please close.
   * Did the author lose interest or time to work on this? ➡️ Please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.
 # Apply the label and comment to indicate a rebase is required
-label_needs_rebase: "Needs rebase"
+needs_rebase_label: "Needs rebase"
 # The comment may contain {owner} and {repo}, which will be substituted
 needs_rebase_comment: |
   🐙 This pull request conflicts with the target branch and [needs rebase](https://github.com/{owner}/{repo}/blob/master/CONTRIBUTING.md#rebasing-changes).
