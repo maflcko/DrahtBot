@@ -1,2 +1,8 @@
 # Comment on a pull request needing rebase after this many days of inactivity
 inactive_rebase_days: 90
+inactive_rebase_comment: |
+  There hasn't been much activity lately and the patch still needs rebase. What is the status here?
+
+  * Is it still relevant? ➡️ Please solve the conflicts to make it ready for review and to ensure the CI passes.
+  * Is it no longer relevant? ➡️ Please close.
+  * Did the author lose interest or time to work on this? ➡️ Please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.

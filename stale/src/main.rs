@@ -20,6 +20,7 @@ struct Args {
 #[derive(serde::Deserialize)]
 struct Config {
     inactive_rebase_days: i64,
+    inactive_rebase_comment: String,
 }
 
 async fn stale(
@@ -57,12 +58,7 @@ async fn stale(
                 repo,
                 item.number,
             );
-            let text = id_stale_comment.to_owned()
-                + "There hasn't been much activity lately and the patch still needs rebase. What is the status here?\n"
-                + "\n"
-                + "* Is it still relevant? ➡️ Please solve the conflicts to make it ready for review and to ensure the CI passes.\n"
-                + "* Is it no longer relevant? ➡️ Please close.\n"
-                + "* Did the author lose interest or time to work on this? ➡️ Please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.\n";
+            let text = id_stale_comment.to_owned() + &config.inactive_rebase_comment;
             if !dry_run {
                 issues_api
                     .create_comment(item.number.try_into().unwrap(), text)
