@@ -9,12 +9,17 @@ struct Args {
     /// The repo slugs of the remotes on GitHub. Format: owner/repo
     #[arg(long)]
     github_repo: Vec<util::Slug>,
-    /// Comment on a pull request needing rebase after this many days of inactivity
-    #[arg(long, default_value_t = 90)]
-    inactive_rebase_days: i64,
+    /// The path to the yaml config file.
+    #[arg(long)]
+    config_file: String,
     /// Print changes/edits instead of calling the GitHub API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
+}
+
+#[derive(serde::Deserialize)]
+struct Config {
+    inactive_rebase_days: i64,
 }
 
 #[tokio::main]
@@ -22,11 +27,15 @@ async fn main() -> octocrab::Result<()> {
     let id_stale_comment = util::IdComment::Stale.str();
 
     let args = Args::parse();
+    let config: Config = serde_yaml::from_reader(
+        std::fs::File::open(args.config_file).expect("config file path error"),
+    )
+    .expect("yaml error");
 
     let github = util::get_octocrab(args.github_access_token)?;
 
     let cutoff =
-        { chrono::Utc::now() - chrono::Duration::days(args.inactive_rebase_days) }.format("%F");
+        { chrono::Utc::now() - chrono::Duration::days(config.inactive_rebase_days) }.format("%F");
     println!("Mark stale before date {} ...", cutoff);
 
     for util::Slug { owner, repo } in args.github_repo {
