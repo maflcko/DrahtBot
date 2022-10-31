@@ -6,3 +6,4 @@ inactive_rebase_comment: |
   * Is it still relevant? ➡️ Please solve the conflicts to make it ready for review and to ensure the CI passes.
   * Is it no longer relevant? ➡️ Please close.
   * Did the author lose interest or time to work on this? ➡️ Please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.
+label_needs_rebase: "Needs rebase"

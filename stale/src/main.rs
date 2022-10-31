@@ -21,6 +21,7 @@ struct Args {
 struct Config {
     inactive_rebase_days: i64,
     inactive_rebase_comment: String,
+    label_needs_rebase: String,
 }
 
 async fn stale(
@@ -37,13 +38,18 @@ async fn stale(
 
     for util::Slug { owner, repo } in github_repo {
         println!("Get stale pull requests for {owner}/{repo} ...");
+        let search_fmt = format!(
+            "repo:{owner}/{repo} is:open is:pr label:\"{label}\" updated:<={cutoff}",
+            owner = owner,
+            repo = repo,
+            label = config.label_needs_rebase,
+            cutoff = cutoff
+        );
         let items = github
             .all_pages(
                 github
                     .search()
-                    .issues_and_pull_requests(&format!(
-                        "repo:{owner}/{repo} is:open is:pr label:\"Needs rebase\" updated:<={cutoff}"
-                    ))
+                    .issues_and_pull_requests(&search_fmt)
                     .send()
                     .await?,
             )
