@@ -26,6 +26,7 @@ struct Config {
     inactive_rebase_days: i64,
     inactive_rebase_comment: String,
     label_needs_rebase: String,
+    needs_rebase_comment: String,
 }
 
 async fn stale(
@@ -68,7 +69,7 @@ async fn stale(
                 repo,
                 item.number,
             );
-            let text = id_stale_comment.to_owned() + &config.inactive_rebase_comment;
+            let text = format!("{}\n{}", id_stale_comment, config.inactive_rebase_comment);
             if !dry_run {
                 issues_api
                     .create_comment(item.number.try_into().unwrap(), text)
@@ -157,14 +158,12 @@ async fn rebase_label(
                             .add_labels(pull.number, &[config.label_needs_rebase.to_string()])
                             .await?;
                         let text = format!(
-                            "{} \n\
-                            🐙 This pull request conflicts with \
-                            the target branch and [needs rebase]\
-                            (https://github.com/{}/{}/blob/master\
-                            /CONTRIBUTING.md#rebasing-changes).",
-                            id_needs_rebase_comment.to_owned(),
-                            owner,
-                            repo
+                            "{}\n{}",
+                            id_needs_rebase_comment,
+                            config
+                                .needs_rebase_comment
+                                .replace("{owner}", owner)
+                                .replace("{repo}", repo)
                         );
                         issues_api.create_comment(pull.number, text).await?;
                     }
@@ -186,6 +185,7 @@ async fn main() -> octocrab::Result<()> {
     let github = util::get_octocrab(args.github_access_token)?;
 
     stale(&github, &config, &args.github_repo, args.dry_run).await?;
+    rebase_label(&github, &config, &args.github_repo, args.dry_run).await?;
 
     Ok(())
 }
