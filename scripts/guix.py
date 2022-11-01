@@ -45,6 +45,7 @@ def main():
     print('Make sure to install docker and run the https://docs.docker.com/install/linux/linux-postinstall/')
     print('sudo usermod -aG docker $USER')
     print()
+    print('rm /var/www/html/index.html')
     print('sudo usermod -aG www-data $USER')
     print('sudo chown -R www-data:www-data /var/www')
     print('sudo chmod -R g+rw /var/www')

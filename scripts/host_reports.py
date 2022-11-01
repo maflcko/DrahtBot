@@ -13,7 +13,7 @@ def main():
     args = parser.parse_args()
 
     print()
-    print('See guix.py or gitian.py for instructions on how to add write permission for /var/www to the current user')
+    print('See guix.py for instructions on how to add write permission for /var/www to the current user')
     print()
     repo_url = 'https://github.com/{}'.format(args.repo_report)
     host_reports_www_folder = '/var/www/html/host_reports/{}/'.format(args.repo_report)
