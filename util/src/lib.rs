@@ -4,6 +4,12 @@ pub struct Slug {
     pub repo: String,
 }
 
+impl Slug {
+    pub fn str(self: &Self) -> String {
+        format!("{}/{}", self.owner, self.repo)
+    }
+}
+
 impl std::str::FromStr for Slug {
     type Err = &'static str;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -40,7 +46,7 @@ pub enum IdComment {
 }
 
 impl IdComment {
-    pub fn str(self: Self) -> &'static str {
+    pub fn str(self: &Self) -> &'static str {
         match self {
             Self::NeedsRebase => "<!--cf906140f33d8803c4a75a2196329ecb-->",
             Self::ReviewersRequested => "<!--4a62be1de6b64f3ed646cdc7932c8cf5-->",
@@ -50,6 +56,169 @@ impl IdComment {
             Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",
         }
     }
+}
+
+pub fn git() -> std::process::Command {
+    std::process::Command::new("git")
+}
+
+pub fn check_call(cmd: &mut std::process::Command) {
+    check_output(cmd);
+}
+
+pub fn call(cmd: &mut std::process::Command) -> bool {
+    let out = cmd.output().expect("command error");
+    out.status.success()
+}
+
+pub fn check_output(cmd: &mut std::process::Command) -> String {
+    let out = cmd.output().expect("command error");
+    assert!(out.status.success());
+    String::from_utf8(out.stdout).expect("invalid utf8")
+}
+
+pub fn chdir(p: &std::path::Path) {
+    std::env::set_current_dir(p).expect("chdir error")
+}
+
+pub struct MetaComment {
+    pull_num: u64,
+    pub id: Option<octocrab::models::CommentId>,
+    sections: Vec<String>,
+}
+
+impl MetaComment {
+    pub fn has_section(self: &Self, section_id: &IdComment) -> bool {
+        let id = section_id.str();
+        for s in &self.sections {
+            if s.starts_with(id) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    pub fn join_metadata_comment(self: &mut Self) -> String {
+        self.sections.sort();
+        format!(
+        "{root_id}\n\n{desc}\n\n{sec}",
+        root_id = IdComment::Metadata.str(),
+        desc = "The following sections might be updated with supplementary metadata relevant to reviewers and maintainers.",
+        sec = self.sections.join("")
+    )
+    }
+
+    pub fn update(self: &mut Self, id: IdComment, new_text: String) -> bool {
+        let needle = id.str();
+        let new_section = format!("{}{}", needle, new_text);
+        for s in self.sections.iter_mut() {
+            if s.starts_with(needle) {
+                // Section exists
+                let orig = s.split(needle).skip(1).next().unwrap();
+                if orig == &new_text {
+                    // Section up to date
+                    return false;
+                }
+                // Update section
+                *s = new_section;
+                return true;
+            }
+        }
+        // Create missing section
+        self.sections.push(new_section);
+        true
+    }
+}
+
+pub async fn get_metadata_sections(
+    api: &octocrab::Octocrab,
+    api_issues: &octocrab::issues::IssueHandler<'_>,
+    pull_nr: u64,
+) -> octocrab::Result<MetaComment> {
+    let comments = api
+        .all_pages(api_issues.list_comments(pull_nr).send().await?)
+        .await?;
+    for c in comments {
+        if let Some(b) = c.body {
+            if b.starts_with(IdComment::Metadata.str()) {
+                let sections = b
+                    .split("<!--")
+                    .skip(2)
+                    .map(|s| format!("<!--{}", s))
+                    .collect::<Vec<_>>();
+                return Ok(MetaComment {
+                    pull_num: pull_nr,
+                    id: Some(c.id),
+                    sections: sections,
+                });
+            }
+        }
+    }
+    Ok(MetaComment {
+        pull_num: pull_nr,
+        id: None,
+        sections: Vec::new(),
+    })
+}
+
+pub async fn update_metadata_comment(
+    api_issues: &octocrab::issues::IssueHandler<'_>,
+    mut comment: MetaComment,
+    text: String,
+    section: IdComment,
+    dry_run: bool,
+) -> octocrab::Result<()> {
+    if comment.id.is_none() {
+        // Create new metadata comment
+        let text = comment.join_metadata_comment();
+        println!("... Create new metadata comment");
+        if !dry_run {
+            api_issues.create_comment(comment.pull_num, text).await?;
+        }
+        return Ok(());
+    }
+    if !comment.update(section, text) {
+        // Section up to date
+        return Ok(());
+    }
+    let text = comment.join_metadata_comment();
+    println!("... Update comment");
+    if !dry_run {
+        api_issues.update_comment(comment.id.unwrap(), text).await?;
+    }
+    return Ok(());
+}
+
+pub async fn get_pulls_mergeable(
+    api: &octocrab::Octocrab,
+    api_pulls: &octocrab::pulls::PullRequestHandler<'_>,
+    base_name: &str,
+) -> octocrab::Result<Vec<octocrab::models::pulls::PullRequest>> {
+    let mut pulls = api
+        .all_pages(
+            api_pulls
+                .list()
+                .state(octocrab::params::State::Open)
+                .base(base_name)
+                .send()
+                .await?,
+        )
+        .await?;
+    while pulls.iter().any(|p| p.mergeable.is_none()) {
+        pulls = pulls
+            .into_iter()
+            .filter(|p| p.state.as_ref().unwrap() == &octocrab::models::IssueState::Open)
+            .map(|p| {
+                if p.mergeable.is_none() {
+                    std::thread::sleep(std::time::Duration::from_secs(3));
+                    futures_executor::block_on(api_pulls.get(p.number)).expect("github api error")
+                } else {
+                    p
+                }
+            })
+            .collect();
+    }
+    Ok(pulls)
 }
 
 pub async fn get_pull_mergeable(
