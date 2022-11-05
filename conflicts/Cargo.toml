@@ -8,6 +8,8 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.0.18", features = ["derive"] }
 octocrab = "0.17.0"
+serde = "1.0.147"
+serde_yaml = "0.9.14"
 tempfile = "3.3.0"
 tokio = { version = "1.21.2", features = ["full"] }
 util = { path = "../util" }

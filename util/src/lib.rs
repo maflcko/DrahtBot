@@ -90,25 +90,20 @@ pub struct MetaComment {
 impl MetaComment {
     pub fn has_section(self: &Self, section_id: &IdComment) -> bool {
         let id = section_id.str();
-        for s in &self.sections {
-            if s.starts_with(id) {
-                return true;
-            }
-        }
-        return false;
+        self.sections.iter().any(|s| s.starts_with(id))
     }
 
-    pub fn join_metadata_comment(self: &mut Self) -> String {
+    fn join_metadata_comment(self: &mut Self) -> String {
         self.sections.sort();
+        let desc = "The following sections might be updated with supplementary metadata relevant to reviewers and maintainers.";
         format!(
-        "{root_id}\n\n{desc}\n\n{sec}",
-        root_id = IdComment::Metadata.str(),
-        desc = "The following sections might be updated with supplementary metadata relevant to reviewers and maintainers.",
-        sec = self.sections.join("")
-    )
+            "{root_id}\n\n{desc}\n\n{sec}",
+            root_id = IdComment::Metadata.str(),
+            sec = self.sections.join("")
+        )
     }
 
-    pub fn update(self: &mut Self, id: IdComment, new_text: String) -> bool {
+    fn update(self: &mut Self, id: IdComment, new_text: String) -> bool {
         let needle = id.str();
         let new_section = format!("{}{}", needle, new_text);
         for s in self.sections.iter_mut() {
@@ -139,19 +134,18 @@ pub async fn get_metadata_sections(
         .all_pages(api_issues.list_comments(pull_nr).send().await?)
         .await?;
     for c in comments {
-        if let Some(b) = c.body {
-            if b.starts_with(IdComment::Metadata.str()) {
-                let sections = b
-                    .split("<!--")
-                    .skip(2)
-                    .map(|s| format!("<!--{}", s))
-                    .collect::<Vec<_>>();
-                return Ok(MetaComment {
-                    pull_num: pull_nr,
-                    id: Some(c.id),
-                    sections: sections,
-                });
-            }
+        let b = c.body.expect("remote api error");
+        if b.starts_with(IdComment::Metadata.str()) {
+            let sections = b
+                .split("<!--")
+                .skip(2)
+                .map(|s| format!("<!--{}", s))
+                .collect::<Vec<_>>();
+            return Ok(MetaComment {
+                pull_num: pull_nr,
+                id: Some(c.id),
+                sections: sections,
+            });
         }
     }
     Ok(MetaComment {
@@ -207,7 +201,9 @@ pub async fn get_pulls_mergeable(
     while pulls.iter().any(|p| p.mergeable.is_none()) {
         pulls = pulls
             .into_iter()
-            .filter(|p| p.state.as_ref().unwrap() == &octocrab::models::IssueState::Open)
+            .filter(|p| {
+                p.state.as_ref().expect("remote api error") == &octocrab::models::IssueState::Open
+            })
             .map(|p| {
                 if p.mergeable.is_none() {
                     std::thread::sleep(std::time::Duration::from_secs(3));
