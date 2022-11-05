@@ -74,7 +74,10 @@ pub fn call(cmd: &mut std::process::Command) -> bool {
 pub fn check_output(cmd: &mut std::process::Command) -> String {
     let out = cmd.output().expect("command error");
     assert!(out.status.success());
-    String::from_utf8(out.stdout).expect("invalid utf8")
+    String::from_utf8(out.stdout)
+        .expect("invalid utf8")
+        .trim()
+        .to_string()
 }
 
 pub fn chdir(p: &std::path::Path) {
@@ -199,20 +202,24 @@ pub async fn get_pulls_mergeable(
         )
         .await?;
     while pulls.iter().any(|p| p.mergeable.is_none()) {
-        pulls = pulls
-            .into_iter()
-            .filter(|p| {
-                p.state.as_ref().expect("remote api error") == &octocrab::models::IssueState::Open
-            })
-            .map(|p| {
-                if p.mergeable.is_none() {
-                    std::thread::sleep(std::time::Duration::from_secs(3));
-                    futures_executor::block_on(api_pulls.get(p.number)).expect("github api error")
-                } else {
-                    p
-                }
-            })
-            .collect();
+        std::thread::sleep(std::time::Duration::from_secs(3));
+        pulls = futures::future::join_all(
+            pulls
+                .into_iter()
+                .filter(|p| {
+                    p.state.as_ref().expect("remote api error")
+                        == &octocrab::models::IssueState::Open
+                })
+                .map(|p| async {
+                    if p.mergeable.is_none() {
+                        api_pulls.get(p.number).await.expect("remote api error")
+                    } else {
+                        p
+                    }
+                })
+                .collect::<Vec<_>>(),
+        )
+        .await;
     }
     Ok(pulls)
 }

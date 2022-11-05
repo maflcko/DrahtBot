@@ -18,10 +18,10 @@ struct Args {
     update_comments: bool,
     /// The local dir used for scratching.
     #[arg(long)]
-    scratch_dir: String,
+    scratch_dir: std::path::PathBuf,
     /// The path to the yaml config file.
     #[arg(long)]
-    config_file: String,
+    config_file: std::path::PathBuf,
     /// Print changes/edits instead of calling the GitHub API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
@@ -216,7 +216,10 @@ async fn main() -> octocrab::Result<()> {
 
     std::fs::create_dir_all(&args.scratch_dir).expect("invalid scratch_dir");
 
-    let monotree_dir = std::path::Path::new(&args.scratch_dir)
+    let monotree_dir = args
+        .scratch_dir
+        .canonicalize()
+        .expect("invalid scratch_dir")
         .join(
             args.github_repo
                 .iter()
@@ -225,7 +228,8 @@ async fn main() -> octocrab::Result<()> {
                 .join("_"),
         )
         .join("persist");
-    let temp_dir = monotree_dir.join("..").join("temp");
+    let temp_dir = monotree_dir.parent().unwrap().join("temp");
+    std::fs::create_dir_all(&temp_dir).expect("invalid temp_dir");
 
     init_git(&monotree_dir, &args.github_repo);
 
@@ -301,13 +305,16 @@ async fn main() -> octocrab::Result<()> {
         let temp_git_work_tree_ctx = tempfile::TempDir::new_in(&temp_dir).expect("tempdir error");
         let temp_git_work_tree = temp_git_work_tree_ctx.path();
 
-        std::process::Command::new("cp")
-            .arg("-r")
-            .arg(monotree_dir.join(".git"))
-            .arg(temp_git_work_tree.join(".git"));
+        util::check_call(
+            std::process::Command::new("cp")
+                .arg("-r")
+                .arg(monotree_dir.join(".git"))
+                .arg(temp_git_work_tree.join(".git")),
+        );
 
         util::chdir(&temp_git_work_tree);
         println!("Calculate mergeable pulls");
+
         calc_mergeable(&mut mono_pulls_mergeable, base_name);
         if args.update_comments {
             for (i, pull_update) in mono_pulls_mergeable.iter().enumerate() {
