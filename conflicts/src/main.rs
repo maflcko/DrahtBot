@@ -161,7 +161,7 @@ async fn update_comment(
         util::update_metadata_comment(
             &api_issues,
             cmt,
-            format!(
+            &format!(
                 "\n### {hd}\n{txt}",
                 hd = config.conflicts_heading,
                 txt = config.conflicts_empty,
@@ -176,7 +176,7 @@ async fn update_comment(
     util::update_metadata_comment(
         &api_issues,
         cmt,
-        format!(
+        &format!(
             "\n### {hd}\n{txt}",
             hd = config.conflicts_heading,
             txt = config.conflicts_description.replace(
