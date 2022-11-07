@@ -106,14 +106,14 @@ impl MetaComment {
         )
     }
 
-    fn update(&mut self, id: IdComment, new_text: String) -> bool {
+    fn update(&mut self, id: IdComment, new_text: &str) -> bool {
         let needle = id.str();
         let new_section = format!("{}{}", needle, new_text);
         for s in self.sections.iter_mut() {
             if s.starts_with(needle) {
                 // Section exists
                 let orig = s.split(needle).nth(1).unwrap();
-                if orig == &new_text {
+                if orig == new_text {
                     // Section up to date
                     return false;
                 }
@@ -161,7 +161,7 @@ pub async fn get_metadata_sections(
 pub async fn update_metadata_comment(
     api_issues: &octocrab::issues::IssueHandler<'_>,
     mut comment: MetaComment,
-    text: String,
+    text: &str,
     section: IdComment,
     dry_run: bool,
 ) -> octocrab::Result<()> {
@@ -171,17 +171,21 @@ pub async fn update_metadata_comment(
     }
     if comment.id.is_none() {
         // Create new metadata comment
-        let text = comment.join_metadata_comment();
+        let full_text = comment.join_metadata_comment();
         println!("... Create new metadata comment");
         if !dry_run {
-            api_issues.create_comment(comment.pull_num, text).await?;
+            api_issues
+                .create_comment(comment.pull_num, full_text)
+                .await?;
         }
         return Ok(());
     }
-    let text = comment.join_metadata_comment();
+    let full_text = comment.join_metadata_comment();
     println!("... Update comment");
     if !dry_run {
-        api_issues.update_comment(comment.id.unwrap(), text).await?;
+        api_issues
+            .update_comment(comment.id.unwrap(), full_text)
+            .await?;
     }
     Ok(())
 }
