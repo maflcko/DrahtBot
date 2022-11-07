@@ -372,7 +372,7 @@ lazy_static! {
     static ref ACK_PATTERNS: Vec<(&'static str, AckType)> = multi_vec![
         ["code review ack", "cr ack", "cr-ack", "crack"] => AckType::ACK;
         ["concept ack", "concept-ack", "conceptack"] => AckType::ConceptACK;
-        ["concept nack", "concept-nack", "conceptnack"] => AckType::ConceptACK;
+        ["concept nack", "concept-nack", "conceptnack"] => AckType::ConceptNACK;
         ["approach ack", "approach-ack", "approachack"] => AckType::ApproachACK;
         ["approach nack", "approach-nack", "approachnack"] => AckType::ApproachNACK;
         ["ack", "utack", "tack"] => AckType::ACK;
@@ -474,4 +474,159 @@ fn parse_acks_in_comment(comment: &str) -> Vec<AckCommit> {
     }
 
     acks
+}
+
+// Test that parse_acks_in_comment works
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct TestCase {
+        comment: &'static str,
+        expected: Vec<AckCommit>,
+    }
+
+    #[test]
+    fn test_parse_acks_in_comment() {
+        let test_cases = vec![
+            TestCase {
+                comment: "ACK",
+                expected: vec![],
+            },
+            TestCase {
+                comment: "ACK 1234567890123456789012345678901234567890",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ACK,
+                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }],
+            },
+            TestCase {
+                comment: "ACK invalid",
+                expected: vec![],
+            },
+            TestCase {
+                comment: "ACK 1234567890123456789012345678901234567890 invalid",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ACK,
+                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }],
+            },
+            TestCase {
+                comment: "ACK 1234567890123456789012345678901234567890\nACK 1234567890123456789012345678901234567890",
+                expected: vec![
+                    AckCommit {
+                        ack_type: AckType::ACK,
+                        commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    },
+                    AckCommit {
+                        ack_type: AckType::ACK,
+                        commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    },
+                ],
+            },
+            TestCase {
+                comment: "ACK 1234567890123456789012345678901234567890\nNACK 1234567890123456789012345678901234567890",
+                expected: vec![
+                    AckCommit {
+                        ack_type: AckType::ACK,
+                        commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    },
+                    AckCommit {
+                        ack_type: AckType::ConceptNACK,
+                        commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    },
+                ],
+            },
+            TestCase {
+                comment: "Concept ACK",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ConceptACK,
+                    commit: None,
+                }],
+            },
+            TestCase {
+                comment: "Concept ACK 1234567890123456789012345678901234567890",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ConceptACK,
+                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }],
+            },
+            TestCase {
+                comment: "tACK",
+                expected: vec![],
+            },
+            TestCase {
+                comment: "tACK 1234567890123456789012345678901234567890",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ACK,
+                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }],
+            },
+            TestCase {
+                comment: "Code Review ACK 1234567890123456789012345678901234567890",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ACK,
+                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }],
+            },
+            TestCase {
+                comment: "crACK",
+                expected: vec![],
+            },
+            TestCase {
+                comment: "crACK 1234567890123456789012345678901234567890",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ACK,
+                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }],
+            },
+            TestCase {
+                comment: "Approach ACK",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ApproachACK,
+                    commit: None,
+                }],
+            },
+            TestCase {
+                comment: "Approach ACK 1234567890123456789012345678901234567890",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ApproachACK,
+                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }],
+            },
+            TestCase {
+                comment: "Concept NACK",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ConceptNACK,
+                    commit: None,
+                }],
+            },
+            TestCase {
+                comment: "nack this change!",
+                expected: vec![AckCommit {
+                    ack_type: AckType::ConceptNACK,
+                    commit: None,
+                }],
+            },
+            TestCase {
+                comment: "> Concept ACK",
+                expected: vec![],
+            },
+            TestCase {
+                comment: "This is a Concept ACK for me!",
+                expected: vec![
+                    AckCommit {
+                        ack_type: AckType::ConceptACK,
+                        commit: None,
+                    },
+                ],
+            }
+        ];
+
+        for test_case in test_cases {
+            let actual = parse_acks_in_comment(test_case.comment);
+            println!("Test case: {}", test_case.comment);
+            assert_eq!(actual, test_case.expected);
+        }
+    }
 }
