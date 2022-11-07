@@ -122,9 +122,7 @@ async fn rebase_label(
             let mut labels = github
                 .all_pages(issues_api.list_labels_for_issue(pull.number).send().await?)
                 .await?;
-            let found_label_rebase = labels
-                .iter()
-                .any(|l| l.name == config.needs_rebase_label);
+            let found_label_rebase = labels.iter().any(|l| l.name == config.needs_rebase_label);
             if pull.mergeable.unwrap() {
                 if found_label_rebase {
                     println!("... remove label '{}')", config.needs_rebase_label);
