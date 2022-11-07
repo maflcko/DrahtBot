@@ -1,3 +1,5 @@
+pub mod summary_comment;
+
 use crate::errors::Result;
 use crate::Context;
 use crate::GitHubEvent;

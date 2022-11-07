@@ -3,6 +3,7 @@ mod features;
 
 use std::str::FromStr;
 
+use crate::features::summary_comment::SummaryCommentFeature;
 use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
 use clap::Parser;
 use features::Feature;
@@ -20,6 +21,8 @@ struct Args {
     host: String,
     #[arg(long, help = "Port to listen on", default_value = "1337")]
     port: u16,
+    #[arg(long, help = "Enable debug mode")]
+    debug: bool,
 }
 
 #[derive(Debug, Display, EnumString, PartialEq, Clone, Copy)]
@@ -43,6 +46,8 @@ async fn index() -> &'static str {
 #[derive(Debug, Clone)]
 pub struct Context {
     octocrab: Octocrab,
+    bot_username: String,
+    debug: bool,
 }
 
 #[post("/postreceive")]
@@ -65,7 +70,7 @@ async fn postreceive_handler(
 }
 
 fn features() -> Vec<Box<dyn Feature>> {
-    vec![]
+    vec![Box::new(SummaryCommentFeature::new())]
 }
 
 async fn emit_event(
@@ -97,11 +102,27 @@ async fn main() -> Result<()> {
         println!("   {}", feature.meta().description());
     }
 
-    let context = Context { octocrab };
+    println!("");
+
+    // Get the bot's username
+    let bot_username = octocrab
+        .current()
+        .user()
+        .await
+        .map_err(|e| DrahtBotError::GitHubError(e))?
+        .login;
+
+    println!("Running as {}...", bot_username);
+
+    let context = Context {
+        octocrab,
+        bot_username,
+        debug: args.debug,
+    };
 
     HttpServer::new(move || {
         App::new()
-            .app_data(context.clone())
+            .app_data(web::Data::new(context.clone()))
             .service(index)
             .service(postreceive_handler)
     })

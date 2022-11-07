@@ -8,4 +8,14 @@ pub enum DrahtBotError {
     IOError(#[from] std::io::Error),
     #[error("GitHub Error {0}")]
     GitHubError(#[from] octocrab::Error),
+    #[error("UnknownEvent")]
+    UnknownEvent,
+    #[error("Key not found")]
+    KeyNotFound,
+    #[error("Invalid login {0}")]
+    InvalidLogin(String),
+    #[error("Invalid repository name {0}")]
+    InvalidRepositoryName(String),
+    #[error("Invalid pull request number {0}")]
+    InvalidPullRequestNumber(String),
 }

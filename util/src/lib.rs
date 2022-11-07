@@ -43,6 +43,7 @@ pub enum IdComment {
     Metadata, // The "root" section
     SecConflicts,
     SecCoverage,
+    SecReviews,
 }
 
 impl IdComment {
@@ -54,6 +55,7 @@ impl IdComment {
             Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",
             Self::SecConflicts => "<!--174a7506f384e20aa4161008e828411d-->",
             Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",
+            Self::SecReviews => "<!--021abf342d371248e50ceaed478a90ca-->",
         }
     }
 }
@@ -136,26 +138,35 @@ pub async fn get_metadata_sections(
     let comments = api
         .all_pages(api_issues.list_comments(pull_nr).send().await?)
         .await?;
+
+    Ok(get_metadata_sections_from_comments(&comments, pull_nr))
+}
+
+pub fn get_metadata_sections_from_comments(
+    comments: &Vec<octocrab::models::issues::Comment>,
+    pull_nr: u64,
+) -> MetaComment {
     for c in comments {
-        let b = c.body.expect("remote api error");
+        let b = c.body.as_ref().expect("remote api error");
         if b.starts_with(IdComment::Metadata.str()) {
             let sections = b
                 .split("<!--")
                 .skip(2)
                 .map(|s| format!("<!--{}", s))
                 .collect::<Vec<_>>();
-            return Ok(MetaComment {
+
+            return MetaComment {
                 pull_num: pull_nr,
                 id: Some(c.id),
                 sections,
-            });
+            }
         }
     }
-    Ok(MetaComment {
+    MetaComment {
         pull_num: pull_nr,
         id: None,
         sections: Vec::new(),
-    })
+    }
 }
 
 pub async fn update_metadata_comment(

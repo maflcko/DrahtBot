@@ -14,3 +14,5 @@ octocrab = { version = "0.17", features = ["stream"] }
 thiserror = "1.0"
 serde_json = "1.0"
 async-trait = "0.1"
+lazy_static = "1.4"
+util = { path = "../util" }
