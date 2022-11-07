@@ -181,18 +181,15 @@ async fn main() -> octocrab::Result<()> {
                 .as_array()
                 .expect(fmt);
             for task_name in &args.task {
-                let found = tasks
-                    .iter()
-                    .filter(|t| {
-                        t.get("name")
-                            .expect(fmt)
-                            .as_str()
-                            .expect(fmt)
-                            .contains(task_name)
-                    })
-                    .next();
-                if found.is_some() {
-                    rerun(found.unwrap(), &ci_token, args.dry_run)
+                let found = tasks.iter().find(|t| {
+                    t.get("name")
+                        .expect(fmt)
+                        .as_str()
+                        .expect(fmt)
+                        .contains(task_name)
+                });
+                if let Some(found) = found {
+                    rerun(found, &ci_token, args.dry_run)
                 }
             }
             std::thread::sleep(std::time::Duration::from_secs(args.sleep_min * 60));
