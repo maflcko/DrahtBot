@@ -1,7 +1,13 @@
 mod errors;
+mod features;
 
-use actix_web::{get, App, HttpServer};
+use std::str::FromStr;
+
+use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
 use clap::Parser;
+use features::Feature;
+use octocrab::Octocrab;
+use strum::{Display, EnumString};
 
 use crate::errors::{DrahtBotError, Result};
 
@@ -16,17 +22,88 @@ struct Args {
     port: u16,
 }
 
+#[derive(Debug, Display, EnumString, PartialEq, Clone, Copy)]
+#[strum(serialize_all = "snake_case")]
+pub enum GitHubEvent {
+    Create,
+    IssueComment,
+    Ping,
+    PullRequest,
+    PullRequestReview,
+    PullRequestReviewComment,
+    Push,
+
+    Unknown,
+}
+
 #[get("/")]
 async fn index() -> &'static str {
     "Welcome to DrahtBot!"
 }
+#[derive(Debug, Clone)]
+pub struct Context {
+    octocrab: Octocrab,
+}
+
+#[post("/postreceive")]
+async fn postreceive_handler(
+    ctx: web::Data<Context>,
+    req: HttpRequest,
+    data: web::Json<serde_json::Value>,
+) -> impl Responder {
+    let event_str = req
+        .headers()
+        .get("X-GitHub-Event")
+        .unwrap()
+        .to_str()
+        .unwrap();
+    let event = GitHubEvent::from_str(event_str).unwrap_or(GitHubEvent::Unknown);
+
+    emit_event(&ctx, event, data).await.unwrap();
+
+    "OK"
+}
+
+fn features() -> Vec<Box<dyn Feature>> {
+    vec![]
+}
+
+async fn emit_event(
+    ctx: &Context,
+    event: GitHubEvent,
+    data: web::Json<serde_json::Value>,
+) -> Result<()> {
+    for feature in features() {
+        if feature.meta().events().contains(&event) {
+            feature.handle(ctx, event, &data).await?;
+        }
+    }
+
+    Ok(())
+}
+
 #[actix_web::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
 
+    let octocrab = octocrab::Octocrab::builder()
+        .personal_token(args.token)
+        .build()
+        .map_err(|e| DrahtBotError::GitHubError(e))?;
+
+    println!("DrahtBot will will run the following features:");
+    for feature in features() {
+        println!(" - {}", feature.meta().name());
+        println!("   {}", feature.meta().description());
+    }
+
+    let context = Context { octocrab };
+
     HttpServer::new(move || {
         App::new()
+            .app_data(context.clone())
             .service(index)
+            .service(postreceive_handler)
     })
     .bind(format!("{}:{}", args.host, args.port))?
     .run()
