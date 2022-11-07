@@ -15,7 +15,7 @@ struct Args {
     github_repo: Vec<util::Slug>,
     /// The path to the yaml config file.
     #[arg(long)]
-    config_file: String,
+    config_file: std::path::PathBuf,
     /// Print changes/edits instead of calling the GitHub API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
