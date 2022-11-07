@@ -5,7 +5,7 @@ pub struct Slug {
 }
 
 impl Slug {
-    pub fn str(self: &Self) -> String {
+    pub fn str(&self) -> String {
         format!("{}/{}", self.owner, self.repo)
     }
 }
@@ -46,7 +46,7 @@ pub enum IdComment {
 }
 
 impl IdComment {
-    pub fn str(self: &Self) -> &'static str {
+    pub fn str(&self) -> &'static str {
         match self {
             Self::NeedsRebase => "<!--cf906140f33d8803c4a75a2196329ecb-->",
             Self::ReviewersRequested => "<!--4a62be1de6b64f3ed646cdc7932c8cf5-->",
@@ -91,12 +91,12 @@ pub struct MetaComment {
 }
 
 impl MetaComment {
-    pub fn has_section(self: &Self, section_id: &IdComment) -> bool {
+    pub fn has_section(&self, section_id: &IdComment) -> bool {
         let id = section_id.str();
         self.sections.iter().any(|s| s.starts_with(id))
     }
 
-    fn join_metadata_comment(self: &mut Self) -> String {
+    fn join_metadata_comment(&mut self) -> String {
         self.sections.sort();
         let desc = "The following sections might be updated with supplementary metadata relevant to reviewers and maintainers.";
         format!(
@@ -106,13 +106,13 @@ impl MetaComment {
         )
     }
 
-    fn update(self: &mut Self, id: IdComment, new_text: String) -> bool {
+    fn update(&mut self, id: IdComment, new_text: String) -> bool {
         let needle = id.str();
         let new_section = format!("{}{}", needle, new_text);
         for s in self.sections.iter_mut() {
             if s.starts_with(needle) {
                 // Section exists
-                let orig = s.split(needle).skip(1).next().unwrap();
+                let orig = s.split(needle).nth(1).unwrap();
                 if orig == &new_text {
                     // Section up to date
                     return false;
@@ -147,7 +147,7 @@ pub async fn get_metadata_sections(
             return Ok(MetaComment {
                 pull_num: pull_nr,
                 id: Some(c.id),
-                sections: sections,
+                sections,
             });
         }
     }
@@ -183,7 +183,7 @@ pub async fn update_metadata_comment(
     if !dry_run {
         api_issues.update_comment(comment.id.unwrap(), text).await?;
     }
-    return Ok(());
+    Ok(())
 }
 
 pub async fn get_pulls_mergeable(
