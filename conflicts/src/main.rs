@@ -114,7 +114,7 @@ fn calc_conflicts<'a>(
         "log",
         "-1",
         "--format=%H",
-        &pull_check.merge_commit.as_ref().expect("merge id missing"),
+        pull_check.merge_commit.as_ref().expect("merge id missing"),
     ]));
     for pull_other in pulls_mergeable {
         if pull_check.slug_num == pull_other.slug_num {
@@ -151,7 +151,7 @@ async fn update_comment(
     pulls_conflict: &Vec<&MetaPull>,
 ) -> octocrab::Result<()> {
     let api_issues = api.issues(&pull.slug.owner, &pull.slug.repo);
-    let cmt = util::get_metadata_sections(&api, &api_issues, pull.pull.number).await?;
+    let cmt = util::get_metadata_sections(api, &api_issues, pull.pull.number).await?;
     if pulls_conflict.is_empty() {
         if cmt.id.is_none() || !cmt.has_section(&util::IdComment::SecConflicts) {
             // No conflict and no section to update
@@ -312,7 +312,7 @@ async fn main() -> octocrab::Result<()> {
                 .arg(temp_git_work_tree.join(".git")),
         );
 
-        util::chdir(&temp_git_work_tree);
+        util::chdir(temp_git_work_tree);
         println!("Calculate mergeable pulls");
 
         calc_mergeable(&mut mono_pulls_mergeable, base_name);
@@ -323,7 +323,7 @@ async fn main() -> octocrab::Result<()> {
                     len = mono_pulls_mergeable.len(),
                     pr_id = pull_update.slug_num
                 );
-                let pulls_conflict = calc_conflicts(&mono_pulls_mergeable, &pull_update);
+                let pulls_conflict = calc_conflicts(&mono_pulls_mergeable, pull_update);
                 update_comment(&config, &github, args.dry_run, pull_update, &pulls_conflict)
                     .await?;
             }
@@ -343,7 +343,7 @@ async fn main() -> octocrab::Result<()> {
                 "Checking for conflicts {base_name} <> {id} <> other_pulls ... ",
                 id = pull_merge.slug_num
             );
-            let conflicts = calc_conflicts(&mono_pulls_mergeable, &pull_merge);
+            let conflicts = calc_conflicts(&mono_pulls_mergeable, pull_merge);
             update_comment(&config, &github, args.dry_run, pull_merge, &conflicts).await?;
         }
     }
