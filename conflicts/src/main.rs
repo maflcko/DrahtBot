@@ -186,7 +186,7 @@ async fn update_comment(
                     .map(|p| format!("\n* [#{ref}]({url}) ({title} by {user})",
             ref=p.slug_num.trim_start_matches(&format!(
                 "{sl}/",
-            sl=p.slug.str()
+            sl=pull.slug.str()
                 ),
             ),
             url=p.pull.html_url.as_ref().expect("remote api error"),
