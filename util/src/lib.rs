@@ -165,6 +165,10 @@ pub async fn update_metadata_comment(
     section: IdComment,
     dry_run: bool,
 ) -> octocrab::Result<()> {
+    if !comment.update(section, text) {
+        // Section up to date
+        return Ok(());
+    }
     if comment.id.is_none() {
         // Create new metadata comment
         let text = comment.join_metadata_comment();
@@ -172,10 +176,6 @@ pub async fn update_metadata_comment(
         if !dry_run {
             api_issues.create_comment(comment.pull_num, text).await?;
         }
-        return Ok(());
-    }
-    if !comment.update(section, text) {
-        // Section up to date
         return Ok(());
     }
     let text = comment.join_metadata_comment();

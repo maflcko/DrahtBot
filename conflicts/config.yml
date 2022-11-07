@@ -1,0 +1,9 @@
+conflicts_heading: "Conflicts"
+# The description should contain {conflicts}, which will be substituted
+conflicts_description: |
+  Reviewers, this pull request conflicts with the following ones:
+  {conflicts}
+
+  If you consider this pull request important, please also help to review the conflicting pull requests. Ideally, start with the one that should be merged first.
+conflicts_empty: |
+  No conflicts as of last run.

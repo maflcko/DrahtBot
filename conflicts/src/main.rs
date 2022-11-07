@@ -189,7 +189,7 @@ async fn update_comment(
             sl=p.slug.str()
                 ),
             ),
-            url=p.pull.url,
+            url=p.pull.html_url.as_ref().expect("remote api error"),
             title=p.pull.title.as_ref().expect("remote api error").trim(),
             user=p.pull.user.as_ref().expect("remote api error").login))
                     .collect::<Vec<_>>()
