@@ -124,8 +124,7 @@ async fn rebase_label(
                 .await?;
             let found_label_rebase = labels
                 .iter()
-                .find(|l| l.name == config.needs_rebase_label)
-                .is_some();
+                .any(|l| l.name == config.needs_rebase_label);
             if pull.mergeable.unwrap() {
                 if found_label_rebase {
                     println!("... remove label '{}')", config.needs_rebase_label);
@@ -150,23 +149,21 @@ async fn rebase_label(
                         }
                     }
                 }
-            } else {
-                if !found_label_rebase {
-                    println!("... add label '{}'", config.needs_rebase_label);
-                    if !dry_run {
-                        labels = issues_api
-                            .add_labels(pull.number, &[config.needs_rebase_label.to_string()])
-                            .await?;
-                        let text = format!(
-                            "{}\n{}",
-                            id_needs_rebase_comment,
-                            config
-                                .needs_rebase_comment
-                                .replace("{owner}", owner)
-                                .replace("{repo}", repo)
-                        );
-                        issues_api.create_comment(pull.number, text).await?;
-                    }
+            } else if !found_label_rebase {
+                println!("... add label '{}'", config.needs_rebase_label);
+                if !dry_run {
+                    labels = issues_api
+                        .add_labels(pull.number, &[config.needs_rebase_label.to_string()])
+                        .await?;
+                    let text = format!(
+                        "{}\n{}",
+                        id_needs_rebase_comment,
+                        config
+                            .needs_rebase_comment
+                            .replace("{owner}", owner)
+                            .replace("{repo}", repo)
+                    );
+                    issues_api.create_comment(pull.number, text).await?;
                 }
             }
         }
