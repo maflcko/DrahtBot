@@ -48,8 +48,8 @@ struct Args {
 
 fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
     let fmt = "json format error";
-    let t_id = task.get("id").expect(fmt).as_str().expect(fmt);
-    let t_name = task.get("name").expect(fmt);
+    let t_id = task["id"].as_str().expect(fmt);
+    let t_name = task["name"].as_str().expect(fmt);
     let raw_data = format!(
         r#"
                         {{
@@ -70,18 +70,16 @@ fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
     );
     println!("Re-run task {t_name} (id: {t_id})");
     if !dry_run {
-        let out = std::process::Command::new("curl")
-            .arg("https://api.cirrus-ci.com/graphql")
-            .arg("-X")
-            .arg("POST")
-            .arg("-H")
-            .arg(format!("Authorization: Bearer {token}"))
-            .arg("--data-raw")
-            .arg(raw_data)
-            .output()
-            .expect("curl error");
-        println!("{}", String::from_utf8_lossy(&out.stdout));
-        assert!(out.status.success());
+        let out = util::check_output(std::process::Command::new("curl").args([
+            "https://api.cirrus-ci.com/graphql",
+            "-X",
+            "POST",
+            "-H",
+            &format!("Authorization: Bearer {token}"),
+            "--data-raw",
+            &raw_data,
+        ]));
+        println!("{out}");
     }
 }
 
@@ -151,43 +149,24 @@ async fn main() -> octocrab::Result<()> {
                      }}
                 "#
             );
-            let output = std::process::Command::new("curl")
-                .arg("https://api.cirrus-ci.com/graphql")
-                .arg("-X")
-                .arg("POST")
-                .arg("--data-raw")
-                .arg(raw_data)
-                .output()
-                .expect("curl error");
-            assert!(output.status.success());
-            let json_parsed = serde_json::from_slice::<serde_json::value::Value>(&output.stdout)
+            let output = util::check_output(std::process::Command::new("curl").args([
+                "https://api.cirrus-ci.com/graphql",
+                "-X",
+                "POST",
+                "--data-raw",
+                &raw_data,
+            ]));
+            let json_parsed = serde_json::from_str::<serde_json::value::Value>(&output)
                 .expect("json parse error");
             let fmt = "json format error";
-            let tasks = json_parsed
-                .get("data")
-                .expect(fmt)
-                .get("ownerRepository")
-                .expect(fmt)
-                .get("builds")
-                .expect(fmt)
-                .get("edges")
-                .expect(fmt)
-                .get(0)
-                .expect(fmt)
-                .get("node")
-                .expect(fmt)
-                .get("tasks")
-                .expect(fmt)
+            let tasks = json_parsed["data"]["ownerRepository"]["builds"]["edges"][0]["node"]
+                ["tasks"]
                 .as_array()
                 .expect(fmt);
             for task_name in &args.task {
-                let found = tasks.iter().find(|t| {
-                    t.get("name")
-                        .expect(fmt)
-                        .as_str()
-                        .expect(fmt)
-                        .contains(task_name)
-                });
+                let found = tasks
+                    .iter()
+                    .find(|t| t["name"].as_str().expect(fmt).contains(task_name));
                 if let Some(found) = found {
                     rerun(found, &ci_token, args.dry_run)
                 }
