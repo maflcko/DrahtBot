@@ -183,15 +183,15 @@ async fn update_comment(
                 "{conflicts}",
                 &pulls_conflict
                     .iter()
-                    .map(|p| format!("\n* [#{ref}]({url}) ({title} by {user})",
-            ref=p.slug_num.trim_start_matches(&format!(
-                "{sl}/",
-            sl=pull.slug.str()
-                ),
-            ),
-            url=p.pull.html_url.as_ref().expect("remote api error"),
-            title=p.pull.title.as_ref().expect("remote api error").trim(),
-            user=p.pull.user.as_ref().expect("remote api error").login))
+                    .map(|p| format!(
+                        "\n* [#{sn}]({url}) ({title} by {user})",
+                        sn = p
+                            .slug_num
+                            .trim_start_matches(&format!("{sl}/", sl = pull.slug.str()),),
+                        url = p.pull.html_url.as_ref().expect("remote api error"),
+                        title = p.pull.title.as_ref().expect("remote api error").trim(),
+                        user = p.pull.user.as_ref().expect("remote api error").login
+                    ))
                     .collect::<Vec<_>>()
                     .join("")
             )
