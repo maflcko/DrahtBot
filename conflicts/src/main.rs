@@ -187,7 +187,7 @@ async fn update_comment(
                         "\n* [#{sn}]({url}) ({title} by {user})",
                         sn = p
                             .slug_num
-                            .trim_start_matches(&format!("{sl}/", sl = pull.slug.str()),),
+                            .trim_start_matches(&format!("{sl}/", sl = pull.slug.str())),
                         url = p.pull.html_url.as_ref().expect("remote api error"),
                         title = p.pull.title.as_ref().expect("remote api error").trim(),
                         user = p.pull.user.as_ref().expect("remote api error").login
