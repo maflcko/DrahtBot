@@ -29,20 +29,20 @@ struct Config {
     needs_rebase_comment: String,
 }
 
-async fn stale(
+async fn inactive_rebase(
     github: &octocrab::Octocrab,
     config: &Config,
     github_repo: &Vec<util::Slug>,
     dry_run: bool,
 ) -> octocrab::Result<()> {
-    let id_stale_comment = util::IdComment::Stale.str();
+    let id_inactive_rebase_comment = util::IdComment::InactiveRebase.str();
 
     let cutoff =
         { chrono::Utc::now() - chrono::Duration::days(config.inactive_rebase_days) }.format("%F");
-    println!("Mark stale before date {} ...", cutoff);
+    println!("Mark inactive_rebase before date {} ...", cutoff);
 
     for util::Slug { owner, repo } in github_repo {
-        println!("Get stale pull requests for {owner}/{repo} ...");
+        println!("Get inactive_rebase pull requests for {owner}/{repo} ...");
         let search_fmt = format!(
             "repo:{owner}/{repo} is:open is:pr label:\"{label}\" updated:<={cutoff}",
             owner = owner,
@@ -69,7 +69,10 @@ async fn stale(
                 repo,
                 item.number,
             );
-            let text = format!("{}\n{}", id_stale_comment, config.inactive_rebase_comment);
+            let text = format!(
+                "{}\n{}",
+                id_inactive_rebase_comment, config.inactive_rebase_comment
+            );
             if !dry_run {
                 issues_api
                     .create_comment(item.number.try_into().unwrap(), text)
@@ -87,7 +90,7 @@ async fn rebase_label(
     dry_run: bool,
 ) -> octocrab::Result<()> {
     let id_needs_rebase_comment = util::IdComment::NeedsRebase.str();
-    let id_stale_comment = util::IdComment::Stale.str();
+    let id_inactive_rebase_comment = util::IdComment::InactiveRebase.str();
 
     for util::Slug { owner, repo } in github_repo {
         println!("Get open pulls for {}/{} ...", owner, repo);
@@ -134,7 +137,7 @@ async fn rebase_label(
                         .filter(|c| {
                             let b = c.body.as_ref().unwrap();
                             b.starts_with(id_needs_rebase_comment)
-                                || b.starts_with(id_stale_comment)
+                                || b.starts_with(id_inactive_rebase_comment)
                         })
                         .collect::<Vec<_>>();
                     println!("... delete {} comments", comments.len());
@@ -179,7 +182,7 @@ async fn main() -> octocrab::Result<()> {
 
     let github = util::get_octocrab(args.github_access_token)?;
 
-    stale(&github, &config, &args.github_repo, args.dry_run).await?;
+    inactive_rebase(&github, &config, &args.github_repo, args.dry_run).await?;
     rebase_label(&github, &config, &args.github_repo, args.dry_run).await?;
 
     Ok(())
