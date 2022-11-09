@@ -40,6 +40,7 @@ pub enum IdComment {
     NeedsRebase,
     ReviewersRequested,
     InactiveRebase,
+    InactiveStale,
     Metadata, // The "root" section
     SecConflicts,
     SecCoverage,
@@ -51,6 +52,7 @@ impl IdComment {
             Self::NeedsRebase => "<!--cf906140f33d8803c4a75a2196329ecb-->",
             Self::ReviewersRequested => "<!--4a62be1de6b64f3ed646cdc7932c8cf5-->",
             Self::InactiveRebase => "<!--13523179cfe9479db18ec6c5d236f789-->",
+            Self::InactiveStale => "<!--8ac04cdde196e94527acabf64b896448-->",
             Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",
             Self::SecConflicts => "<!--174a7506f384e20aa4161008e828411d-->",
             Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",

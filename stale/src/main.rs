@@ -4,6 +4,7 @@ use clap::Parser;
 #[command(about = "\
 Handle stale issues and pull requests:
 * Comment on pull requests that needed a rebase for too long.\n\
+* Comment on pull requests that are inactive for too long.\n\
 * Update the label that indicates a rebase is required.\n\
 ", long_about = None)]
 struct Args {
@@ -25,6 +26,8 @@ struct Args {
 struct Config {
     inactive_rebase_days: i64,
     inactive_rebase_comment: String,
+    inactive_stale_days: i64,
+    inactive_stale_comment: String,
     needs_rebase_label: String,
     needs_rebase_comment: String,
 }
@@ -83,6 +86,63 @@ async fn inactive_rebase(
     Ok(())
 }
 
+async fn inactive_stale(
+    github: &octocrab::Octocrab,
+    config: &Config,
+    github_repo: &Vec<util::Slug>,
+    dry_run: bool,
+) -> octocrab::Result<()> {
+    let id_inactive_stale_comment = util::IdComment::InactiveStale.str();
+
+    let cutoff =
+        { chrono::Utc::now() - chrono::Duration::days(config.inactive_stale_days) }.format("%F");
+    println!("Mark inactive_stale before date {} ...", cutoff);
+
+    for util::Slug { owner, repo } in github_repo {
+        println!("Get inactive_stale pull requests for {owner}/{repo} ...");
+        let search_fmt = format!(
+            "repo:{owner}/{repo} is:open is:pr updated:<={cutoff}",
+            owner = owner,
+            repo = repo,
+            cutoff = cutoff
+        );
+        let items = github
+            .all_pages(
+                github
+                    .search()
+                    .issues_and_pull_requests(&search_fmt)
+                    .send()
+                    .await?,
+            )
+            .await?;
+        let issues_api = github.issues(owner, repo);
+        for (i, item) in items.iter().enumerate() {
+            println!(
+                "{}/{} (Item: {}/{}#{})",
+                i,
+                items.len(),
+                owner,
+                repo,
+                item.number,
+            );
+            let text = format!(
+                "{}\n{}",
+                id_inactive_stale_comment,
+                config
+                    .inactive_stale_comment
+                    .replace("{owner}", owner)
+                    .replace("{repo}", repo)
+            );
+            if !dry_run {
+                issues_api
+                    .create_comment(item.number.try_into().unwrap(), text)
+                    .await?;
+            }
+        }
+    }
+    Ok(())
+}
+
 async fn rebase_label(
     github: &octocrab::Octocrab,
     config: &Config,
@@ -91,6 +151,9 @@ async fn rebase_label(
 ) -> octocrab::Result<()> {
     let id_needs_rebase_comment = util::IdComment::NeedsRebase.str();
     let id_inactive_rebase_comment = util::IdComment::InactiveRebase.str();
+    let id_inactive_stale_comment = util::IdComment::InactiveStale.str();
+
+    println!("Apply rebase label");
 
     for util::Slug { owner, repo } in github_repo {
         println!("Get open pulls for {}/{} ...", owner, repo);
@@ -138,6 +201,7 @@ async fn rebase_label(
                             let b = c.body.as_ref().unwrap();
                             b.starts_with(id_needs_rebase_comment)
                                 || b.starts_with(id_inactive_rebase_comment)
+                                || b.starts_with(id_inactive_stale_comment)
                         })
                         .collect::<Vec<_>>();
                     println!("... delete {} comments", comments.len());
@@ -183,6 +247,7 @@ async fn main() -> octocrab::Result<()> {
     let github = util::get_octocrab(args.github_access_token)?;
 
     inactive_rebase(&github, &config, &args.github_repo, args.dry_run).await?;
+    inactive_stale(&github, &config, &args.github_repo, args.dry_run).await?;
     rebase_label(&github, &config, &args.github_repo, args.dry_run).await?;
 
     Ok(())
