@@ -22,7 +22,7 @@ impl SummaryCommentFeature {
         Self {
             meta: FeatureMeta::new(
                 "Summary Comment",
-                "Creates a summary comment on pulls requests with an ACK tracker.",
+                "Creates a summary comment on pull requests which tracks reviews.",
                 vec![
                     GitHubEvent::PullRequest,
                     GitHubEvent::PullRequestReview,

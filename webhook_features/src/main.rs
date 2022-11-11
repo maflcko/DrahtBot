@@ -13,7 +13,7 @@ use strum::{Display, EnumString};
 use crate::errors::{DrahtBotError, Result};
 
 #[derive(Parser, Debug)]
-#[command(author, version, about, long_about = None)]
+#[command(about="Run features on webhooks", long_about = None)]
 struct Args {
     #[arg(short, long, help = "GitHub token")]
     token: String,
