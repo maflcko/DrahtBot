@@ -161,7 +161,7 @@ pub fn get_metadata_sections_from_comments(
                 pull_num: pull_nr,
                 id: Some(c.id),
                 sections,
-            }
+            };
         }
     }
     MetaComment {
