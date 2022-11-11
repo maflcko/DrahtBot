@@ -116,70 +116,67 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
         comment += "| ACK | Count | Reviewers |\n";
         comment += "| --- | ----- | --------- |\n";
 
-        match acks {
-            Some(acks) => {
-                let mut stale_acks: HashMap<String, String> = HashMap::new();
-                let ack_map: HashMap<AckType, Vec<(String, String)>> =
-                    acks.iter().rev().fold(HashMap::new(), |mut acc, ack| {
-                        if ack.commit.is_some() && !ack.commit.as_ref().unwrap().1 {
-                            // Commit is referenced but is stale
-                            if ack.ack_type == AckType::ACK // Only add Stale for ACKs
+        if let Some(acks) = acks {
+            let mut stale_acks: HashMap<String, String> = HashMap::new();
+            let ack_map: HashMap<AckType, Vec<(String, String)>> =
+                acks.iter().rev().fold(HashMap::new(), |mut acc, ack| {
+                    if ack.commit.is_some() && !ack.commit.as_ref().unwrap().1 {
+                        // Commit is referenced but is stale
+                        if ack.ack_type == AckType::Ack // Only add Stale for ACKs
                                 && !acks.iter().any(|a| {
                                     a.commit.is_some()
                                         && a.commit.as_ref().unwrap().1
                                         && a.user == ack.user // There is no non-stale ACK from the same user
                                 })
-                            {
-                                if stale_acks.contains_key(&ack.user) {
-                                    return acc; // Skip stale ACKs from the same users
-                                } else {
-                                    stale_acks.insert(ack.user.clone(), ack.url.clone());
-                                    // Add stale ACK to the list
-                                }
-
-                                acc.entry(AckType::StaleACK)
-                                    .or_insert_with(Vec::new)
-                                    .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the stale ACK
+                        {
+                            if stale_acks.contains_key(&ack.user) {
+                                return acc; // Skip stale ACKs from the same users
+                            } else {
+                                stale_acks.insert(ack.user.clone(), ack.url.clone());
+                                // Add stale ACK to the list
                             }
-                            return acc;
-                        }
-                        if ack.ack_type.requires_commit_hash() && ack.commit.is_none() {
-                            // ACK requires a commit hash but none is referenced
-                            return acc;
-                        }
 
-                        acc.entry(ack.ack_type)
-                            .or_insert_with(Vec::new)
-                            .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the ACK
-                        acc
-                    });
-
-                // Display ACKs in the following order
-                for ack_type in &[
-                    AckType::ACK,
-                    AckType::ConceptNACK,
-                    AckType::ConceptACK,
-                    AckType::ApproachACK,
-                    AckType::ApproachNACK,
-                    AckType::StaleACK,
-                ] {
-                    if let Some(users) = ack_map.get(ack_type) {
-                        let mut users = users.clone();
-                        users.sort();
-                        comment += &format!(
-                            "| {} | {} | {} |\n",
-                            ack_type.to_string(),
-                            users.len(),
-                            users
-                                .iter()
-                                .map(|(user, url)| format!("[{}]({})", user, url))
-                                .collect::<Vec<String>>()
-                                .join(", ")
-                        );
+                            acc.entry(AckType::StaleACK)
+                                .or_insert_with(Vec::new)
+                                .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the stale ACK
+                        }
+                        return acc;
                     }
+                    if ack.ack_type.requires_commit_hash() && ack.commit.is_none() {
+                        // ACK requires a commit hash but none is referenced
+                        return acc;
+                    }
+
+                    acc.entry(ack.ack_type)
+                        .or_insert_with(Vec::new)
+                        .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the ACK
+                    acc
+                });
+
+            // Display ACKs in the following order
+            for ack_type in &[
+                AckType::Ack,
+                AckType::ConceptNACK,
+                AckType::ConceptACK,
+                AckType::ApproachACK,
+                AckType::ApproachNACK,
+                AckType::StaleACK,
+            ] {
+                if let Some(users) = ack_map.get(ack_type) {
+                    let mut users = users.clone();
+                    users.sort();
+                    comment += &format!(
+                        "| {} | {} | {} |\n",
+                        ack_type.as_str(),
+                        users.len(),
+                        users
+                            .iter()
+                            .map(|(user, url)| format!("[{}]({})", user, url))
+                            .collect::<Vec<String>>()
+                            .join(", ")
+                    );
                 }
             }
-            None => {}
         }
 
         comment += "\n";
@@ -196,22 +193,20 @@ async fn create_summary_comment(
         let login = &payload["pull_request"]["user"]["login"];
         login
             .as_str()
-            .ok_or(DrahtBotError::InvalidLogin(login.to_string()))?
+            .ok_or_else(|| DrahtBotError::InvalidLogin(login.to_string()))?
     };
 
     let repo_name = {
         let name = &payload["repository"]["name"];
         name.as_str()
-            .ok_or(DrahtBotError::InvalidRepositoryName(name.to_string()))?
+            .ok_or_else(|| DrahtBotError::InvalidRepositoryName(name.to_string()))?
     };
 
     let pr_number = {
         let pr_number = &payload["number"];
         pr_number
             .as_u64()
-            .ok_or(DrahtBotError::InvalidPullRequestNumber(
-                pr_number.to_string(),
-            ))?
+            .ok_or_else(|| DrahtBotError::InvalidPullRequestNumber(pr_number.to_string()))?
     };
 
     let cmt = util::get_metadata_sections(octocrab, &octocrab.issues(owner, repo_name), pr_number)
@@ -219,7 +214,7 @@ async fn create_summary_comment(
     let comment = summary_comment_template(true, None);
 
     util::update_metadata_comment(
-        &octocrab.issues(owner.clone(), repo_name.clone()),
+        &octocrab.issues(owner, repo_name),
         cmt,
         &comment,
         util::IdComment::SecReviews,
@@ -356,7 +351,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 enum AckType {
-    ACK,
+    Ack,
     ConceptACK,
     ConceptNACK,
     ApproachACK,
@@ -367,15 +362,12 @@ enum AckType {
 
 impl AckType {
     fn requires_commit_hash(&self) -> bool {
-        match self {
-            AckType::ACK => true,
-            _ => false,
-        }
+        matches!(self, AckType::Ack)
     }
 
-    fn to_string(&self) -> &str {
+    fn as_str(&self) -> &str {
         match self {
-            AckType::ACK => "ACK",
+            AckType::Ack => "ACK",
             AckType::ConceptACK => "Concept ACK",
             AckType::ConceptNACK => "Concept NACK",
             AckType::ApproachACK => "Approach ACK",
@@ -395,12 +387,12 @@ macro_rules! multi_vec {
 
 lazy_static! {
     static ref ACK_PATTERNS: Vec<(&'static str, AckType)> = multi_vec![
-        ["code review ack", "cr ack", "cr-ack", "crack"] => AckType::ACK;
+        ["code review ack", "cr ack", "cr-ack", "crack"] => AckType::Ack;
         ["concept ack", "concept-ack", "conceptack"] => AckType::ConceptACK;
         ["concept nack", "concept-nack", "conceptnack"] => AckType::ConceptNACK;
         ["approach ack", "approach-ack", "approachack"] => AckType::ApproachACK;
         ["approach nack", "approach-nack", "approachnack"] => AckType::ApproachNACK;
-        ["ack", "utack", "tack"] => AckType::ACK;
+        ["ack", "utack", "tack"] => AckType::Ack;
         ["nack"] => AckType::ConceptNACK
     ];
 }
@@ -521,7 +513,7 @@ mod tests {
             TestCase {
                 comment: "ACK 1234567890123456789012345678901234567890",
                 expected: vec![AckCommit {
-                    ack_type: AckType::ACK,
+                    ack_type: AckType::Ack,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                 }],
             },
@@ -532,7 +524,7 @@ mod tests {
             TestCase {
                 comment: "ACK 1234567890123456789012345678901234567890 invalid",
                 expected: vec![AckCommit {
-                    ack_type: AckType::ACK,
+                    ack_type: AckType::Ack,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                 }],
             },
@@ -540,11 +532,11 @@ mod tests {
                 comment: "ACK 1234567890123456789012345678901234567890\nACK 1234567890123456789012345678901234567890",
                 expected: vec![
                     AckCommit {
-                        ack_type: AckType::ACK,
+                        ack_type: AckType::Ack,
                         commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                     },
                     AckCommit {
-                        ack_type: AckType::ACK,
+                        ack_type: AckType::Ack,
                         commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                     },
                 ],
@@ -553,7 +545,7 @@ mod tests {
                 comment: "ACK 1234567890123456789012345678901234567890\nNACK 1234567890123456789012345678901234567890",
                 expected: vec![
                     AckCommit {
-                        ack_type: AckType::ACK,
+                        ack_type: AckType::Ack,
                         commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                     },
                     AckCommit {
@@ -583,14 +575,14 @@ mod tests {
             TestCase {
                 comment: "tACK 1234567890123456789012345678901234567890",
                 expected: vec![AckCommit {
-                    ack_type: AckType::ACK,
+                    ack_type: AckType::Ack,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                 }],
             },
             TestCase {
                 comment: "Code Review ACK 1234567890123456789012345678901234567890",
                 expected: vec![AckCommit {
-                    ack_type: AckType::ACK,
+                    ack_type: AckType::Ack,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                 }],
             },
@@ -601,7 +593,7 @@ mod tests {
             TestCase {
                 comment: "crACK 1234567890123456789012345678901234567890",
                 expected: vec![AckCommit {
-                    ack_type: AckType::ACK,
+                    ack_type: AckType::Ack,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                 }],
             },
