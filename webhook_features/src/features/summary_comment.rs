@@ -155,7 +155,7 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
                     });
 
                 // Display ACKs in the following order
-                for ack_type in vec![
+                for ack_type in &[
                     AckType::ACK,
                     AckType::ConceptNACK,
                     AckType::ConceptACK,
@@ -163,7 +163,7 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
                     AckType::ApproachNACK,
                     AckType::StaleACK,
                 ] {
-                    if let Some(users) = ack_map.get(&ack_type) {
+                    if let Some(users) = ack_map.get(ack_type) {
                         let mut users = users.clone();
                         users.sort();
                         comment += &format!(
@@ -214,7 +214,7 @@ async fn create_summary_comment(
             ))?
     };
 
-    let cmt = util::get_metadata_sections(&octocrab, &octocrab.issues(owner, repo_name), pr_number)
+    let cmt = util::get_metadata_sections(octocrab, &octocrab.issues(owner, repo_name), pr_number)
         .await?;
     let comment = summary_comment_template(true, None);
 
@@ -272,7 +272,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .iter()
         .map(|c| GitHubReviewComment {
             user: c.user.login.clone(),
-            url: c.html_url.to_string().clone(),
+            url: c.html_url.to_string(),
             body: c.body.as_ref().unwrap_or(&String::new()).clone(),
             id: c.id.to_string(),
         })
@@ -289,7 +289,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .iter()
         .map(|c| GitHubReviewComment {
             user: c.user.login.clone(),
-            url: c.html_url.to_string().clone(),
+            url: c.html_url.to_string(),
             body: c.body.as_ref().unwrap_or(&String::new()).clone(),
             id: c.id.to_string(),
         })
@@ -312,7 +312,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         let acks = parse_acks_in_comment(&comment.body); // A single comment can contain multiple acks, e.g 'Concept ACK and Code Review ACK'
 
         for ack_commit in acks {
-            let ack_type = ack_commit.ack_type.clone();
+            let ack_type = ack_commit.ack_type;
             let commit = ack_commit.commit.clone();
 
             if commit.is_none() && ack_type.requires_commit_hash() {
@@ -428,8 +428,8 @@ struct AckCommit {
 fn parse_acks_in_comment(comment: &str) -> Vec<AckCommit> {
     let comment = comment.to_lowercase();
     let words = comment
-        .split("\n")
-        .filter(|s| !s.starts_with(">")) // Ignore quoted text
+        .split('\n')
+        .filter(|s| !s.starts_with('>')) // Ignore quoted text
         .flat_map(|s| s.split(|c: char| c.is_whitespace() || c.is_ascii_punctuation())) // Split on whitespace and punctuation
         .collect::<Vec<_>>(); // Collect into a Vec
 

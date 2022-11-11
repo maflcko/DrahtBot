@@ -25,7 +25,7 @@ struct Args {
     debug: bool,
 }
 
-#[derive(Debug, Display, EnumString, PartialEq, Clone, Copy)]
+#[derive(Debug, Display, EnumString, PartialEq, Eq, Clone, Copy)]
 #[strum(serialize_all = "snake_case")]
 pub enum GitHubEvent {
     Create,
@@ -94,7 +94,7 @@ async fn main() -> Result<()> {
     let octocrab = octocrab::Octocrab::builder()
         .personal_token(args.token)
         .build()
-        .map_err(|e| DrahtBotError::GitHubError(e))?;
+        .map_err(DrahtBotError::GitHubError)?;
 
     println!("DrahtBot will will run the following features:");
     for feature in features() {
@@ -102,14 +102,14 @@ async fn main() -> Result<()> {
         println!("   {}", feature.meta().description());
     }
 
-    println!("");
+    println!();
 
     // Get the bot's username
     let bot_username = octocrab
         .current()
         .user()
         .await
-        .map_err(|e| DrahtBotError::GitHubError(e))?
+        .map_err(DrahtBotError::GitHubError)?
         .login;
 
     println!("Running as {}...", bot_username);
@@ -129,5 +129,5 @@ async fn main() -> Result<()> {
     .bind(format!("{}:{}", args.host, args.port))?
     .run()
     .await
-    .map_err(|e| DrahtBotError::IOError(e))
+    .map_err(DrahtBotError::IOError)
 }
