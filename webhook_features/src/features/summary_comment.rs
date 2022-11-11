@@ -107,7 +107,8 @@ fn summary_comment_template(initial: bool, acks: Option<Vec<Review>>) -> String 
 ### Reviews
 Please ACK this PR if you have reviewed it and believe it to be ready for merging.
 See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review for more information.
-"#.to_string();
+"#
+    .to_string();
 
     if initial || acks.is_none() || acks.as_ref().unwrap().is_empty() {
         comment += "ACKs will appear here.\n";
@@ -213,7 +214,8 @@ async fn create_summary_comment(
             ))?
     };
 
-    let cmt = util::get_metadata_sections(&octocrab, &octocrab.issues(owner, repo_name), pr_number).await?;
+    let cmt = util::get_metadata_sections(&octocrab, &octocrab.issues(owner, repo_name), pr_number)
+        .await?;
     let comment = summary_comment_template(true, None);
 
     util::update_metadata_comment(
@@ -221,7 +223,9 @@ async fn create_summary_comment(
         cmt,
         &comment,
         util::IdComment::SecReviews,
-        false).await?;
+        false,
+    )
+    .await?;
 
     Ok(())
 }
@@ -251,28 +255,47 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .get(pr_number)
         .await?;
 
-    let all_comments = ctx.octocrab.all_pages(ctx.octocrab.issues(&repo.owner, &repo.name)
-        .list_comments(pr_number).send().await?).await?;
+    let all_comments = ctx
+        .octocrab
+        .all_pages(
+            ctx.octocrab
+                .issues(&repo.owner, &repo.name)
+                .list_comments(pr_number)
+                .send()
+                .await?,
+        )
+        .await?;
 
     let cmt = util::get_metadata_sections_from_comments(&all_comments, pr_number);
-    
-    let mut all_comments = all_comments.iter().map(|c| GitHubReviewComment {
-        user: c.user.login.clone(),
-        url: c.html_url.to_string().clone(),
-        body: c.body.as_ref().unwrap_or(&String::new()).clone(),
-        id: c.id.to_string(),
-    }).collect::<Vec<GitHubReviewComment>>();
-    let mut all_review_comments = ctx.octocrab.all_pages(ctx.octocrab.pulls(&repo.owner, &repo.name)
-        .list_reviews(pr_number).await?)
-        .await?.iter().map(|c| GitHubReviewComment {
+
+    let mut all_comments = all_comments
+        .iter()
+        .map(|c| GitHubReviewComment {
             user: c.user.login.clone(),
             url: c.html_url.to_string().clone(),
             body: c.body.as_ref().unwrap_or(&String::new()).clone(),
             id: c.id.to_string(),
-        }).collect::<Vec<GitHubReviewComment>>();
+        })
+        .collect::<Vec<GitHubReviewComment>>();
+    let mut all_review_comments = ctx
+        .octocrab
+        .all_pages(
+            ctx.octocrab
+                .pulls(&repo.owner, &repo.name)
+                .list_reviews(pr_number)
+                .await?,
+        )
+        .await?
+        .iter()
+        .map(|c| GitHubReviewComment {
+            user: c.user.login.clone(),
+            url: c.html_url.to_string().clone(),
+            body: c.body.as_ref().unwrap_or(&String::new()).clone(),
+            id: c.id.to_string(),
+        })
+        .collect::<Vec<GitHubReviewComment>>();
 
     all_comments.append(&mut all_review_comments);
-
 
     let mut ack_per_user: HashMap<String, Vec<AckCommit>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
     let mut parsed_acks = Vec::new();
@@ -325,7 +348,9 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         cmt,
         &comment,
         util::IdComment::SecReviews,
-        false).await?;
+        false,
+    )
+    .await?;
     Ok(())
 }
 
@@ -437,7 +462,7 @@ fn parse_acks_in_comment(comment: &str) -> Vec<AckCommit> {
                     word = word.trim_start_matches("re");
                 }
 
-                if pattern_word != &word{
+                if pattern_word != &word {
                     matches = false;
                     break;
                 }
