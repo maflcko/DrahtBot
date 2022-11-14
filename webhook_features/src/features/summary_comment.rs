@@ -89,6 +89,7 @@ impl Feature for SummaryCommentFeature {
                 refresh_summary_comment(ctx, repo, pr_number).await?
             }
             GitHubEvent::PullRequestReview => {
+                // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request_review
                 let pr_number = payload["pull_request"]["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
@@ -103,77 +104,74 @@ impl Feature for SummaryCommentFeature {
 fn summary_comment_template(acks: Vec<Review>) -> String {
     let mut comment = r#"
 ### Reviews
-Please ACK this PR if you have reviewed it and believe it to be ready for merging.
-See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review for more information.
+See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review for information on the review process.
 "#
     .to_string();
 
     if acks.is_empty() {
-        comment += "ACKs will appear here.\n";
+        comment += "A summary of reviews will appear here.\n";
     } else {
-        comment += "| ACK | Count | Reviewers |\n";
-        comment += "| --- | ----- | --------- |\n";
+        comment += "| Type | Count | Reviewers |\n";
+        comment += "| ---- | ----- | --------- |\n";
 
-        {
-            let mut stale_acks: HashMap<String, String> = HashMap::new();
-            let ack_map: HashMap<AckType, Vec<(String, String)>> =
-                acks.iter().rev().fold(HashMap::new(), |mut acc, ack| {
-                    if ack.commit.is_some() && !ack.commit.as_ref().unwrap().1 {
-                        // Commit is referenced but is stale
-                        if ack.ack_type == AckType::Ack // Only add Stale for ACKs
+        let mut stale_acks: HashMap<String, String> = HashMap::new();
+        let ack_map: HashMap<AckType, Vec<(String, String)>> =
+            acks.iter().rev().fold(HashMap::new(), |mut acc, ack| {
+                if ack.commit.is_some() && !ack.commit.as_ref().unwrap().1 {
+                    // Commit is referenced but is stale
+                    if ack.ack_type == AckType::Ack // Only add Stale for ACKs
                                 && !acks.iter().any(|a| {
                                     a.commit.is_some()
                                         && a.commit.as_ref().unwrap().1
                                         && a.user == ack.user // There is no non-stale ACK from the same user
                                 })
-                        {
-                            if stale_acks.contains_key(&ack.user) {
-                                return acc; // Skip stale ACKs from the same users
-                            } else {
-                                stale_acks.insert(ack.user.clone(), ack.url.clone());
-                                // Add stale ACK to the list
-                            }
-
-                            acc.entry(AckType::StaleACK)
-                                .or_insert_with(Vec::new)
-                                .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the stale ACK
+                    {
+                        if stale_acks.contains_key(&ack.user) {
+                            return acc; // Skip stale ACKs from the same users
+                        } else {
+                            stale_acks.insert(ack.user.clone(), ack.url.clone());
+                            // Add stale ACK to the list
                         }
-                        return acc;
-                    }
-                    if ack.ack_type.requires_commit_hash() && ack.commit.is_none() {
-                        // ACK requires a commit hash but none is referenced
-                        return acc;
-                    }
 
-                    acc.entry(ack.ack_type)
-                        .or_insert_with(Vec::new)
-                        .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the ACK
-                    acc
-                });
-
-            // Display ACKs in the following order
-            for ack_type in &[
-                AckType::Ack,
-                AckType::ConceptNACK,
-                AckType::ConceptACK,
-                AckType::ApproachACK,
-                AckType::ApproachNACK,
-                AckType::StaleACK,
-            ] {
-                if let Some(users) = ack_map.get(ack_type) {
-                    let mut users = users.clone();
-                    users.sort();
-                    comment += &format!(
-                        "| {} | {} | {} |\n",
-                        ack_type.as_str(),
-                        users.len(),
-                        users
-                            .iter()
-                            .map(|(user, url)| format!("[{}]({})", user, url))
-                            .collect::<Vec<String>>()
-                            .join(", ")
-                    );
+                        acc.entry(AckType::StaleACK)
+                            .or_insert_with(Vec::new)
+                            .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the stale ACK
+                    }
+                    return acc;
                 }
+                if ack.ack_type.requires_commit_hash() && ack.commit.is_none() {
+                    // ACK requires a commit hash but none is referenced
+                    return acc;
+                }
+
+                acc.entry(ack.ack_type)
+                    .or_insert_with(Vec::new)
+                    .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the ACK
+                acc
+            });
+
+        // Display ACKs in the following order
+        for ack_type in &[
+            AckType::Ack,
+            AckType::ConceptNACK,
+            AckType::ConceptACK,
+            AckType::ApproachACK,
+            AckType::ApproachNACK,
+            AckType::StaleACK,
+        ] {
+            if let Some(users) = ack_map.get(ack_type) {
+                let mut users = users.clone();
+                users.sort();
+                comment += &format!(
+                    "| {} | {} | {} |\n",
+                    ack_type.as_str(),
+                    users.len(),
+                    users
+                        .iter()
+                        .map(|(user, url)| format!("[{}]({})", user, url))
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                );
             }
         }
 
