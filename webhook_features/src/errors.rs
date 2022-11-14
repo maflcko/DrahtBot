@@ -10,10 +10,4 @@ pub enum DrahtBotError {
     GitHubError(#[from] octocrab::Error),
     #[error("Key not found")]
     KeyNotFound,
-    #[error("Invalid login {0}")]
-    InvalidLogin(String),
-    #[error("Invalid repository name {0}")]
-    InvalidRepositoryName(String),
-    #[error("Invalid pull request number {0}")]
-    InvalidPullRequestNumber(String),
 }

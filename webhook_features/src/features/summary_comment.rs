@@ -65,11 +65,8 @@ impl Feature for SummaryCommentFeature {
         println!("Handling event: {:?}", event);
         println!("Action: {:?}", payload["action"]);
         match event {
-            GitHubEvent::PullRequest if action == "opened" => {
-                create_summary_comment(payload, &ctx.octocrab).await?
-            }
-
-            GitHubEvent::PullRequest if action == "synchronize" => {
+            GitHubEvent::PullRequest if action == "synchronize" || action == "opened" => {
+                // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
                 let pr_number = payload["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
@@ -102,7 +99,7 @@ impl Feature for SummaryCommentFeature {
     }
 }
 
-fn summary_comment_template(initial: bool, acks: Option<Vec<Review>>) -> String {
+fn summary_comment_template(acks: Vec<Review>) -> String {
     let mut comment = r#"
 ### Reviews
 Please ACK this PR if you have reviewed it and believe it to be ready for merging.
@@ -110,13 +107,13 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
 "#
     .to_string();
 
-    if initial || acks.is_none() || acks.as_ref().unwrap().is_empty() {
+    if acks.is_empty() {
         comment += "ACKs will appear here.\n";
     } else {
         comment += "| ACK | Count | Reviewers |\n";
         comment += "| --- | ----- | --------- |\n";
 
-        if let Some(acks) = acks {
+        {
             let mut stale_acks: HashMap<String, String> = HashMap::new();
             let ack_map: HashMap<AckType, Vec<(String, String)>> =
                 acks.iter().rev().fold(HashMap::new(), |mut acc, ack| {
@@ -183,46 +180,6 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
     }
 
     comment
-}
-
-async fn create_summary_comment(
-    payload: &serde_json::Value,
-    octocrab: &octocrab::Octocrab,
-) -> Result<()> {
-    let owner = {
-        let login = &payload["pull_request"]["user"]["login"];
-        login
-            .as_str()
-            .ok_or_else(|| DrahtBotError::InvalidLogin(login.to_string()))?
-    };
-
-    let repo_name = {
-        let name = &payload["repository"]["name"];
-        name.as_str()
-            .ok_or_else(|| DrahtBotError::InvalidRepositoryName(name.to_string()))?
-    };
-
-    let pr_number = {
-        let pr_number = &payload["number"];
-        pr_number
-            .as_u64()
-            .ok_or_else(|| DrahtBotError::InvalidPullRequestNumber(pr_number.to_string()))?
-    };
-
-    let cmt = util::get_metadata_sections(octocrab, &octocrab.issues(owner, repo_name), pr_number)
-        .await?;
-    let comment = summary_comment_template(true, None);
-
-    util::update_metadata_comment(
-        &octocrab.issues(owner, repo_name),
-        cmt,
-        &comment,
-        util::IdComment::SecReviews,
-        false,
-    )
-    .await?;
-
-    Ok(())
 }
 
 fn should_skip_ack(commit_ack: AckCommit, commit_acks: Vec<AckCommit>) -> bool {
@@ -337,7 +294,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         }
     }
 
-    let comment = summary_comment_template(false, Some(parsed_acks));
+    let comment = summary_comment_template(parsed_acks);
     util::update_metadata_comment(
         &ctx.octocrab.issues(&repo.owner, &repo.name),
         cmt,
