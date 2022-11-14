@@ -21,8 +21,6 @@ struct Args {
     host: String,
     #[arg(long, help = "Port to listen on", default_value = "1337")]
     port: u16,
-    #[arg(long, help = "Enable debug mode")]
-    debug: bool,
 }
 
 #[derive(Debug, Display, EnumString, PartialEq, Eq, Clone, Copy)]
@@ -47,7 +45,6 @@ async fn index() -> &'static str {
 pub struct Context {
     octocrab: Octocrab,
     bot_username: String,
-    debug: bool,
 }
 
 #[post("/postreceive")]
@@ -117,7 +114,6 @@ async fn main() -> Result<()> {
     let context = Context {
         octocrab,
         bot_username,
-        debug: args.debug,
     };
 
     HttpServer::new(move || {

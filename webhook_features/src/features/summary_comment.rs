@@ -63,7 +63,7 @@ impl Feature for SummaryCommentFeature {
         };
 
         println!("Handling event: {:?}", event);
-        println!("Action: {:?}", payload["action"]);
+        println!("Action: {action}");
         match event {
             GitHubEvent::PullRequest if action == "synchronize" || action == "opened" => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
@@ -74,11 +74,12 @@ impl Feature for SummaryCommentFeature {
                 refresh_summary_comment(ctx, repo, pr_number).await?
             }
             GitHubEvent::IssueComment if payload["issue"].get("pull_request").is_some() => {
+                // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issue_comment
                 let comment_author = payload["comment"]["user"]["login"]
                     .as_str()
                     .ok_or(DrahtBotError::KeyNotFound)?;
 
-                if !ctx.debug && comment_author == ctx.bot_username {
+                if comment_author == ctx.bot_username {
                     return Ok(());
                 }
 
