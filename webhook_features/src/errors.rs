@@ -8,8 +8,6 @@ pub enum DrahtBotError {
     IOError(#[from] std::io::Error),
     #[error("GitHub Error {0}")]
     GitHubError(#[from] octocrab::Error),
-    #[error("UnknownEvent")]
-    UnknownEvent,
     #[error("Key not found")]
     KeyNotFound,
     #[error("Invalid login {0}")]

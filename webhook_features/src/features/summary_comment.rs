@@ -47,7 +47,7 @@ impl Feature for SummaryCommentFeature {
     ) -> Result<()> {
         let action = payload["action"]
             .as_str()
-            .ok_or(DrahtBotError::UnknownEvent)?;
+            .ok_or(DrahtBotError::KeyNotFound)?;
 
         let repo_user = payload["repository"]["owner"]["login"]
             .as_str()
