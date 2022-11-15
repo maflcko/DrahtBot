@@ -44,7 +44,6 @@ async fn index() -> &'static str {
 #[derive(Debug, Clone)]
 pub struct Context {
     octocrab: Octocrab,
-    bot_username: String,
 }
 
 #[post("/postreceive")]
@@ -111,10 +110,7 @@ async fn main() -> Result<()> {
 
     println!("Running as {}...", bot_username);
 
-    let context = Context {
-        octocrab,
-        bot_username,
-    };
+    let context = Context { octocrab };
 
     HttpServer::new(move || {
         App::new()

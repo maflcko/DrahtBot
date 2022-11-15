@@ -70,19 +70,10 @@ impl Feature for SummaryCommentFeature {
                 let pr_number = payload["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-
                 refresh_summary_comment(ctx, repo, pr_number).await?
             }
             GitHubEvent::IssueComment if payload["issue"].get("pull_request").is_some() => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issue_comment
-                let comment_author = payload["comment"]["user"]["login"]
-                    .as_str()
-                    .ok_or(DrahtBotError::KeyNotFound)?;
-
-                if comment_author == ctx.bot_username {
-                    return Ok(());
-                }
-
                 let pr_number = payload["issue"]["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
@@ -101,14 +92,14 @@ impl Feature for SummaryCommentFeature {
     }
 }
 
-fn summary_comment_template(acks: Vec<Review>) -> String {
+fn summary_comment_template(reviews: Vec<Review>) -> String {
     let mut comment = r#"
 ### Reviews
 See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review for information on the review process.
 "#
     .to_string();
 
-    if acks.is_empty() {
+    if reviews.is_empty() {
         comment += "A summary of reviews will appear here.\n";
     } else {
         comment += "| Type | Count | Reviewers |\n";
@@ -116,11 +107,11 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
 
         let mut stale_acks: HashMap<String, String> = HashMap::new();
         let ack_map: HashMap<AckType, Vec<(String, String)>> =
-            acks.iter().rev().fold(HashMap::new(), |mut acc, ack| {
+            reviews.iter().rev().fold(HashMap::new(), |mut acc, ack| {
                 if ack.commit.is_some() && !ack.commit.as_ref().unwrap().1 {
                     // Commit is referenced but is stale
                     if ack.ack_type == AckType::Ack // Only add Stale for ACKs
-                                && !acks.iter().any(|a| {
+                                && !reviews.iter().any(|a| {
                                     a.commit.is_some()
                                         && a.commit.as_ref().unwrap().1
                                         && a.user == ack.user // There is no non-stale ACK from the same user
