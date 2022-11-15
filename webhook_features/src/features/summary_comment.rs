@@ -130,10 +130,6 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
                     }
                     return acc;
                 }
-                if ack.ack_type.requires_commit_hash() && ack.commit.is_none() {
-                    // ACK requires a commit hash but none is referenced
-                    return acc;
-                }
 
                 acc.entry(ack.ack_type)
                     .or_insert_with(Vec::new)
@@ -247,11 +243,6 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         if let Some(ack_commit) = review {
             let ack_type = ack_commit.ack_type;
             let commit = ack_commit.commit.clone();
-
-            if commit.is_none() && ack_type.requires_commit_hash() {
-                // If the ack type requires a commit hash, but the comment does not contain one, skip it
-                continue;
-            }
 
             if ack_per_user.contains_key(&comment.user) // If the user already has an ack for this commit
                 && should_skip_ack(ack_commit.clone(), ack_per_user[&comment.user].clone())
