@@ -77,14 +77,26 @@ impl Feature for SummaryCommentFeature {
                 let pr_number = payload["issue"]["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-                refresh_summary_comment(ctx, repo, pr_number).await?
+                if payload["issue"]["state"]
+                    .as_str()
+                    .ok_or(DrahtBotError::KeyNotFound)?
+                    == "open"
+                {
+                    refresh_summary_comment(ctx, repo, pr_number).await?
+                }
             }
             GitHubEvent::PullRequestReview => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request_review
                 let pr_number = payload["pull_request"]["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-                refresh_summary_comment(ctx, repo, pr_number).await?
+                if payload["pull_request"]["state"]
+                    .as_str()
+                    .ok_or(DrahtBotError::KeyNotFound)?
+                    == "open"
+                {
+                    refresh_summary_comment(ctx, repo, pr_number).await?
+                }
             }
             _ => {}
         }
