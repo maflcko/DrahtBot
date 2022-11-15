@@ -24,9 +24,9 @@ impl SummaryCommentFeature {
                 "Summary Comment",
                 "Creates a summary comment on pull requests which tracks reviews.",
                 vec![
+                    GitHubEvent::IssueComment,
                     GitHubEvent::PullRequest,
                     GitHubEvent::PullRequestReview,
-                    GitHubEvent::IssueComment,
                 ],
             ),
         }
@@ -42,7 +42,7 @@ impl Feature for SummaryCommentFeature {
     async fn handle(
         &self,
         ctx: &Context,
-        event: GitHubEvent,
+        event: &GitHubEvent,
         payload: &serde_json::Value,
     ) -> Result<()> {
         let action = payload["action"]

@@ -39,7 +39,7 @@ pub trait Feature {
     async fn handle(
         &self,
         ctx: &Context,
-        event: GitHubEvent,
+        event: &GitHubEvent,
         payload: &serde_json::Value,
     ) -> Result<()>;
 }

@@ -12,7 +12,7 @@ use strum::{Display, EnumString};
 
 use crate::errors::{DrahtBotError, Result};
 
-#[derive(Parser, Debug)]
+#[derive(Parser)]
 #[command(about="Run features on webhooks", long_about = None)]
 struct Args {
     #[arg(short, long, help = "GitHub token")]
@@ -23,16 +23,12 @@ struct Args {
     port: u16,
 }
 
-#[derive(Debug, Display, EnumString, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Display, EnumString, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum GitHubEvent {
-    Create,
     IssueComment,
-    Ping,
     PullRequest,
     PullRequestReview,
-    PullRequestReviewComment,
-    Push,
 
     Unknown,
 }
@@ -76,7 +72,7 @@ async fn emit_event(
 ) -> Result<()> {
     for feature in features() {
         if feature.meta().events().contains(&event) {
-            feature.handle(ctx, event, &data).await?;
+            feature.handle(ctx, &event, &data).await?;
         }
     }
 
