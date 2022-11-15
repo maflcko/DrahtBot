@@ -343,7 +343,8 @@ struct Review {
 }
 
 fn is_commit_hash(s: &str) -> bool {
-    s.len() == 40 && s.chars().all(|c| c.is_ascii_hexdigit())
+    // Use length from https://github.com/bitcoin-core/bitcoin-maintainer-tools/blob/78ab16ae88af7a5ef886ae8cef6df2e9ef3f6085/github-merge.py#L211
+    s.len() >= 6 && s.chars().all(|c| c.is_ascii_hexdigit())
 }
 
 #[derive(Debug, PartialEq, Clone, Hash, Eq)]
@@ -505,6 +506,13 @@ mod tests {
                 expected: Some(AckCommit {
                     ack_type: AckType::Ack,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                }),
+            },
+            TestCase {
+                comment: "Code Review ACK 123456",
+                expected: Some(AckCommit {
+                    ack_type: AckType::Ack,
+                    commit: Some(Commit("123456".to_string())),
                 }),
             },
             TestCase {
