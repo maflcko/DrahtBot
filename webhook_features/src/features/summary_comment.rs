@@ -187,7 +187,6 @@ struct GitHubReviewComment {
     user: String,
     url: String,
     body: String,
-    id: String,
 }
 
 async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64) -> Result<()> {
@@ -211,14 +210,14 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     let cmt = util::get_metadata_sections_from_comments(&all_comments, pr_number);
 
     let mut all_comments = all_comments
-        .iter()
+        .into_iter()
+        .filter(|c| cmt.id != Some(c.id))
         .map(|c| GitHubReviewComment {
-            user: c.user.login.clone(),
+            user: c.user.login,
             url: c.html_url.to_string(),
-            body: c.body.as_ref().unwrap_or(&String::new()).clone(),
-            id: c.id.to_string(),
+            body: c.body.unwrap_or_default(),
         })
-        .collect::<Vec<GitHubReviewComment>>();
+        .collect::<Vec<_>>();
     let mut all_review_comments = ctx
         .octocrab
         .all_pages(
@@ -228,14 +227,13 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
                 .await?,
         )
         .await?
-        .iter()
+        .into_iter()
         .map(|c| GitHubReviewComment {
-            user: c.user.login.clone(),
+            user: c.user.login,
             url: c.html_url.to_string(),
-            body: c.body.as_ref().unwrap_or(&String::new()).clone(),
-            id: c.id.to_string(),
+            body: c.body.unwrap_or_default(),
         })
-        .collect::<Vec<GitHubReviewComment>>();
+        .collect::<Vec<_>>();
 
     all_comments.append(&mut all_review_comments);
 
@@ -244,13 +242,6 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
 
     println!("Comments count {}", all_comments.len());
     for comment in all_comments {
-        // Check comment id is not the same as cmt.id wichi is optional
-        if let Some(cmt_id) = &cmt.id {
-            if cmt_id.to_string() == comment.id {
-                continue;
-            }
-        }
-
         let acks = parse_acks_in_comment(&comment.body); // A single comment can contain multiple acks, e.g 'Concept ACK and Code Review ACK'
 
         for ack_commit in acks {
