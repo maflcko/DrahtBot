@@ -116,11 +116,11 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
         // Display ACKs in the following order
         for ack_type in &[
             AckType::Ack,
-            AckType::ConceptNACK,
-            AckType::ConceptACK,
-            AckType::ApproachACK,
-            AckType::ApproachNACK,
-            AckType::StaleACK,
+            AckType::ConceptNack,
+            AckType::ConceptAck,
+            AckType::ApproachAck,
+            AckType::ApproachNack,
+            AckType::StaleAck,
         ] {
             if let Some(mut users) = ack_map.remove(ack_type) {
                 users.sort();
@@ -212,7 +212,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
                 user: comment.user,
                 ack_type: if ac.ack_type == AckType::Ack && ac.commit.as_ref() == Some(&head_commit)
                 {
-                    AckType::StaleACK
+                    AckType::StaleAck
                 } else {
                     ac.ack_type
                 },
@@ -242,12 +242,12 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 enum AckType {
     Ack,
-    ConceptACK,
-    ConceptNACK,
-    ApproachACK,
-    ApproachNACK,
+    ConceptAck,
+    ConceptNack,
+    ApproachAck,
+    ApproachNack,
 
-    StaleACK, // ACK, but the commit is not the head of the PR anymore
+    StaleAck, // ACK, but the commit is not the head of the PR anymore
 }
 
 impl AckType {
@@ -258,11 +258,11 @@ impl AckType {
     fn as_str(&self) -> &str {
         match self {
             AckType::Ack => "ACK",
-            AckType::ConceptACK => "Concept ACK",
-            AckType::ConceptNACK => "Concept NACK",
-            AckType::ApproachACK => "Approach ACK",
-            AckType::ApproachNACK => "Approach NACK",
-            AckType::StaleACK => "Stale ACK",
+            AckType::ConceptAck => "Concept ACK",
+            AckType::ConceptNack => "Concept NACK",
+            AckType::ApproachAck => "Approach ACK",
+            AckType::ApproachNack => "Approach NACK",
+            AckType::StaleAck => "Stale ACK",
         }
     }
 }
@@ -278,12 +278,12 @@ macro_rules! multi_vec {
 lazy_static! {
     static ref ACK_PATTERNS: Vec<(&'static str, AckType)> = multi_vec![
         ["code review ack", "cr ack", "cr-ack", "crack"] => AckType::Ack;
-        ["concept ack", "concept-ack", "conceptack"] => AckType::ConceptACK;
-        ["concept nack", "concept-nack", "conceptnack"] => AckType::ConceptNACK;
-        ["approach ack", "approach-ack", "approachack"] => AckType::ApproachACK;
-        ["approach nack", "approach-nack", "approachnack"] => AckType::ApproachNACK;
+        ["concept ack", "concept-ack", "conceptack"] => AckType::ConceptAck;
+        ["concept nack", "concept-nack", "conceptnack"] => AckType::ConceptNack;
+        ["approach ack", "approach-ack", "approachack"] => AckType::ApproachAck;
+        ["approach nack", "approach-nack", "approachnack"] => AckType::ApproachNack;
         ["ack", "utack", "tack"] => AckType::Ack;
-        ["nack"] => AckType::ConceptNACK
+        ["nack"] => AckType::ConceptNack
     ];
 }
 
@@ -438,14 +438,14 @@ mod tests {
             TestCase {
                 comment: "Concept ACK",
                 expected: Some(AckCommit {
-                    ack_type: AckType::ConceptACK,
+                    ack_type: AckType::ConceptAck,
                     commit: None,
                 }),
             },
             TestCase {
                 comment: "Concept ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
-                    ack_type: AckType::ConceptACK,
+                    ack_type: AckType::ConceptAck,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                 }),
             },
@@ -488,28 +488,28 @@ mod tests {
             TestCase {
                 comment: "Approach ACK",
                 expected: Some(AckCommit {
-                    ack_type: AckType::ApproachACK,
+                    ack_type: AckType::ApproachAck,
                     commit: None,
                 }),
             },
             TestCase {
                 comment: "Approach ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
-                    ack_type: AckType::ApproachACK,
+                    ack_type: AckType::ApproachAck,
                     commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
                 }),
             },
             TestCase {
                 comment: "Concept NACK",
                 expected: Some(AckCommit {
-                    ack_type: AckType::ConceptNACK,
+                    ack_type: AckType::ConceptNack,
                     commit: None,
                 }),
             },
             TestCase {
                 comment: "nack this change!",
                 expected: Some(AckCommit {
-                    ack_type: AckType::ConceptNACK,
+                    ack_type: AckType::ConceptNack,
                     commit: None,
                 }),
             },
@@ -521,7 +521,7 @@ mod tests {
                 comment: "This is a Concept ACK for me!",
                 expected: Some(
                     AckCommit {
-                        ack_type: AckType::ConceptACK,
+                        ack_type: AckType::ConceptAck,
                         commit: None,
                     },
                 ),
