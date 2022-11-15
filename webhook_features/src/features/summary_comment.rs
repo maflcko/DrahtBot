@@ -233,7 +233,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         cmt,
         &comment,
         util::IdComment::SecReviews,
-        false,
+        ctx.dry_run,
     )
     .await?;
     Ok(())

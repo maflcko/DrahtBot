@@ -21,6 +21,9 @@ struct Args {
     host: String,
     #[arg(long, help = "Port to listen on", default_value = "1337")]
     port: u16,
+    /// Print changes/edits instead of calling the GitHub/CI API.
+    #[arg(long, default_value_t = false)]
+    dry_run: bool,
 }
 
 #[derive(Debug, Display, EnumString, PartialEq, Eq)]
@@ -37,9 +40,11 @@ pub enum GitHubEvent {
 async fn index() -> &'static str {
     "Welcome to DrahtBot!"
 }
+
 #[derive(Debug, Clone)]
 pub struct Context {
     octocrab: Octocrab,
+    dry_run: bool,
 }
 
 #[post("/postreceive")]
@@ -106,7 +111,10 @@ async fn main() -> Result<()> {
 
     println!("Running as {}...", bot_username);
 
-    let context = Context { octocrab };
+    let context = Context {
+        octocrab,
+        dry_run: args.dry_run,
+    };
 
     HttpServer::new(move || {
         App::new()
