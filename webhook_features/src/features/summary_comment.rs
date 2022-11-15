@@ -200,7 +200,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
 
     all_comments.append(&mut all_review_comments);
 
-    let head_commit = Commit(pr.head.sha);
+    let head_commit = pr.head.sha;
 
     let mut user_reviews: HashMap<String, Vec<Review>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
 
@@ -208,10 +208,10 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     for comment in all_comments.into_iter() {
         if let Some(ac) = parse_review(&comment.body) {
             let v = user_reviews.entry(comment.user.clone()).or_default();
+            let has_current_head = ac.commit.map_or(false, |c| head_commit.starts_with(&c));
             v.push(Review {
                 user: comment.user,
-                ack_type: if ac.ack_type == AckType::Ack && ac.commit.as_ref() == Some(&head_commit)
-                {
+                ack_type: if ac.ack_type == AckType::Ack && !has_current_head {
                     AckType::StaleAck
                 } else {
                     ac.ack_type
@@ -300,12 +300,9 @@ fn is_commit_hash(s: &str) -> bool {
 }
 
 #[derive(Debug, PartialEq)]
-struct Commit(String);
-
-#[derive(Debug, PartialEq)]
 struct AckCommit {
     ack_type: AckType,
-    commit: Option<Commit>,
+    commit: Option<String>,
 }
 
 fn parse_review(comment: &str) -> Option<AckCommit> {
@@ -356,7 +353,7 @@ fn parse_review(comment: &str) -> Option<AckCommit> {
                     // If there are more words after the pattern, check if the next word is a commit hash
                     let next_word = words[pos + pattern_words.len()];
                     if is_commit_hash(next_word) {
-                        commit = Some(Commit(next_word.to_string())); // If there is a commit hash, attach it to the ack
+                        commit = Some(next_word.to_string()); // If there is a commit hash, attach it to the ack
                     }
 
                     if ack_type.requires_commit_hash() && commit.is_none() {
@@ -403,7 +400,7 @@ mod tests {
                 comment: "ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::Ack,
-                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    commit: Some("1234567890123456789012345678901234567890".to_string()),
                 }),
             },
             TestCase {
@@ -414,7 +411,7 @@ mod tests {
                 comment: "ACK 1234567890123456789012345678901234567890 invalid",
                 expected: Some(AckCommit {
                     ack_type: AckType::Ack,
-                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    commit: Some("1234567890123456789012345678901234567890".to_string()),
                 }),
             },
             TestCase {
@@ -422,7 +419,7 @@ mod tests {
                 expected: Some(
                     AckCommit {
                         ack_type: AckType::Ack,
-                        commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                        commit: Some("1234567890123456789012345678901234567890".to_string()),
                     },
                 ),
             },
@@ -431,7 +428,7 @@ mod tests {
                 expected: Some(
                     AckCommit {
                         ack_type: AckType::Ack,
-                        commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                        commit: Some("1234567890123456789012345678901234567890".to_string()),
                     },
                 ),
             },
@@ -446,7 +443,7 @@ mod tests {
                 comment: "Concept ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::ConceptAck,
-                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    commit: Some("1234567890123456789012345678901234567890".to_string()),
                 }),
             },
             TestCase {
@@ -457,21 +454,21 @@ mod tests {
                 comment: "tACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::Ack,
-                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    commit: Some("1234567890123456789012345678901234567890".to_string()),
                 }),
             },
             TestCase {
                 comment: "Code Review ACK 123456",
                 expected: Some(AckCommit {
                     ack_type: AckType::Ack,
-                    commit: Some(Commit("123456".to_string())),
+                    commit: Some("123456".to_string()),
                 }),
             },
             TestCase {
                 comment: "Code Review ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::Ack,
-                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    commit: Some("1234567890123456789012345678901234567890".to_string()),
                 }),
             },
             TestCase {
@@ -482,7 +479,7 @@ mod tests {
                 comment: "crACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::Ack,
-                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    commit: Some("1234567890123456789012345678901234567890".to_string()),
                 }),
             },
             TestCase {
@@ -496,7 +493,7 @@ mod tests {
                 comment: "Approach ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::ApproachAck,
-                    commit: Some(Commit("1234567890123456789012345678901234567890".to_string())),
+                    commit: Some("1234567890123456789012345678901234567890".to_string()),
                 }),
             },
             TestCase {
