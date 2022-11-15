@@ -17,7 +17,7 @@ use crate::errors::{DrahtBotError, Result};
 struct Args {
     #[arg(short, long, help = "GitHub token")]
     token: String,
-    #[arg(long, help = "Host to listen on", default_value = "0.0.0.0")]
+    #[arg(long, help = "Host to listen on", default_value = "localhost")]
     host: String,
     #[arg(long, help = "Port to listen on", default_value = "1337")]
     port: u16,
