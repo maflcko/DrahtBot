@@ -105,35 +105,11 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
         comment += "| Type | Count | Reviewers |\n";
         comment += "| ---- | ----- | --------- |\n";
 
-        let mut stale_acks: HashMap<String, String> = HashMap::new();
-        let ack_map: HashMap<AckType, Vec<(String, String)>> =
-            reviews.iter().rev().fold(HashMap::new(), |mut acc, ack| {
-                if ack.commit.is_some() && !ack.commit.as_ref().unwrap().1 {
-                    // Commit is referenced but is stale
-                    if ack.ack_type == AckType::Ack // Only add Stale for ACKs
-                                && !reviews.iter().any(|a| {
-                                    a.commit.is_some()
-                                        && a.commit.as_ref().unwrap().1
-                                        && a.user == ack.user // There is no non-stale ACK from the same user
-                                })
-                    {
-                        if stale_acks.contains_key(&ack.user) {
-                            return acc; // Skip stale ACKs from the same users
-                        } else {
-                            stale_acks.insert(ack.user.clone(), ack.url.clone());
-                            // Add stale ACK to the list
-                        }
-
-                        acc.entry(AckType::StaleACK)
-                            .or_insert_with(Vec::new)
-                            .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the stale ACK
-                    }
-                    return acc;
-                }
-
-                acc.entry(ack.ack_type)
-                    .or_insert_with(Vec::new)
-                    .push((ack.user.clone(), ack.url.clone())); // Store the user and the URL of the ACK
+        let mut ack_map: HashMap<AckType, Vec<(String, String)>> =
+            reviews.into_iter().fold(HashMap::new(), |mut acc, review| {
+                acc.entry(review.ack_type)
+                    .or_default()
+                    .push((review.user, review.url));
                 acc
             });
 
@@ -146,8 +122,7 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
             AckType::ApproachNACK,
             AckType::StaleACK,
         ] {
-            if let Some(users) = ack_map.get(ack_type) {
-                let mut users = users.clone();
+            if let Some(mut users) = ack_map.remove(ack_type) {
                 users.sort();
                 comment += &format!(
                     "| {} | {} | {} |\n",
@@ -156,7 +131,7 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
                     users
                         .iter()
                         .map(|(user, url)| format!("[{}]({})", user, url))
-                        .collect::<Vec<String>>()
+                        .collect::<Vec<_>>()
                         .join(", ")
                 );
             }
@@ -168,21 +143,11 @@ See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review f
     comment
 }
 
-fn should_skip_ack(commit_ack: AckCommit, commit_acks: Vec<AckCommit>) -> bool {
-    match commit_ack.ack_type.requires_commit_hash() {
-        true => commit_acks
-            .iter()
-            .any(|c| c.ack_type == commit_ack.ack_type && c.commit == commit_ack.commit), // Skip if there is already an ACK of this type and commit
-        false => commit_acks
-            .iter()
-            .any(|c| c.ack_type == commit_ack.ack_type), // Skip if there is already an ACK of this type
-    }
-}
-
 struct GitHubReviewComment {
     user: String,
     url: String,
     body: String,
+    date: chrono::DateTime<chrono::Utc>,
 }
 
 async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64) -> Result<()> {
@@ -212,6 +177,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
             user: c.user.login,
             url: c.html_url.to_string(),
             body: c.body.unwrap_or_default(),
+            date: c.updated_at.unwrap_or(c.created_at),
         })
         .collect::<Vec<_>>();
     let mut all_review_comments = ctx
@@ -228,43 +194,38 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
             user: c.user.login,
             url: c.html_url.to_string(),
             body: c.body.unwrap_or_default(),
+            date: c.submitted_at.unwrap(),
         })
         .collect::<Vec<_>>();
 
     all_comments.append(&mut all_review_comments);
 
-    let mut ack_per_user: HashMap<String, Vec<AckCommit>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
-    let mut parsed_acks = Vec::new();
+    let head_commit = Commit(pr.head.sha);
+
+    let mut user_reviews: HashMap<String, Vec<Review>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
 
     println!("Comments count {}", all_comments.len());
-    for comment in all_comments {
-        let review = parse_review(&comment.body);
-
-        if let Some(ack_commit) = review {
-            let ack_type = ack_commit.ack_type;
-            let commit = ack_commit.commit.clone();
-
-            if ack_per_user.contains_key(&comment.user) // If the user already has an ack for this commit
-                && should_skip_ack(ack_commit.clone(), ack_per_user[&comment.user].clone())
-            // Maybe the ack is a duplicate, need to check for Stale acks
-            {
-                continue;
-            }
-
-            let head = commit.is_some() && commit.as_ref().map_or(false, |c| c.0 == pr.head.sha); // Check if the commit is the head commit of the PR
-
-            parsed_acks.push(Review {
-                user: comment.user.clone(),
-                ack_type,
-                commit: commit.map(|c| (c, head)),
-                url: comment.url.clone(),
+    for comment in all_comments.into_iter() {
+        if let Some(ac) = parse_review(&comment.body) {
+            let v = user_reviews.entry(comment.user.clone()).or_default();
+            v.push(Review {
+                user: comment.user,
+                ack_type: if ac.ack_type == AckType::Ack && ac.commit.as_ref() == Some(&head_commit)
+                {
+                    AckType::StaleACK
+                } else {
+                    ac.ack_type
+                },
+                url: comment.url,
+                date: comment.date,
             });
-
-            ack_per_user
-                .entry(comment.user.clone())
-                .or_insert_with(|| vec![ack_commit.clone()]);
         }
     }
+
+    let parsed_acks = user_reviews
+        .into_iter()
+        .map(|e| e.1.into_iter().max_by_key(|r| r.date).unwrap())
+        .collect::<Vec<_>>();
 
     let comment = summary_comment_template(parsed_acks);
     util::update_metadata_comment(
@@ -325,12 +286,12 @@ lazy_static! {
         ["nack"] => AckType::ConceptNACK
     ];
 }
-#[derive(Debug)]
+
 struct Review {
     user: String,
     ack_type: AckType,
-    commit: Option<(Commit, bool)>,
     url: String,
+    date: chrono::DateTime<chrono::Utc>,
 }
 
 fn is_commit_hash(s: &str) -> bool {
@@ -338,10 +299,10 @@ fn is_commit_hash(s: &str) -> bool {
     s.len() >= 6 && s.chars().all(|c| c.is_ascii_hexdigit())
 }
 
-#[derive(Debug, PartialEq, Clone, Hash, Eq)]
+#[derive(Debug, PartialEq)]
 struct Commit(String);
 
-#[derive(Debug, Eq, Hash, PartialEq, Clone)]
+#[derive(Debug, PartialEq)]
 struct AckCommit {
     ack_type: AckType,
     commit: Option<Commit>,
