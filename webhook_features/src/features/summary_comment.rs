@@ -95,7 +95,7 @@ impl Feature for SummaryCommentFeature {
 fn summary_comment_template(reviews: Vec<Review>) -> String {
     let mut comment = r#"
 ### Reviews
-See https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review for information on the review process.
+See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review) for information on the review process.
 "#
     .to_string();
 
