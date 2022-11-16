@@ -124,7 +124,6 @@ async fn main() -> Result<()> {
             .service(index)
             .service(postreceive_handler)
     })
-    .workers(1) // Avoid races by forcing sequential processing
     .bind(format!("{}:{}", args.host, args.port))?
     .run()
     .await
