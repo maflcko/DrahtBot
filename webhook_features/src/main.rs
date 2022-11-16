@@ -47,7 +47,7 @@ pub struct Context {
     dry_run: bool,
 }
 
-#[post("/postreceive")]
+#[post("/drahtbot")]
 async fn postreceive_handler(
     ctx: web::Data<Context>,
     req: HttpRequest,
