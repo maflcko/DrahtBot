@@ -62,8 +62,7 @@ impl Feature for SummaryCommentFeature {
             name: repo_name.to_string(),
         };
 
-        println!("Handling event: {:?}", event);
-        println!("Action: {action}");
+        println!("Handling: {repo_user}/{repo_name} {event}::{action}");
         match event {
             GitHubEvent::PullRequest if action == "synchronize" || action == "opened" => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
@@ -216,7 +215,12 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
 
     let mut user_reviews: HashMap<String, Vec<Review>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
 
-    println!("Comments count {}", all_comments.len());
+    println!(
+        " ... Refresh of {num} comments from {url}.",
+        num = all_comments.len(),
+        url = pr.html_url.unwrap(),
+    );
+
     for comment in all_comments.into_iter() {
         if let Some(ac) = parse_review(&comment.body) {
             let v = user_reviews.entry(comment.user.clone()).or_default();

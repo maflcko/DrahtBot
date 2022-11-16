@@ -26,7 +26,7 @@ struct Args {
     dry_run: bool,
 }
 
-#[derive(Debug, Display, EnumString, PartialEq, Eq)]
+#[derive(Display, EnumString, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum GitHubEvent {
     IssueComment,
