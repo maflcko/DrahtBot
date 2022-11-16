@@ -44,6 +44,7 @@ async fn index() -> &'static str {
 #[derive(Debug, Clone)]
 pub struct Context {
     octocrab: Octocrab,
+    bot_username: String,
     dry_run: bool,
 }
 
@@ -113,6 +114,7 @@ async fn main() -> Result<()> {
 
     let context = Context {
         octocrab,
+        bot_username,
         dry_run: args.dry_run,
     };
 

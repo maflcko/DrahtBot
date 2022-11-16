@@ -73,6 +73,9 @@ impl Feature for SummaryCommentFeature {
             }
             GitHubEvent::IssueComment if payload["issue"].get("pull_request").is_some() => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issue_comment
+                let comment_author = payload["comment"]["user"]["login"]
+                    .as_str()
+                    .ok_or(DrahtBotError::KeyNotFound)?;
                 let pr_number = payload["issue"]["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
@@ -80,6 +83,7 @@ impl Feature for SummaryCommentFeature {
                     .as_str()
                     .ok_or(DrahtBotError::KeyNotFound)?
                     == "open"
+                    && comment_author != ctx.bot_username
                 {
                     refresh_summary_comment(ctx, repo, pr_number).await?
                 }
