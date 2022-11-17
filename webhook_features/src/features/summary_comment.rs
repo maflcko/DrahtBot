@@ -298,11 +298,11 @@ macro_rules! multi_vec {
 lazy_static! {
     static ref ACK_PATTERNS: Vec<(&'static str, AckType)> = multi_vec![
         ["code review ack", "cr ack", "cr-ack", "crack"] => AckType::Ack;
-        ["concept ack", "concept-ack", "conceptack"] => AckType::ConceptAck;
+        ["ack", "utack", "tack"] => AckType::Ack;
+        ["concept ack", "concept-ack", "conceptack", "ack"] => AckType::ConceptAck;
         ["concept nack", "concept-nack", "conceptnack"] => AckType::ConceptNack;
         ["approach ack", "approach-ack", "approachack"] => AckType::ApproachAck;
         ["approach nack", "approach-nack", "approachnack"] => AckType::ApproachNack;
-        ["ack", "utack", "tack"] => AckType::Ack;
         ["nack"] => AckType::ConceptNack
     ];
 }
@@ -414,7 +414,10 @@ mod tests {
         let test_cases = vec![
             TestCase {
                 comment: "ACK",
-                expected: None,
+                expected: Some(AckCommit {
+                    ack_type: AckType::ConceptAck,
+                    commit: None,
+                }),
             },
             TestCase {
                 comment: "ACK 1234567890123456789012345678901234567890",
@@ -425,7 +428,10 @@ mod tests {
             },
             TestCase {
                 comment: "ACK invalid",
-                expected: None,
+                expected: Some(AckCommit {
+                    ack_type: AckType::ConceptAck,
+                    commit: None,
+                }),
             },
             TestCase {
                 comment: "ACK 1234567890123456789012345678901234567890 invalid",
