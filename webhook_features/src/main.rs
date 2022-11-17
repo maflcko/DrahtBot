@@ -9,7 +9,6 @@ use clap::Parser;
 use features::Feature;
 use lazy_static::lazy_static;
 use octocrab::Octocrab;
-use std::sync::Mutex;
 use strum::{Display, EnumString};
 
 use crate::errors::{DrahtBotError, Result};
@@ -74,7 +73,7 @@ fn features() -> Vec<Box<dyn Feature>> {
 }
 
 lazy_static! {
-    static ref MUTEX: Mutex<()> = Mutex::new(());
+    static ref MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::new(());
 }
 
 async fn emit_event(
@@ -82,7 +81,7 @@ async fn emit_event(
     event: GitHubEvent,
     data: web::Json<serde_json::Value>,
 ) -> Result<()> {
-    let _guard = MUTEX.lock().unwrap();
+    let _guard = MUTEX.lock().await;
 
     for feature in features() {
         if feature.meta().events().contains(&event) {
