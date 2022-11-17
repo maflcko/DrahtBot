@@ -331,6 +331,7 @@ fn parse_review(comment: &str) -> Option<AckCommit> {
         .split('\n')
         .filter(|s| !s.starts_with('>')) // Ignore quoted text
         .flat_map(|s| s.split(|c: char| c.is_whitespace() || c.is_ascii_punctuation())) // Split on whitespace and punctuation
+        .flat_map(|s| s.split_whitespace())
         .collect::<Vec<_>>(); // Collect into a Vec
 
     // Split words by whitespace and punctuation
@@ -546,6 +547,15 @@ mod tests {
                     AckCommit {
                         ack_type: AckType::ConceptAck,
                         commit: None,
+                    },
+                ),
+            },
+            TestCase {
+                comment: "Code review ACK  bba667e ",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("bba667e".to_string()),
                     },
                 ),
             }
