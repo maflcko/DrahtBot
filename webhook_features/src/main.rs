@@ -9,6 +9,8 @@ use clap::Parser;
 use features::Feature;
 use octocrab::Octocrab;
 use strum::{Display, EnumString};
+use std::sync::Mutex;
+use lazy_static::lazy_static;
 
 use crate::errors::{DrahtBotError, Result};
 
@@ -71,11 +73,17 @@ fn features() -> Vec<Box<dyn Feature>> {
     vec![Box::new(SummaryCommentFeature::new())]
 }
 
+lazy_static! {
+    static ref MUTEX: Mutex<()> = Mutex::new(());
+}
+
 async fn emit_event(
     ctx: &Context,
     event: GitHubEvent,
     data: web::Json<serde_json::Value>,
 ) -> Result<()> {
+    let _guard = MUTEX.lock().unwrap();
+
     for feature in features() {
         if feature.meta().events().contains(&event) {
             feature.handle(ctx, &event, &data).await?;
