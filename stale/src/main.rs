@@ -185,10 +185,12 @@ async fn rebase_label(
                 }
                 Some(p) => p,
             };
-            let mut labels = github
+            let labels = github
                 .all_pages(issues_api.list_labels_for_issue(pull.number).send().await?)
                 .await?;
-            let found_label_rebase = labels.iter().any(|l| l.name == config.needs_rebase_label);
+            let found_label_rebase = labels
+                .into_iter()
+                .any(|l| l.name == config.needs_rebase_label);
             if pull.mergeable.unwrap() {
                 if found_label_rebase {
                     println!("... remove label '{}')", config.needs_rebase_label);
@@ -206,7 +208,7 @@ async fn rebase_label(
                         .collect::<Vec<_>>();
                     println!("... delete {} comments", comments.len());
                     if !dry_run {
-                        labels = issues_api
+                        issues_api
                             .remove_label(pull.number, &config.needs_rebase_label)
                             .await?;
                         for c in comments {
@@ -217,7 +219,7 @@ async fn rebase_label(
             } else if !found_label_rebase {
                 println!("... add label '{}'", config.needs_rebase_label);
                 if !dry_run {
-                    labels = issues_api
+                    issues_api
                         .add_labels(pull.number, &[config.needs_rebase_label.to_string()])
                         .await?;
                     let text = format!(
