@@ -7,10 +7,10 @@ use crate::features::summary_comment::SummaryCommentFeature;
 use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
 use clap::Parser;
 use features::Feature;
-use octocrab::Octocrab;
-use strum::{Display, EnumString};
-use std::sync::Mutex;
 use lazy_static::lazy_static;
+use octocrab::Octocrab;
+use std::sync::Mutex;
+use strum::{Display, EnumString};
 
 use crate::errors::{DrahtBotError, Result};
 
