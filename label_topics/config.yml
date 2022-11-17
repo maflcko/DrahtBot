@@ -1,6 +1,6 @@
 apply_labels:
   - repo_slug: bitcoin/bitcoin
-    backport_label: Needs rebase
+    backport_label: Backport
     repo_labels:
       Build system:
         - '^guix:'

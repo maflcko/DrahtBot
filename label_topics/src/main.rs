@@ -27,6 +27,56 @@ struct Config {
     apply_labels: Vec<Repo>,
 }
 
+async fn apply_labels_one(
+    github: &octocrab::Octocrab,
+    issues_api: &octocrab::issues::IssueHandler<'_>,
+    config_repo: &Repo,
+    base_name: &str,
+    pull: &octocrab::models::pulls::PullRequest,
+    dry_run: bool,
+) -> octocrab::Result<()> {
+    let regs = config_repo.repo_labels.iter().fold(
+        std::collections::HashMap::<&String, Vec<regex::Regex>>::new(),
+        |mut acc, (label_name, title_regs)| {
+            for reg in title_regs {
+                acc.entry(label_name).or_default().push(
+                    regex::RegexBuilder::new(reg)
+                        .case_insensitive(true)
+                        .build()
+                        .expect("regex config format error"),
+                );
+            }
+            acc
+        },
+    );
+    let pull_title = pull.title.as_ref().expect("remote api error");
+    let labels = github
+        .all_pages(issues_api.list_labels_for_issue(pull.number).send().await?)
+        .await?;
+    if !labels.is_empty() {
+        return Ok(());
+    }
+    let mut new_labels = Vec::new();
+    if pull.base.ref_field != base_name {
+        new_labels.push(config_repo.backport_label.to_string());
+    } else {
+        for (label_name, title_regs) in regs {
+            if title_regs.iter().any(|r| r.is_match(pull_title)) {
+                new_labels.push(label_name.to_string());
+                break;
+            }
+        }
+    }
+    if new_labels.is_empty() {
+        return Ok(());
+    }
+    println!(" ... add_to_labels({:?})", new_labels);
+    if !dry_run {
+        issues_api.add_labels(pull.number, &new_labels).await?;
+    }
+    Ok(())
+}
+
 async fn apply_labels(
     github: &octocrab::Octocrab,
     config: &Config,
@@ -37,20 +87,6 @@ async fn apply_labels(
     for config_repo in &config.apply_labels {
         let util::Slug { owner, repo } =
             util::Slug::from_str(&config_repo.repo_slug).expect("config format error");
-        let regs = config_repo.repo_labels.iter().fold(
-            std::collections::HashMap::<&String, Vec<regex::Regex>>::new(),
-            |mut acc, (label_name, title_regs)| {
-                for reg in title_regs {
-                    acc.entry(label_name).or_default().push(
-                        regex::RegexBuilder::new(reg)
-                            .case_insensitive(true)
-                            .build()
-                            .expect("regex config format error"),
-                    );
-                }
-                acc
-            },
-        );
         println!("Repo {}/{} ...", owner, repo);
         let base_name = github
             .repos(&owner, &repo)
@@ -80,31 +116,7 @@ async fn apply_labels(
                 repo,
                 pull.number
             );
-            let pull_title = pull.title.as_ref().expect("remote api error");
-            let labels = github
-                .all_pages(issues_api.list_labels_for_issue(pull.number).send().await?)
-                .await?;
-            if !labels.is_empty() {
-                continue;
-            }
-            let mut new_labels = Vec::new();
-            if pull.base.ref_field != base_name {
-                new_labels.push(config_repo.backport_label.to_string());
-            } else {
-                for (label_name, title_regs) in &regs {
-                    if title_regs.iter().any(|r| r.is_match(pull_title)) {
-                        new_labels.push(label_name.to_string());
-                        break;
-                    }
-                }
-            }
-            if new_labels.is_empty() {
-                continue;
-            }
-            println!(" ... add_to_labels({:?})", new_labels);
-            if !dry_run {
-                issues_api.add_labels(pull.number, &new_labels).await?;
-            }
+            apply_labels_one(github, &issues_api, config_repo, &base_name, pull, dry_run).await?;
         }
     }
     Ok(())
