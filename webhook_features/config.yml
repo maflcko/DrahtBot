@@ -1,0 +1,82 @@
+apply_labels:
+  - repo_slug: bitcoin/bitcoin
+    backport_label: Backport
+    repo_labels:
+      Build system:
+        - '^guix:'
+        - '^build:'
+        - '^depends:'
+      TX fees and policy:
+        - '^policy:'
+      Utils/log/libs:
+        - '^log:'
+        - '^util:'
+        - '^crypto:'
+        - '^libs:'
+        - '^compat:'
+      UTXO Db and Indexes:
+        - '^index:'
+        - '^indexes:'
+        - '^txdb:'
+        - '^coins:'
+        - '^db:'
+      Block storage:
+        - '^blockstorage:'
+      PSBT:
+        - '^psbt:'
+      Validation:
+        - '^validation:'
+        - '^chain:'
+        - '^kernel:'
+      interfaces:
+        - '^interfaces:'
+      Wallet:
+        - '^wallet:'
+      Descriptors:
+        - '^descriptors:'
+        - '^miniscript:'
+      Consensus:
+        - '^consensus:'
+        - '^versionbits:'
+        - '^interpreter:'
+        - '^script:'
+        - '^sigcache:'
+      GUI:
+        - '^gui:'
+        - '^qt:'
+      Mempool:
+        - ^mempool
+        - '^txmempool:'
+      Mining:
+        - '^mining:'
+        - '^miner:'
+      P2P:
+        - '^net:'
+        - '^p2p:'
+        - '^tor:'
+        - '^addrman:'
+        - '^protocol:'
+        - '^net processing:'
+      RPC/REST/ZMQ:
+        - '^univalue:'
+        - '^rpc:'
+        - '^rest:'
+        - '^zmq:'
+        - '^http:'
+      Scripts and tools:
+        - '^contrib:'
+      Tests:
+        - '^qa:'
+        - '^fuzz:'
+        - '^tests?:'
+        - '^ci:'
+        - '^bench:'
+        - '^cirrus:'
+      Docs:
+        - '^docs?:'
+      Backport:
+        - '^backport:'
+      Refactoring:
+        - '^refactor(ing)?:'
+        - '^move-?only:'
+        - '^scripted-diff:'

@@ -22,6 +22,9 @@ struct Args {
     host: String,
     #[arg(long, help = "Port to listen on", default_value = "1337")]
     port: u16,
+    /// The path to the yaml config file.
+    #[arg(long)]
+    config_file: std::path::PathBuf,
     /// Print changes/edits instead of calling the GitHub/CI API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
@@ -42,10 +45,11 @@ async fn index() -> &'static str {
     "Welcome to DrahtBot!"
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Context {
     octocrab: Octocrab,
     bot_username: String,
+    config: crate::features::labels::Config,
     dry_run: bool,
 }
 
@@ -69,7 +73,10 @@ async fn postreceive_handler(
 }
 
 fn features() -> Vec<Box<dyn Feature>> {
-    vec![Box::new(SummaryCommentFeature::new())]
+    vec![
+        Box::new(SummaryCommentFeature::new()),
+        Box::new(crate::features::labels::LabelsFeature::new()),
+    ]
 }
 
 lazy_static! {
@@ -95,6 +102,11 @@ async fn emit_event(
 #[actix_web::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+
+    let config: crate::features::labels::Config = serde_yaml::from_reader(
+        std::fs::File::open(args.config_file).expect("config file path error"),
+    )
+    .expect("yaml error");
 
     let octocrab = octocrab::Octocrab::builder()
         .personal_token(args.token)
@@ -122,6 +134,7 @@ async fn main() -> Result<()> {
     let context = Context {
         octocrab,
         bot_username,
+        config,
         dry_run: args.dry_run,
     };
 

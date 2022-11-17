@@ -1,3 +1,4 @@
+pub mod labels;
 pub mod summary_comment;
 
 use crate::errors::Result;
