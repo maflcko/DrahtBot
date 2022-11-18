@@ -46,10 +46,19 @@ struct Args {
     dry_run: bool,
 }
 
-fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
-    let fmt = "json format error";
-    let t_id = task["id"].as_str().expect(fmt);
-    let t_name = task["name"].as_str().expect(fmt);
+static ERROR_JSON_FORMAT: &str = "json format error";
+
+fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) -> Result<(), String> {
+    let t_id = task["id"].as_str().ok_or(format!(
+        "{ERROR_JSON_FORMAT}: Missing {key} in {json}",
+        key = "id",
+        json = task
+    ))?;
+    let t_name = task["name"].as_str().ok_or(format!(
+        "{ERROR_JSON_FORMAT}: Missing {key} in {json}",
+        key = "name",
+        json = task
+    ))?;
     let raw_data = format!(
         r#"
                         {{
@@ -81,6 +90,7 @@ fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) {
         ]));
         println!("{out}");
     }
+    Ok(())
 }
 
 #[tokio::main]
@@ -156,19 +166,36 @@ async fn main() -> octocrab::Result<()> {
                 "--data-raw",
                 &raw_data,
             ]));
-            let json_parsed = serde_json::from_str::<serde_json::value::Value>(&output)
-                .expect("json parse error");
-            let fmt = "json format error";
-            let tasks = json_parsed["data"]["ownerRepository"]["builds"]["edges"][0]["node"]
-                ["tasks"]
-                .as_array()
-                .expect(fmt);
+            let tasks = serde_json::from_str::<serde_json::value::Value>(&output)
+                .map_err(|e| e.to_string())
+                .and_then(|json_parsed| {
+                    json_parsed["data"]["ownerRepository"]["builds"]["edges"][0]["node"]["tasks"]
+                        .as_array()
+                        .cloned()
+                        .ok_or(format!("{ERROR_JSON_FORMAT}: Missing keys in '{output}'"))
+                });
+            if let Err(msg) = tasks {
+                println!("{msg}");
+                continue;
+            }
+            let tasks = tasks.unwrap();
             for task_name in &args.task {
-                let found = tasks
-                    .iter()
-                    .find(|t| t["name"].as_str().expect(fmt).contains(task_name));
-                if let Some(found) = found {
-                    rerun(found, &ci_token, args.dry_run)
+                for t in &tasks {
+                    match t["name"].as_str().ok_or(format!(
+                        "{ERROR_JSON_FORMAT}: Missing '{key}' in '{t}'",
+                        key = "name",
+                    )) {
+                        Err(msg) => {
+                            println!("{msg}");
+                        }
+                        Ok(name) => {
+                            if name.contains(task_name) {
+                                if let Err(msg) = rerun(t, &ci_token, args.dry_run) {
+                                    println!("{msg}");
+                                }
+                            }
+                        }
+                    }
                 }
             }
             std::thread::sleep(std::time::Duration::from_secs(args.sleep_min * 60));
