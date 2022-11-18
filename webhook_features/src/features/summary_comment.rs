@@ -7,6 +7,7 @@ use crate::Context;
 use crate::GitHubEvent;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
+use regex::Regex; 
 
 pub struct SummaryCommentFeature {
     meta: FeatureMeta,
@@ -270,10 +271,6 @@ enum AckType {
 }
 
 impl AckType {
-    fn requires_commit_hash(&self) -> bool {
-        matches!(self, AckType::Ack)
-    }
-
     fn as_str(&self) -> &str {
         match self {
             AckType::Ack => "ACK",
@@ -286,23 +283,14 @@ impl AckType {
     }
 }
 
-macro_rules! multi_vec {
-    ($([$($key:literal),+] => $value:expr);*) => {
-        vec![
-            $($(($key, $value)),*),*
-        ]
-    };
-}
-
 lazy_static! {
-    static ref ACK_PATTERNS: Vec<(&'static str, AckType)> = multi_vec![
-        ["code review ack", "cr ack", "cr-ack", "crack"] => AckType::Ack;
-        ["ack", "utack", "tack"] => AckType::Ack;
-        ["concept ack", "concept-ack", "conceptack", "ack"] => AckType::ConceptAck;
-        ["concept nack", "concept-nack", "conceptnack"] => AckType::ConceptNack;
-        ["approach ack", "approach-ack", "approachack"] => AckType::ApproachAck;
-        ["approach nack", "approach-nack", "approachnack"] => AckType::ApproachNack;
-        ["nack"] => AckType::ConceptNack
+    static ref ACK_PATTERNS: Vec<(Regex, AckType)> = vec![
+        (Regex::new(r".*\b(Approach ACK)\b.*").unwrap(), AckType::ApproachAck),
+        (Regex::new(r".*\b(Approach NACK)\b.*").unwrap(), AckType::ApproachNack),
+        (Regex::new(r".*\b(NACK)\b").unwrap(), AckType::ConceptNack),
+        (Regex::new(r".*\b(Concept ACK)\b.*").unwrap(), AckType::ConceptAck),
+        (Regex::new(r".*\b(?:re)?(ACK|utACK|tACK|crACK)((\s)*[0-9a-f]{6,40})\b.*").unwrap(), AckType::Ack),
+        (Regex::new(r".*\b(ACK)\b.*").unwrap(), AckType::ConceptAck)
     ];
 }
 
@@ -313,11 +301,6 @@ struct Review {
     date: chrono::DateTime<chrono::Utc>,
 }
 
-fn is_commit_hash(s: &str) -> bool {
-    // Use length from https://github.com/bitcoin-core/bitcoin-maintainer-tools/blob/78ab16ae88af7a5ef886ae8cef6df2e9ef3f6085/github-merge.py#L211
-    s.len() >= 6 && s.chars().all(|c| c.is_ascii_hexdigit())
-}
-
 #[derive(Debug, PartialEq)]
 struct AckCommit {
     ack_type: AckType,
@@ -325,75 +308,20 @@ struct AckCommit {
 }
 
 fn parse_review(comment: &str) -> Option<AckCommit> {
-    let comment = comment.to_lowercase();
-    let words = comment
+    let lines = comment
         .split('\n')
-        .filter(|s| !s.starts_with('>')) // Ignore quoted text
-        .flat_map(|s| s.split(|c: char| c.is_whitespace() || c.is_ascii_punctuation())) // Split on whitespace and punctuation
-        .collect::<Vec<_>>(); // Collect into a Vec
+        .filter(|s| !s.starts_with('>'));
 
-    // Split words by whitespace and punctuation
-
-    let mut pos = 0;
-    while pos < words.len() {
-        for (pattern, ack_type) in ACK_PATTERNS.iter() {
-            let pattern_words = pattern.split_whitespace().collect::<Vec<_>>(); // Split pattern into words (e.g "code review ack" => ["code", "review", "ack"])
-
-            let pattern_len = {
-                match ack_type.requires_commit_hash() {
-                    true => pattern_words.len() + 1, // If the ack type requires a commit hash, the pattern will be one word longer
-                    false => pattern_words.len(),
-                }
-            };
-            if pattern_len > words.len() - pos {
-                // If the pattern is longer than the remaining words, skip it
-                continue;
-            }
-
-            let mut matches = true;
-            for (i, pattern_word) in pattern_words.iter().enumerate() {
-                // Check if the pattern matches the words
-
-                // Ignore "re" prefixes, e.g. "reack" => "ack"
-                let mut word = words[pos + i].trim_start_matches("re-");
-                if word != "review" {
-                    word = word.trim_start_matches("re");
-                }
-
-                if pattern_word != &word {
-                    matches = false;
-                    break;
-                }
-            }
-
-            if matches {
-                let mut commit = None;
-                if pos + pattern_words.len() < words.len() {
-                    // If there are more words after the pattern, check if the next word is a commit hash
-                    let next_word = words[pos + pattern_words.len()];
-                    if is_commit_hash(next_word) {
-                        commit = Some(next_word.to_string()); // If there is a commit hash, attach it to the ack
-                    }
-
-                    if ack_type.requires_commit_hash() && commit.is_none() {
-                        // If the ack type requires a commit hash, but there is no commit hash, skip this pattern
-                        continue;
-                    }
-                }
-
+    for (re, ack_type) in ACK_PATTERNS.iter() {
+        for line in lines.clone() {
+            if let Some(caps) = re.captures(line) {
+                let commit = caps.get(2).map(|m| m.as_str().trim().to_string());
                 return Some(AckCommit {
                     ack_type: *ack_type,
                     commit,
                 });
             }
-
-            if matches {
-                pos += pattern_words.len(); // Skip the words that were matched and try to match the next pattern
-                break;
-            }
         }
-
-        pos += 1;
     }
     None
 }
@@ -452,8 +380,8 @@ mod tests {
                 comment: "ACK 1234567890123456789012345678901234567890\nNACK 1234567890123456789012345678901234567890",
                 expected: Some(
                     AckCommit {
-                        ack_type: AckType::Ack,
-                        commit: Some("1234567890123456789012345678901234567890".to_string()),
+                        ack_type: AckType::ConceptNack,
+                        commit: None,
                     },
                 ),
             },
@@ -468,7 +396,7 @@ mod tests {
                 comment: "Concept ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::ConceptAck,
-                    commit: Some("1234567890123456789012345678901234567890".to_string()),
+                    commit: None,
                 }),
             },
             TestCase {
@@ -497,17 +425,6 @@ mod tests {
                 }),
             },
             TestCase {
-                comment: "crACK",
-                expected: None,
-            },
-            TestCase {
-                comment: "crACK 1234567890123456789012345678901234567890",
-                expected: Some(AckCommit {
-                    ack_type: AckType::Ack,
-                    commit: Some("1234567890123456789012345678901234567890".to_string()),
-                }),
-            },
-            TestCase {
                 comment: "Approach ACK",
                 expected: Some(AckCommit {
                     ack_type: AckType::ApproachAck,
@@ -518,7 +435,7 @@ mod tests {
                 comment: "Approach ACK 1234567890123456789012345678901234567890",
                 expected: Some(AckCommit {
                     ack_type: AckType::ApproachAck,
-                    commit: Some("1234567890123456789012345678901234567890".to_string()),
+                    commit: None,
                 }),
             },
             TestCase {
@@ -529,7 +446,7 @@ mod tests {
                 }),
             },
             TestCase {
-                comment: "nack this change!",
+                comment: "NACK this change!",
                 expected: Some(AckCommit {
                     ack_type: AckType::ConceptNack,
                     commit: None,
@@ -545,6 +462,136 @@ mod tests {
                     AckCommit {
                         ack_type: AckType::ConceptAck,
                         commit: None,
+                    },
+                ),
+            },
+            TestCase {
+                comment: "This is a Concept ACK for me! 1234567890123456789012345678901234567890",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ConceptAck,
+                        commit: None,
+                    },
+                ),
+            },
+            TestCase {
+                comment: "Code Review ACK",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ConceptAck,
+                        commit: None,
+                    },
+                ),
+            },
+            TestCase {
+                comment: "Code review ACK  bba667e ",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("bba667e".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "Concept ACK, nice.",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ConceptAck,
+                        commit: None,
+                    },
+                ),
+            },
+            TestCase {
+                comment: "ACK    12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "> Good job, ACK 12345678",
+                expected: None,
+            },
+            TestCase {
+                comment: "test\nConcept ACK",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ConceptAck,
+                        commit: None,
+                    }
+                )
+            },
+            TestCase {
+                comment: "> NACK \ntest\n\nApproach NACK",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ApproachNack,
+                        commit: None,
+                    }
+                )
+            },
+            TestCase {
+                comment: "> Good job, ACK 12345678\ntest    Concept ACK !",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ConceptAck,
+                        commit: None,
+                    },
+                ),
+            },
+            TestCase {
+                comment: "NACK ACK",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ConceptNack,
+                        commit: None,
+                    },
+                ),
+            },
+            TestCase {
+                comment: "re-ACK 12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "reACK 12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "reutACK 12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "CR ACK 12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "crACK 12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
                     },
                 ),
             }
