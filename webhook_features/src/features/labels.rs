@@ -67,7 +67,7 @@ impl Feature for LabelsFeature {
                     .config
                     .apply_labels
                     .iter()
-                    .find(|r| r.repo_slug == format!("{repo_user}{repo_name}"))
+                    .find(|r| r.repo_slug == format!("{repo_user}/{repo_name}"))
                 {
                     let pr_number = payload["number"]
                         .as_u64()
