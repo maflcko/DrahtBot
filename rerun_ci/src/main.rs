@@ -48,16 +48,34 @@ struct Args {
 
 static ERROR_JSON_FORMAT: &str = "json format error";
 
-fn rerun(task: &serde_json::Value, token: &String, dry_run: bool) -> Result<(), String> {
+fn rerun_first(
+    task_name: &str,
+    tasks: &[serde_json::Value],
+    token: &String,
+    dry_run: bool,
+) -> Result<(), String> {
+    let mut task = None;
+    for t in tasks {
+        let name = t["name"].as_str().ok_or(format!(
+            "{ERROR_JSON_FORMAT}: Missing '{key}' in '{t}'",
+            key = "name",
+        ))?;
+        if name.contains(task_name) {
+            task = Some(t);
+            break;
+        }
+    }
+    if task.is_none() {
+        return Ok(());
+    }
+    let task = task.unwrap();
     let t_id = task["id"].as_str().ok_or(format!(
-        "{ERROR_JSON_FORMAT}: Missing {key} in {json}",
+        "{ERROR_JSON_FORMAT}: Missing {key} in '{task}'",
         key = "id",
-        json = task
     ))?;
     let t_name = task["name"].as_str().ok_or(format!(
-        "{ERROR_JSON_FORMAT}: Missing {key} in {json}",
+        "{ERROR_JSON_FORMAT}: Missing {key} in '{task}'",
         key = "name",
-        json = task
     ))?;
     let raw_data = format!(
         r#"
@@ -180,22 +198,8 @@ async fn main() -> octocrab::Result<()> {
             }
             let tasks = tasks.unwrap();
             for task_name in &args.task {
-                for t in &tasks {
-                    match t["name"].as_str().ok_or(format!(
-                        "{ERROR_JSON_FORMAT}: Missing '{key}' in '{t}'",
-                        key = "name",
-                    )) {
-                        Err(msg) => {
-                            println!("{msg}");
-                        }
-                        Ok(name) => {
-                            if name.contains(task_name) {
-                                if let Err(msg) = rerun(t, &ci_token, args.dry_run) {
-                                    println!("{msg}");
-                                }
-                            }
-                        }
-                    }
+                if let Err(msg) = rerun_first(task_name, &tasks, &ci_token, args.dry_run) {
+                    println!("{msg}");
                 }
             }
             std::thread::sleep(std::time::Duration::from_secs(args.sleep_min * 60));
