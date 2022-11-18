@@ -122,9 +122,11 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
 
         let mut ack_map: HashMap<AckType, Vec<(String, String, chrono::DateTime<chrono::Utc>)>> =
             reviews.into_iter().fold(HashMap::new(), |mut acc, review| {
-                acc.entry(review.ack_type)
-                    .or_default()
-                    .push((review.user, review.url, review.date));
+                acc.entry(review.ack_type).or_default().push((
+                    review.user,
+                    review.url,
+                    review.date,
+                ));
                 acc
             });
 
