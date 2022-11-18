@@ -117,8 +117,8 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
     if reviews.is_empty() {
         comment += "A summary of reviews will appear here.\n";
     } else {
-        comment += "| Type | Count | Reviewers |\n";
-        comment += "| ---- | ----- | --------- |\n";
+        comment += "| Type | Reviewers |\n";
+        comment += "| ---- | --------- |\n";
 
         let mut ack_map: HashMap<AckType, Vec<(String, String)>> =
             reviews.into_iter().fold(HashMap::new(), |mut acc, review| {
@@ -140,9 +140,8 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
             if let Some(mut users) = ack_map.remove(ack_type) {
                 users.sort();
                 comment += &format!(
-                    "| {} | {} | {} |\n",
+                    "| {} | {} |\n",
                     ack_type.as_str(),
-                    users.len(),
                     users
                         .iter()
                         .map(|(user, url)| format!("[{}]({})", user, url))
