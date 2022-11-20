@@ -21,14 +21,14 @@ impl LabelsFeature {
     }
 }
 
-#[derive(Clone, serde::Deserialize)]
+#[derive(serde::Deserialize)]
 struct Repo {
     repo_slug: String,
     backport_label: String,
     repo_labels: std::collections::HashMap<String, Vec<String>>,
 }
 
-#[derive(Clone, serde::Deserialize)]
+#[derive(serde::Deserialize)]
 pub struct Config {
     apply_labels: Vec<Repo>,
 }

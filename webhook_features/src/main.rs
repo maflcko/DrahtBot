@@ -45,7 +45,6 @@ async fn index() -> &'static str {
     "Welcome to DrahtBot!"
 }
 
-#[derive(Clone)]
 pub struct Context {
     octocrab: Octocrab,
     bot_username: String,
@@ -131,16 +130,16 @@ async fn main() -> Result<()> {
 
     println!("Running as {}...", bot_username);
 
-    let context = Context {
+    let context = web::Data::new(Context {
         octocrab,
         bot_username,
         config,
         dry_run: args.dry_run,
-    };
+    });
 
     HttpServer::new(move || {
         App::new()
-            .app_data(web::Data::new(context.clone()))
+            .app_data(context.clone())
             .service(index)
             .service(postreceive_handler)
     })
