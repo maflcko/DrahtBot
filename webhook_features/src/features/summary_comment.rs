@@ -7,7 +7,7 @@ use crate::Context;
 use crate::GitHubEvent;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
-use regex::Regex; 
+use regex::Regex;
 
 pub struct SummaryCommentFeature {
     meta: FeatureMeta,
@@ -288,13 +288,19 @@ impl AckType {
 
 lazy_static! {
     static ref ACK_PATTERNS: Vec<(Regex, AckType)> = vec![
-        (Regex::new(r".*\b(Approach ACK)\b.*").unwrap(), AckType::ApproachAck),
-        (Regex::new(r".*\b(Approach NACK)\b.*").unwrap(), AckType::ApproachNack),
-        (Regex::new(r".*\b(NACK)\b").unwrap(), AckType::ConceptNack),
-        (Regex::new(r".*\b(Concept ACK)\b.*").unwrap(), AckType::ConceptAck),
-        (Regex::new(r".*\b(?:re)?(ACK|utACK|tACK|crACK)((\s)*[0-9a-f]{6,40})\b.*").unwrap(), AckType::Ack),
-        (Regex::new(r".*\b(ACK)\b.*").unwrap(), AckType::ConceptAck)
-    ];
+        (r"\b(Approach ACK)\b", AckType::ApproachAck),
+        (r"\b(Approach NACK)\b", AckType::ApproachNack),
+        (r"\b(NACK)\b", AckType::ConceptNack),
+        (r"\b(Concept ACK)\b", AckType::ConceptAck),
+        (
+            r"\b(?:re)?(ACK|utACK|tACK|crACK)(?:\s*)([0-9a-f]{6,40})\b",
+            AckType::Ack
+        ),
+        (r"\b(ACK)\b", AckType::ConceptAck)
+    ]
+    .into_iter()
+    .map(|(reg, typ)| (Regex::new(reg).unwrap(), typ))
+    .collect::<Vec::<_>>();
 }
 
 struct Review {
@@ -311,14 +317,12 @@ struct AckCommit {
 }
 
 fn parse_review(comment: &str) -> Option<AckCommit> {
-    let lines = comment
-        .split('\n')
-        .filter(|s| !s.starts_with('>'));
+    let lines = comment.split('\n').filter(|s| !s.starts_with('>'));
 
     for (re, ack_type) in ACK_PATTERNS.iter() {
         for line in lines.clone() {
             if let Some(caps) = re.captures(line) {
-                let commit = caps.get(2).map(|m| m.as_str().trim().to_string());
+                let commit = caps.get(2).map(|m| m.as_str().to_string());
                 return Some(AckCommit {
                     ack_type: *ack_type,
                     commit,
