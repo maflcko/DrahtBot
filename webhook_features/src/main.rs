@@ -34,6 +34,7 @@ struct Args {
 #[strum(serialize_all = "snake_case")]
 pub enum GitHubEvent {
     IssueComment,
+    Issues,
     PullRequest,
     PullRequestReview,
 
@@ -75,6 +76,7 @@ fn features() -> Vec<Box<dyn Feature>> {
     vec![
         Box::new(SummaryCommentFeature::new()),
         Box::new(crate::features::labels::LabelsFeature::new()),
+        Box::new(crate::features::spam_filter::SpamFilterFeature::new()),
     ]
 }
 
