@@ -293,7 +293,7 @@ lazy_static! {
         (r"\b(NACK)\b", AckType::ConceptNack),
         (r"\b(Concept ACK)\b", AckType::ConceptAck),
         (
-            r"\b(?:re)?(ACK|utACK|tACK|crACK)(?:\s*)([0-9a-f]{6,40})\b",
+            r"(ACK)(?:\s*)([0-9a-f]{6,40})\b",
             AckType::Ack
         ),
         (r"\b(ACK)\b", AckType::ConceptAck)
@@ -568,6 +568,15 @@ mod tests {
             },
             TestCase {
                 comment: "reACK 12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "ReACK 12345678",
                 expected: Some(
                     AckCommit {
                         ack_type: AckType::Ack,
