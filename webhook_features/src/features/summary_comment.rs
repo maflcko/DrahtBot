@@ -292,10 +292,7 @@ lazy_static! {
         (r"\b(Approach NACK)\b", AckType::ApproachNack),
         (r"\b(NACK)\b", AckType::ConceptNack),
         (r"\b(Concept ACK)\b", AckType::ConceptAck),
-        (
-            r"(ACK)(?:\s*)([0-9a-f]{6,40})\b",
-            AckType::Ack
-        ),
+        (r"(ACK)(?:\s*)([0-9a-f]{6,40})\b", AckType::Ack),
         (r"\b(ACK)\b", AckType::ConceptAck)
     ]
     .into_iter()

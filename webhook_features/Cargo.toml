@@ -6,18 +6,18 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-actix-web = "4.2"
-strum = { version = "0.24", features = ["derive"] }
-strum_macros = "0.24"
+actix-web = "4"
+async-trait = "0.1"
+chrono = "0.4"
 clap = { version = "4", features = ["derive"] }
+lazy_static = "1"
 octocrab = { version = "0.17", features = ["stream"] }
-thiserror = "1"
 regex = "1"
 serde = "1"
-serde_yaml = "0.9"
 serde_json = "1"
-async-trait = "0.1"
-lazy_static = "1"
-util = { path = "../util" }
-chrono = "0.4"
+serde_yaml = "0.9"
+strum = { version = "0.24", features = ["derive"] }
+strum_macros = "0.24"
+thiserror = "1"
 tokio = { version = "1", features = ["sync"] }
+util = { path = "../util" }
