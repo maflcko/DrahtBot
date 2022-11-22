@@ -1,5 +1,4 @@
 pub mod labels;
-pub mod spam_filter;
 pub mod summary_comment;
 
 use crate::errors::Result;
