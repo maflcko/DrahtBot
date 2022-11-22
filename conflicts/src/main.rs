@@ -46,7 +46,7 @@ fn init_git(monotree_dir: &std::path::Path, repos: &Vec<util::Slug>) {
             util::check_call(
                 util::git()
                     .args(["clone", "--quiet", &url])
-                    .arg(&monotree_dir),
+                    .arg(monotree_dir),
             );
         }
         println!("Set git metadata");

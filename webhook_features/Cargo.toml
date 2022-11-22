@@ -20,4 +20,4 @@ strum = { version = "0.24", features = ["derive"] }
 strum_macros = "0.24"
 thiserror = "1"
 tokio = { version = "1", features = ["sync"] }
-util = { path = "../util" }
+util = { path = "../util" ,features=["github"]}

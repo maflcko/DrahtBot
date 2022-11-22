@@ -27,6 +27,7 @@ impl std::str::FromStr for Slug {
     }
 }
 
+#[cfg(feature = "github")]
 pub fn get_octocrab(token: Option<String>) -> octocrab::Result<octocrab::Octocrab> {
     let build = octocrab::Octocrab::builder();
     match token {
@@ -36,6 +37,7 @@ pub fn get_octocrab(token: Option<String>) -> octocrab::Result<octocrab::Octocra
     .build()
 }
 
+#[cfg(feature = "github")]
 pub enum IdComment {
     NeedsRebase,
     ReviewersRequested,
@@ -47,6 +49,7 @@ pub enum IdComment {
     SecReviews,
 }
 
+#[cfg(feature = "github")]
 impl IdComment {
     pub fn str(&self) -> &'static str {
         match self {
@@ -88,12 +91,14 @@ pub fn chdir(p: &std::path::Path) {
     std::env::set_current_dir(p).expect("chdir error")
 }
 
+#[cfg(feature = "github")]
 pub struct MetaComment {
     pull_num: u64,
     pub id: Option<octocrab::models::CommentId>,
     sections: Vec<String>,
 }
 
+#[cfg(feature = "github")]
 impl MetaComment {
     pub fn has_section(&self, section_id: &IdComment) -> bool {
         let id = section_id.str();
@@ -132,6 +137,7 @@ impl MetaComment {
     }
 }
 
+#[cfg(feature = "github")]
 pub async fn get_metadata_sections(
     api: &octocrab::Octocrab,
     api_issues: &octocrab::issues::IssueHandler<'_>,
@@ -144,6 +150,7 @@ pub async fn get_metadata_sections(
     Ok(get_metadata_sections_from_comments(&comments, pull_nr))
 }
 
+#[cfg(feature = "github")]
 pub fn get_metadata_sections_from_comments(
     comments: &Vec<octocrab::models::issues::Comment>,
     pull_nr: u64,
@@ -171,6 +178,7 @@ pub fn get_metadata_sections_from_comments(
     }
 }
 
+#[cfg(feature = "github")]
 pub async fn update_metadata_comment(
     api_issues: &octocrab::issues::IssueHandler<'_>,
     mut comment: MetaComment,
@@ -203,6 +211,7 @@ pub async fn update_metadata_comment(
     Ok(())
 }
 
+#[cfg(feature = "github")]
 pub async fn get_pulls_mergeable(
     api: &octocrab::Octocrab,
     api_pulls: &octocrab::pulls::PullRequestHandler<'_>,
@@ -241,6 +250,7 @@ pub async fn get_pulls_mergeable(
     Ok(pulls)
 }
 
+#[cfg(feature = "github")]
 pub async fn get_pull_mergeable(
     api: &octocrab::pulls::PullRequestHandler<'_>,
     number: u64,
