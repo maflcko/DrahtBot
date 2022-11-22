@@ -84,8 +84,5 @@ fn main() -> Result<(), std::io::Error> {
             )?;
         }
     }
-
-    //util::chdir(&temp_dir);
-
     Ok(())
 }
