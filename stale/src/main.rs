@@ -77,9 +77,7 @@ async fn inactive_rebase(
                 id_inactive_rebase_comment, config.inactive_rebase_comment
             );
             if !dry_run {
-                issues_api
-                    .create_comment(item.number.try_into().unwrap(), text)
-                    .await?;
+                issues_api.create_comment(item.number, text).await?;
             }
         }
     }
@@ -134,9 +132,7 @@ async fn inactive_stale(
                     .replace("{repo}", repo)
             );
             if !dry_run {
-                issues_api
-                    .create_comment(item.number.try_into().unwrap(), text)
-                    .await?;
+                issues_api.create_comment(item.number, text).await?;
             }
         }
     }

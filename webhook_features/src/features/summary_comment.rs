@@ -230,7 +230,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
 
     let pr_author = pr.user.unwrap().login;
     for comment in all_comments.into_iter() {
-        if &comment.user == &pr_author {
+        if comment.user == pr_author {
             continue;
         }
         if let Some(ac) = parse_review(&comment.body) {

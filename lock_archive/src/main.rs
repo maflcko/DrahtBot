@@ -50,9 +50,7 @@ async fn main() -> octocrab::Result<()> {
                 item.number,
             );
             if !args.dry_run {
-                issues_api
-                    .lock(item.number.try_into().unwrap(), None)
-                    .await?;
+                issues_api.lock(item.number, None).await?;
             }
         }
     }
