@@ -228,7 +228,11 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         url = pr.html_url.unwrap(),
     );
 
+    let pr_author = pr.user.unwrap().login;
     for comment in all_comments.into_iter() {
+        if &comment.user == &pr_author {
+            continue;
+        }
         if let Some(ac) = parse_review(&comment.body) {
             let v = user_reviews.entry(comment.user.clone()).or_default();
             let has_current_head = ac.commit.map_or(false, |c| head_commit.starts_with(&c));
