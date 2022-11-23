@@ -194,7 +194,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .map(|c| GitHubReviewComment {
             user: c.user.login,
             url: c.html_url.to_string(),
-            body: c.body.unwrap_or_default(),
+            body: c.body_text.unwrap_or_default(),
             date: c.updated_at.unwrap_or(c.created_at),
         })
         .collect::<Vec<_>>();
@@ -211,7 +211,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .map(|c| GitHubReviewComment {
             user: c.user.login,
             url: c.html_url.to_string(),
-            body: c.body.unwrap_or_default(),
+            body: c.body_text.unwrap_or_default(),
             date: c.submitted_at.unwrap(),
         })
         .collect::<Vec<_>>();
