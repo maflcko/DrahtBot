@@ -4,7 +4,7 @@ mod features;
 use std::str::FromStr;
 
 use crate::features::summary_comment::SummaryCommentFeature;
-use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
+use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder, http};
 use clap::Parser;
 use features::Feature;
 use lazy_static::lazy_static;
@@ -109,6 +109,7 @@ async fn main() -> Result<()> {
 
     let octocrab = octocrab::Octocrab::builder()
         .personal_token(args.token)
+        .add_header(http::header::ACCEPT, "application/vnd.github.full+json".to_string())
         .build()
         .map_err(DrahtBotError::GitHubError)?;
 

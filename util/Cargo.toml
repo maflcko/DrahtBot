@@ -6,8 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-futures = { version="0.3", optional=true}
-octocrab = {version="0.17",optional=true}
+futures = { version="0.3", optional=true }
+octocrab = { git = "https://github.com/XAMPPRocky/octocrab", branch = "master", optional=true }
 
 [features]
 github = ["dep:futures","dep:octocrab"]
