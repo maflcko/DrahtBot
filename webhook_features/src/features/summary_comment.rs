@@ -112,6 +112,7 @@ fn summary_comment_template(reviews: Vec<Review>) -> String {
     let mut comment = r#"
 ### Reviews
 See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review) for information on the review process.
+If your review is incorrectly listed, please react with 👎 to this comment and the bot will ignore it.
 "#
     .to_string();
 
@@ -139,6 +140,7 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
             AckType::ApproachAck,
             AckType::ApproachNack,
             AckType::StaleAck,
+            AckType::Ignored,
         ] {
             if let Some(mut users) = ack_map.remove(ack_type) {
                 // Sort by date
@@ -187,6 +189,24 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .await?;
 
     let cmt = util::get_metadata_sections_from_comments(&all_comments, pr_number);
+
+    let ignored_users: Vec<String> = if let Some(cmt_id) = cmt.id {
+        let reactions = ctx.octocrab.all_pages(
+            ctx.octocrab
+                .issues(&repo.owner, &repo.name)
+                .list_comment_reactions(cmt_id)
+                .send()
+                .await?,
+        ).await?;
+
+        reactions
+            .into_iter()
+            .filter(|r| r.content == octocrab::models::reactions::ReactionContent::MinusOne)
+            .map(|r| r.user.login)
+            .collect::<Vec<_>>()
+    } else {
+        vec![]
+    };
 
     let mut all_comments = all_comments
         .into_iter()
@@ -237,8 +257,10 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
             let v = user_reviews.entry(comment.user.clone()).or_default();
             let has_current_head = ac.commit.map_or(false, |c| head_commit.starts_with(&c));
             v.push(Review {
-                user: comment.user,
-                ack_type: if ac.ack_type == AckType::Ack && !has_current_head {
+                user: comment.user.clone(),
+                ack_type: if ignored_users.contains(&comment.user) {
+                    AckType::Ignored
+                } else if ac.ack_type == AckType::Ack && !has_current_head {
                     AckType::StaleAck
                 } else {
                     ac.ack_type
@@ -275,6 +297,7 @@ enum AckType {
     ApproachNack,
 
     StaleAck, // ACK, but the commit is not the head of the PR anymore
+    Ignored, // The user has a -1 reaction on the summary comment
 }
 
 impl AckType {
@@ -286,6 +309,7 @@ impl AckType {
             AckType::ApproachAck => "Approach ACK",
             AckType::ApproachNack => "Approach NACK",
             AckType::StaleAck => "Stale ACK",
+            AckType::Ignored => "Ignored review",
         }
     }
 }
@@ -609,6 +633,15 @@ mod tests {
                     AckCommit {
                         ack_type: AckType::Ack,
                         commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "NACK ffaabbccdd11",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::ConceptNack,
+                        commit: None,
                     },
                 ),
             }
