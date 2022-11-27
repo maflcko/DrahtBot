@@ -112,7 +112,6 @@ fn summary_comment_template(reviews: Vec<Review>) -> String {
     let mut comment = r#"
 ### Reviews
 See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review) for information on the review process.
-If your review is incorrectly listed, please react with 👎 to this comment and the bot will ignore it on the next update.
 "#
     .to_string();
 
@@ -157,6 +156,8 @@ If your review is incorrectly listed, please react with 👎 to this comment and
             }
         }
 
+        comment += "\n";
+        comment +="If your review is incorrectly listed, please react with 👎 to this comment and the bot will ignore it on the next update.";
         comment += "\n";
     }
 
