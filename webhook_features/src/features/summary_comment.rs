@@ -171,33 +171,22 @@ struct GitHubReviewComment {
 }
 
 async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64) -> Result<()> {
-    let pr = ctx
-        .octocrab
-        .pulls(&repo.owner, &repo.name)
-        .get(pr_number)
-        .await?;
+    let issues_api = ctx.octocrab.issues(&repo.owner, &repo.name);
+    let pulls_api = ctx.octocrab.pulls(&repo.owner, &repo.name);
+    let pr = pulls_api.get(pr_number).await?;
 
     let all_comments = ctx
         .octocrab
-        .all_pages(
-            ctx.octocrab
-                .issues(&repo.owner, &repo.name)
-                .list_comments(pr_number)
-                .send()
-                .await?,
-        )
+        .all_pages(issues_api.list_comments(pr_number).send().await?)
         .await?;
 
     let cmt = util::get_metadata_sections_from_comments(&all_comments, pr_number);
 
-    let ignored_users: Vec<String> = if let Some(cmt_id) = cmt.id {
-        let reactions = ctx.octocrab.all_pages(
-            ctx.octocrab
-                .issues(&repo.owner, &repo.name)
-                .list_comment_reactions(cmt_id)
-                .send()
-                .await?,
-        ).await?;
+    let ignored_users = if let Some(cmt_id) = cmt.id {
+        let reactions = ctx
+            .octocrab
+            .all_pages(issues_api.list_comment_reactions(cmt_id).send().await?)
+            .await?;
 
         reactions
             .into_iter()
@@ -220,12 +209,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .collect::<Vec<_>>();
     let mut all_review_comments = ctx
         .octocrab
-        .all_pages(
-            ctx.octocrab
-                .pulls(&repo.owner, &repo.name)
-                .list_reviews(pr_number)
-                .await?,
-        )
+        .all_pages(pulls_api.list_reviews(pr_number).await?)
         .await?
         .into_iter()
         .map(|c| GitHubReviewComment {
@@ -278,7 +262,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
 
     let comment = summary_comment_template(parsed_acks);
     util::update_metadata_comment(
-        &ctx.octocrab.issues(&repo.owner, &repo.name),
+        &issues_api,
         cmt,
         &comment,
         util::IdComment::SecReviews,
@@ -297,7 +281,7 @@ enum AckType {
     ApproachNack,
 
     StaleAck, // ACK, but the commit is not the head of the PR anymore
-    Ignored, // The user has a -1 reaction on the summary comment
+    Ignored,  // The user has a -1 reaction on the summary comment
 }
 
 impl AckType {
