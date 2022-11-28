@@ -70,7 +70,7 @@ impl Feature for SummaryCommentFeature {
                 let pr_number = payload["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-                refresh_summary_comment(ctx, repo, pr_number).await?
+                refresh_summary_comment(ctx, repo, pr_number, action == "synchronize").await?
             }
             GitHubEvent::IssueComment if payload["issue"].get("pull_request").is_some() => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issue_comment
@@ -86,7 +86,7 @@ impl Feature for SummaryCommentFeature {
                     == "open"
                     && comment_author != ctx.bot_username
                 {
-                    refresh_summary_comment(ctx, repo, pr_number).await?
+                    refresh_summary_comment(ctx, repo, pr_number, false).await?
                 }
             }
             GitHubEvent::PullRequestReview => {
@@ -99,7 +99,7 @@ impl Feature for SummaryCommentFeature {
                     .ok_or(DrahtBotError::KeyNotFound)?
                     == "open"
                 {
-                    refresh_summary_comment(ctx, repo, pr_number).await?
+                    refresh_summary_comment(ctx, repo, pr_number, false).await?
                 }
             }
             _ => {}
@@ -108,7 +108,7 @@ impl Feature for SummaryCommentFeature {
     }
 }
 
-fn summary_comment_template(reviews: Vec<Review>) -> String {
+fn summary_comment_template(reviews: &Vec<Review>) -> String {
     let mut comment = r#"
 ### Reviews
 See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review) for information on the review process.
@@ -124,9 +124,9 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
         let mut ack_map: HashMap<AckType, Vec<(String, String, chrono::DateTime<chrono::Utc>)>> =
             reviews.into_iter().fold(HashMap::new(), |mut acc, review| {
                 acc.entry(review.ack_type).or_default().push((
-                    review.user,
-                    review.url,
-                    review.date,
+                    review.user.clone(),
+                    review.url.clone(),
+                    review.date.clone(),
                 ));
                 acc
             });
@@ -171,7 +171,7 @@ struct GitHubReviewComment {
     date: chrono::DateTime<chrono::Utc>,
 }
 
-async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64) -> Result<()> {
+async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64, ping_stale_reviewers: bool) -> Result<()> {
     let issues_api = ctx.octocrab.issues(&repo.owner, &repo.name);
     let pulls_api = ctx.octocrab.pulls(&repo.owner, &repo.name);
     let pr = pulls_api.get(pr_number).await?;
@@ -261,7 +261,8 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .map(|e| e.1.into_iter().max_by_key(|r| r.date).unwrap())
         .collect::<Vec<_>>();
 
-    let comment = summary_comment_template(parsed_acks);
+
+    let comment = summary_comment_template(&parsed_acks);
     util::update_metadata_comment(
         &issues_api,
         cmt,
@@ -270,6 +271,19 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         ctx.dry_run,
     )
     .await?;
+
+    if ping_stale_reviewers {
+        let stale_reviewers = parsed_acks
+            .into_iter()
+            .filter(|r| r.ack_type == AckType::StaleAck)
+            .map(|r| r.user)
+            .collect::<Vec<_>>();
+
+        ctx.octocrab.pulls(&repo.owner, &repo.name)
+            .request_reviews(pr_number, stale_reviewers, vec![])
+            .await?;
+    }
+
     Ok(())
 }
 
