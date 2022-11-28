@@ -1143,7 +1143,7 @@ dependencies = [
 [[package]]
 name = "octocrab"
 version = "0.17.0"
-source = "git+https://github.com/XAMPPRocky/octocrab?branch=master#06c0152089a3d5ff8174885c2c7ff899815aab22"
+source = "git+https://github.com/XAMPPRocky/octocrab?branch=master#cc93dd39f0085154be4750863f8197d7637f644e"
 dependencies = [
  "arc-swap",
  "async-trait",
