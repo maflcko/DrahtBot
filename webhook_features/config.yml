@@ -45,7 +45,7 @@ apply_labels:
         - '^gui:'
         - '^qt:'
       Mempool:
-        - ^mempool
+        - '^mempool:'
         - '^txmempool:'
       Mining:
         - '^mining:'
@@ -65,6 +65,9 @@ apply_labels:
         - '^http:'
       Scripts and tools:
         - '^contrib:'
+        - '^tool:'
+        - '^tools:'
+        - '^cli:'
       Tests:
         - '^qa:'
         - '^fuzz:'
