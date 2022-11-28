@@ -306,7 +306,7 @@ lazy_static! {
         (r"\b(NACK)\b", AckType::ConceptNack),
         (r"\b(Concept ACK)\b", AckType::ConceptAck),
         (r"(ACK)(?:.*?)([0-9a-f]{6,40})\b", AckType::Ack),
-        (r"\b(ACK)\b", AckType::ConceptAck)
+        (r"(ACK)\b", AckType::ConceptAck)
     ]
     .into_iter()
     .map(|(reg, typ)| (Regex::new(reg).unwrap(), typ))
@@ -418,7 +418,10 @@ mod tests {
             },
             TestCase {
                 comment: "tACK",
-                expected: None,
+                expected: Some(AckCommit {
+                    ack_type: AckType::ConceptAck,
+                    commit: None,
+                }),
             },
             TestCase {
                 comment: "tACK 1234567890123456789012345678901234567890",
