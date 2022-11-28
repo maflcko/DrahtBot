@@ -204,7 +204,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .map(|c| GitHubReviewComment {
             user: c.user.login,
             url: c.html_url.to_string(),
-            body: c.body_text.unwrap_or_default(),
+            body: c.body.unwrap_or_default(),
             date: c.updated_at.unwrap_or(c.created_at),
         })
         .collect::<Vec<_>>();
@@ -216,7 +216,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .map(|c| GitHubReviewComment {
             user: c.user.login,
             url: c.html_url.to_string(),
-            body: c.body_text.unwrap_or_default(),
+            body: c.body.unwrap_or_default(),
             date: c.submitted_at.unwrap(),
         })
         .collect::<Vec<_>>();
@@ -305,7 +305,7 @@ lazy_static! {
         (r"\b(Approach NACK)\b", AckType::ApproachNack),
         (r"\b(NACK)\b", AckType::ConceptNack),
         (r"\b(Concept ACK)\b", AckType::ConceptAck),
-        (r"(ACK)(?:\s*)([0-9a-f]{6,40})\b", AckType::Ack),
+        (r"(ACK)(?:.*?)([0-9a-f]{6,40})\b", AckType::Ack),
         (r"\b(ACK)\b", AckType::ConceptAck)
     ]
     .into_iter()
@@ -629,7 +629,34 @@ mod tests {
                         commit: None,
                     },
                 ),
-            }
+            },
+            TestCase {
+                comment: "ACK https://github.com/bitcoin/bitcoin/commits/12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "ACK [d9bd628](https://github.com/bitcoin/bitcoin/commit/d9bd628ac9d1e6272cb2f8f67b86376a13233f90)",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("d9bd628".to_string()),
+                    },
+                ),
+            },
+            TestCase {
+                comment: "ACK https://github.com/bitcoin/bitcoin/pull/12345/commits/12345678",
+                expected: Some(
+                    AckCommit {
+                        ack_type: AckType::Ack,
+                        commit: Some("12345678".to_string()),
+                    },
+                ),
+            },
         ];
 
         for test_case in test_cases {
