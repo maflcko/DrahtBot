@@ -118,6 +118,15 @@ async fn apply_labels_one(
         },
     );
     let pull_title = pull.title.as_ref().expect("remote api error");
+    let pull_title_trimmed = pull_title.trim();
+    if pull_title_trimmed != pull_title && !dry_run {
+        issues_api
+            .update(pull.number)
+            .title(pull_title_trimmed)
+            .send()
+            .await?;
+    }
+    let pull_title = pull_title_trimmed;
     let labels = github
         .all_pages(issues_api.list_labels_for_issue(pull.number).send().await?)
         .await?;
