@@ -171,6 +171,7 @@ struct GitHubReviewComment {
 }
 
 async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64) -> Result<()> {
+    println!("Refresh summary comment for {pr_number}");
     let issues_api = ctx.octocrab.issues(&repo.owner, &repo.name);
     let pulls_api = ctx.octocrab.pulls(&repo.owner, &repo.name);
     let pr = pulls_api.get(pr_number).await?;
