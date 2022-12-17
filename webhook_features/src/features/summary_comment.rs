@@ -213,8 +213,9 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .all_pages(pulls_api.list_reviews(pr_number).await?)
         .await?
         .into_iter()
+        .filter(|c| c.user.is_some())
         .map(|c| GitHubReviewComment {
-            user: c.user.login,
+            user: c.user.unwrap().login,
             url: c.html_url.to_string(),
             body: c.body.unwrap_or_default(),
             date: c.submitted_at.unwrap(),
