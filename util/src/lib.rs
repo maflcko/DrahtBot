@@ -228,7 +228,6 @@ pub async fn get_pulls_mergeable(
         )
         .await?;
     while pulls.iter().any(|p| p.mergeable.is_none()) {
-        std::thread::sleep(std::time::Duration::from_secs(3));
         pulls = futures::future::join_all(
             pulls
                 .into_iter()
@@ -238,6 +237,7 @@ pub async fn get_pulls_mergeable(
                 })
                 .map(|p| async {
                     if p.mergeable.is_none() {
+                        std::thread::sleep(std::time::Duration::from_secs(3));
                         api_pulls.get(p.number).await.expect("remote api error")
                     } else {
                         p
