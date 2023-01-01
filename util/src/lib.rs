@@ -212,45 +212,6 @@ pub async fn update_metadata_comment(
 }
 
 #[cfg(feature = "github")]
-pub async fn get_pulls_mergeable(
-    api: &octocrab::Octocrab,
-    api_pulls: &octocrab::pulls::PullRequestHandler<'_>,
-    base_name: &str,
-) -> octocrab::Result<Vec<octocrab::models::pulls::PullRequest>> {
-    let mut pulls = api
-        .all_pages(
-            api_pulls
-                .list()
-                .state(octocrab::params::State::Open)
-                .base(base_name)
-                .send()
-                .await?,
-        )
-        .await?;
-    while pulls.iter().any(|p| p.mergeable.is_none()) {
-        pulls = futures::future::join_all(
-            pulls
-                .into_iter()
-                .filter(|p| {
-                    p.state.as_ref().expect("remote api error")
-                        == &octocrab::models::IssueState::Open
-                })
-                .map(|p| async {
-                    if p.mergeable.is_none() {
-                        std::thread::sleep(std::time::Duration::from_secs(3));
-                        api_pulls.get(p.number).await.expect("remote api error")
-                    } else {
-                        p
-                    }
-                })
-                .collect::<Vec<_>>(),
-        )
-        .await;
-    }
-    Ok(pulls)
-}
-
-#[cfg(feature = "github")]
 pub async fn get_pull_mergeable(
     api: &octocrab::pulls::PullRequestHandler<'_>,
     number: u64,

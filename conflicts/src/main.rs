@@ -81,28 +81,34 @@ fn merge_strategy() -> &'static str {
     "--strategy=ort"
 }
 
-fn calc_mergeable(pulls_mergeable: &mut Vec<MetaPull>, base_branch: &str) {
+fn calc_mergeable(pulls: Vec<MetaPull>, base_branch: &str) -> Vec<MetaPull> {
     let base_id = util::check_output(
         util::git()
             .args(["log", "-1", "--format=%H"])
             .arg(format!("origin/{base_branch}")),
     );
-    for mut p in pulls_mergeable {
+    let mut ret = Vec::new();
+    for mut p in pulls {
         util::check_call(util::git().args(["checkout", &base_id, "--quiet"]));
-        util::check_call(
+        let mergeable = util::call(
             util::git()
-                // May fail intermittently, if the GitHub metadata is temporarily inconsistent
                 .args(["merge", merge_strategy(), "--quiet", &p.head_commit, "-m"])
                 .arg(format!("Prepare base for {id}", id = p.slug_num)),
         );
 
-        p.merge_commit = Some(util::check_output(util::git().args([
-            "log",
-            "-1",
-            "--format=%H",
-            "HEAD",
-        ])));
+        if mergeable {
+            p.merge_commit = Some(util::check_output(util::git().args([
+                "log",
+                "-1",
+                "--format=%H",
+                "HEAD",
+            ])));
+            ret.push(p);
+        } else {
+            util::check_call(util::git().args(["merge", "--abort"]));
+        }
     }
+    ret
 }
 
 fn calc_conflicts<'a>(
@@ -249,25 +255,25 @@ async fn main() -> octocrab::Result<()> {
             .default_branch
             .expect("remote api error");
         let pulls_api = github.pulls(owner, repo);
-        let pulls = util::get_pulls_mergeable(&github, &pulls_api, &base_name).await?;
+        let pulls = github
+            .all_pages(
+                pulls_api
+                    .list()
+                    .state(octocrab::params::State::Open)
+                    .base(&base_name)
+                    .send()
+                    .await?,
+            )
+            .await?;
         println!(
             "Open {base_name}-pulls for {sl}: {len}",
             sl = s.str(),
             len = pulls.len()
         );
-        let pulls_mergeable = pulls
-            .into_iter()
-            .filter(|p| p.mergeable.unwrap())
-            .collect::<Vec<_>>();
-        println!(
-            "Open mergeable {base_name}-pulls for {sl}: {len}",
-            sl = s.str(),
-            len = pulls_mergeable.len()
-        );
         base_names.push(base_name);
-        pull_blobs.push((pulls_mergeable, s));
+        pull_blobs.push((pulls, s));
     }
-    let mut mono_pulls_mergeable = Vec::new();
+    let mut mono_pulls = Vec::new();
     for (ps, slug) in pull_blobs {
         let sl = slug.str();
         println!("Store diffs for {sl}");
@@ -278,7 +284,7 @@ async fn main() -> octocrab::Result<()> {
         );
         for p in ps {
             let num = p.number;
-            mono_pulls_mergeable.push(MetaPull {
+            mono_pulls.push(MetaPull {
                 pull: p,
                 head_commit: util::check_output(
                     util::git()
@@ -315,7 +321,7 @@ async fn main() -> octocrab::Result<()> {
         util::chdir(temp_git_work_tree);
         println!("Calculate mergeable pulls");
 
-        calc_mergeable(&mut mono_pulls_mergeable, base_name);
+        let mono_pulls_mergeable = calc_mergeable(mono_pulls, base_name);
         if args.update_comments {
             for (i, pull_update) in mono_pulls_mergeable.iter().enumerate() {
                 println!(
