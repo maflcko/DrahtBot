@@ -128,7 +128,7 @@ async fn main() -> Result<()> {
         .map_err(DrahtBotError::GitHubError)?
         .login;
 
-    println!("Running as {}...", bot_username);
+    println!("Running as {bot_username}...");
 
     let context = web::Data::new(Context {
         octocrab,

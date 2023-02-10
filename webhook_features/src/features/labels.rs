@@ -147,7 +147,7 @@ async fn apply_labels_one(
     if new_labels.is_empty() {
         return Ok(());
     }
-    println!(" ... add_to_labels({:?})", new_labels);
+    println!(" ... add_to_labels({new_labels:?})");
     if !dry_run {
         issues_api.add_labels(pull.number, &new_labels).await?;
     }

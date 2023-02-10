@@ -148,7 +148,7 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
                     ack_type.as_str(),
                     users
                         .iter()
-                        .map(|(user, url, _)| format!("[{}]({})", user, url))
+                        .map(|(user, url, _)| format!("[{user}]({url})"))
                         .collect::<Vec<_>>()
                         .join(", ")
                 );
