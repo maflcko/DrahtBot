@@ -266,12 +266,14 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     // Ideally, do this after some time (7 days) after the last push to avoid requesting reviewers
     // on a pull that did not finish CI yet and to avoid too agressive spam.
     // However, the API does not give a last push date, so it would need to be fetched and stored
-    // somehow (via a synchronize event, or opened event, or the commit date of the head commit.
+    // somehow (via a synchronize event, or opened event, or the commit date of the head commit).
     // For now, if there was 1 ACK, assume it happened after sufficient time.
-    // If the last push date was available, stale reviewers could be filtered to exclude ones that
-    // submitted a review comment that shows up in list_comments and not list_reviews after the
-    // last push.
-    // Also, reviews could be un-requested for all AckType::Ack review comments?
+    // Improvements:
+    // * If the last push date was available, stale reviewers could be filtered to exclude ones
+    //   that submitted a review comment after the last push. This could avoid requesting a review
+    //   when the users already left an comment yet to be addressed?
+    // * Leftover review requests could be un-requested for all existing AckType::Ack reviews?
+    // * Reviews could be requested from any AckType other than Ack and ConceptNack?
     if parsed_acks.iter().any(|r| r.ack_type == AckType::Ack) {
         let stale_reviewers = parsed_acks
             .iter()
