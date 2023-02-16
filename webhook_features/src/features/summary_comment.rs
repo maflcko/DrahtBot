@@ -268,11 +268,14 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     // However, the API does not give a last push date, so it would need to be fetched and stored
     // somehow (via a synchronize event, or opened event, or the commit date of the head commit).
     // For now, if there was 1 ACK, assume it happened after sufficient time.
+    // This also helps to avoid notification email spam, because the review request is most likely
+    // sent out along with the previous ACK comment notification email.
     // Improvements:
     // * If the last push date was available, stale reviewers could be filtered to exclude ones
     //   that submitted a review comment after the last push. This could avoid requesting a review
-    //   when the users already left an comment yet to be addressed?
+    //   when the users already left a comment yet to be addressed?
     // * Leftover review requests could be un-requested for all existing AckType::Ack reviews?
+    //   Maybe this already happens? See https://github.com/MarcoFalke/DrahtBot/issues/28
     // * Reviews could be requested from any AckType other than Ack and ConceptNack?
     if parsed_acks.iter().any(|r| r.ack_type == AckType::Ack) {
         let stale_reviewers = parsed_acks
