@@ -283,10 +283,12 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
             .filter(|r| r.ack_type == AckType::StaleAck)
             .map(|r| r.user.clone())
             .collect::<Vec<_>>();
-        println!(" ... Request review from {:?}", stale_reviewers);
-        pulls_api
-            .request_reviews(pr_number, stale_reviewers, [])
-            .await?;
+        if !stale_reviewers.is_empty() {
+            println!(" ... Request review from {:?}", stale_reviewers);
+            pulls_api
+                .request_reviews(pr_number, stale_reviewers, [])
+                .await?;
+        }
     }
 
     let comment = summary_comment_template(parsed_acks);
