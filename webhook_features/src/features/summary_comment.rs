@@ -300,11 +300,13 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     )
     .await?;
     if !maybe_leftover_review_requests.is_empty() {
-        println!(" ... Unrequest review from {:?}", stale_reviewers);
-        // TODO implement upstream
-        // pulls_api
-        //     .remove_reviews(pr_number, maybe_leftover_review_requests, [])
-        //     .await?;
+        println!(
+            " ... Unrequest review from {:?}",
+            maybe_leftover_review_requests
+        );
+        pulls_api
+            .remove_requested_reviewers(pr_number, maybe_leftover_review_requests, [])
+            .await?;
     }
     // Done last to work around https://github.com/MarcoFalke/DrahtBot/issues/29
     if !stale_reviewers.is_empty() {
