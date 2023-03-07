@@ -274,8 +274,6 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     // * If the last push date was available, stale reviewers could be filtered to exclude ones
     //   that submitted a review comment after the last push. This could avoid requesting a review
     //   when the users already left a comment yet to be addressed?
-    // * Leftover review requests could be un-requested for all existing AckType::Ack reviews?
-    //   Maybe this already happens? See https://github.com/MarcoFalke/DrahtBot/issues/28
     // * Reviews could be requested from any AckType other than Ack and ConceptNack?
     let stale_reviewers = if parsed_acks.iter().any(|r| r.ack_type == AckType::Ack) {
         parsed_acks
@@ -286,6 +284,11 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     } else {
         Vec::new()
     };
+    let maybe_leftover_review_requests = parsed_acks
+        .iter()
+        .filter(|r| r.ack_type == AckType::Ack)
+        .map(|r| r.user.clone())
+        .collect::<Vec<_>>();
 
     let comment = summary_comment_template(parsed_acks);
     util::update_metadata_comment(
@@ -296,6 +299,13 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         ctx.dry_run,
     )
     .await?;
+    if !maybe_leftover_review_requests.is_empty() {
+        println!(" ... Unrequest review from {:?}", stale_reviewers);
+        // TODO implement upstream
+        // pulls_api
+        //     .remove_reviews(pr_number, maybe_leftover_review_requests, [])
+        //     .await?;
+    }
     // Done last to work around https://github.com/MarcoFalke/DrahtBot/issues/29
     if !stale_reviewers.is_empty() {
         println!(" ... Request review from {:?}", stale_reviewers);
