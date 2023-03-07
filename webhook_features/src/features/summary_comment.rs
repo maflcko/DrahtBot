@@ -277,19 +277,15 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     // * Leftover review requests could be un-requested for all existing AckType::Ack reviews?
     //   Maybe this already happens? See https://github.com/MarcoFalke/DrahtBot/issues/28
     // * Reviews could be requested from any AckType other than Ack and ConceptNack?
-    if parsed_acks.iter().any(|r| r.ack_type == AckType::Ack) {
-        let stale_reviewers = parsed_acks
+    let stale_reviewers = if parsed_acks.iter().any(|r| r.ack_type == AckType::Ack) {
+        parsed_acks
             .iter()
             .filter(|r| r.ack_type == AckType::StaleAck)
             .map(|r| r.user.clone())
-            .collect::<Vec<_>>();
-        if !stale_reviewers.is_empty() {
-            println!(" ... Request review from {:?}", stale_reviewers);
-            pulls_api
-                .request_reviews(pr_number, stale_reviewers, [])
-                .await?;
-        }
-    }
+            .collect::<Vec<_>>()
+    } else {
+        Vec::new()
+    };
 
     let comment = summary_comment_template(parsed_acks);
     util::update_metadata_comment(
@@ -300,6 +296,13 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         ctx.dry_run,
     )
     .await?;
+    // Done last to work around https://github.com/MarcoFalke/DrahtBot/issues/29
+    if !stale_reviewers.is_empty() {
+        println!(" ... Request review from {:?}", stale_reviewers);
+        pulls_api
+            .request_reviews(pr_number, stale_reviewers, [])
+            .await?;
+    }
     Ok(())
 }
 
