@@ -1,3 +1,4 @@
+pub mod ci_status;
 pub mod labels;
 pub mod summary_comment;
 

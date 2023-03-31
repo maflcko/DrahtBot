@@ -33,6 +33,7 @@ struct Args {
 #[derive(Display, EnumString, PartialEq, Eq)]
 #[strum(serialize_all = "snake_case")]
 pub enum GitHubEvent {
+    CheckSuite,
     IssueComment,
     PullRequest,
     PullRequestReview,
@@ -74,6 +75,7 @@ async fn postreceive_handler(
 fn features() -> Vec<Box<dyn Feature>> {
     vec![
         Box::new(SummaryCommentFeature::new()),
+        Box::new(crate::features::ci_status::CiStatusFeature::new()),
         Box::new(crate::features::labels::LabelsFeature::new()),
     ]
 }
