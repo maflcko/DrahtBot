@@ -57,30 +57,28 @@ impl Feature for CiStatusFeature {
                 let pulls = payload["check_suite"]["pull_requests"]
                     .as_array()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-                if success {
-                    let issues_api = ctx.octocrab.issues(repo_user, repo_name);
-                    for p in pulls {
-                        let pull_number = p["number"].as_u64().ok_or(DrahtBotError::KeyNotFound)?;
+                let issues_api = ctx.octocrab.issues(repo_user, repo_name);
+                for p in pulls {
+                    let pull_number = p["number"].as_u64().ok_or(DrahtBotError::KeyNotFound)?;
 
-                        let labels = ctx
-                            .octocrab
-                            .all_pages(issues_api.list_labels_for_issue(pull_number).send().await?)
-                            .await?;
-                        let found_label = labels.into_iter().any(|l| l.name == ci_failed_label);
-                        if found_label {
-                            println!("... remove label '{}')", ci_failed_label);
-                            if !ctx.dry_run {
-                                issues_api
-                                    .remove_label(pull_number, &ci_failed_label)
-                                    .await?;
-                            }
-                        } else {
-                            println!("... add label '{}'", ci_failed_label);
-                            if !ctx.dry_run {
-                                issues_api
-                                    .add_labels(pull_number, &[ci_failed_label.to_string()])
-                                    .await?;
-                            }
+                    let labels = ctx
+                        .octocrab
+                        .all_pages(issues_api.list_labels_for_issue(pull_number).send().await?)
+                        .await?;
+                    let found_label = labels.into_iter().any(|l| l.name == ci_failed_label);
+                    if found_label && success {
+                        println!("... remove label '{}')", ci_failed_label);
+                        if !ctx.dry_run {
+                            issues_api
+                                .remove_label(pull_number, &ci_failed_label)
+                                .await?;
+                        }
+                    } else if !found_label && !success {
+                        println!("... add label '{}'", ci_failed_label);
+                        if !ctx.dry_run {
+                            issues_api
+                                .add_labels(pull_number, &[ci_failed_label.to_string()])
+                                .await?;
                         }
                     }
                 }
