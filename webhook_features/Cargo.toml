@@ -11,7 +11,7 @@ async-trait = "0.1"
 chrono = "0.4"
 clap = { version = "4", features = ["derive"] }
 lazy_static = "1"
-octocrab = { features = ["stream"], git = "https://github.com/XAMPPRocky/octocrab", branch = "master" }
+octocrab = { features = ["stream"], git = "https://github.com/XAMPPRocky/octocrab", branch = "main" }
 regex = "1"
 serde = "1"
 serde_json = "1"

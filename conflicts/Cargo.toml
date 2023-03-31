@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-octocrab = { git = "https://github.com/XAMPPRocky/octocrab", branch = "master" }
+octocrab = { git = "https://github.com/XAMPPRocky/octocrab", branch = "main" }
 serde = "1"
 serde_yaml = "0.9"
 tempfile = "3"

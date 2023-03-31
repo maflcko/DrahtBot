@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 futures = { version="0.3", optional=true }
-octocrab = { git = "https://github.com/XAMPPRocky/octocrab", branch = "master", optional=true }
+octocrab = { git = "https://github.com/XAMPPRocky/octocrab", branch = "main", optional=true }
 
 [features]
 github = ["dep:futures","dep:octocrab"]
