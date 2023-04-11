@@ -67,18 +67,18 @@ impl Feature for CiStatusFeature {
                         .await?;
                     let found_label = labels.into_iter().any(|l| l.name == ci_failed_label);
                     if found_label && success {
-                        println!("... remove label '{}')", ci_failed_label);
+                        println!("... {} remove label '{}')", pull_number, ci_failed_label);
                         if !ctx.dry_run {
                             issues_api
                                 .remove_label(pull_number, &ci_failed_label)
                                 .await?;
                         }
                     } else if !found_label && !success {
-                        println!("... add label '{}'", ci_failed_label);
+                        println!("... {} add label '{}'", pull_number, ci_failed_label);
                         if !ctx.dry_run {
-                            //issues_api
-                            //    .add_labels(pull_number, &[ci_failed_label.to_string()])
-                            //    .await?;
+                            issues_api
+                                .add_labels(pull_number, &[ci_failed_label.to_string()])
+                                .await?;
                         }
                     }
                 }
