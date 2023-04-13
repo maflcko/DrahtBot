@@ -76,9 +76,9 @@ impl Feature for CiStatusFeature {
                     } else if !found_label && !success {
                         println!("... {} add label '{}'", pull_number, ci_failed_label);
                         if !ctx.dry_run {
-                            issues_api
-                                .add_labels(pull_number, &[ci_failed_label.to_string()])
-                                .await?;
+                            //issues_api
+                            //    .add_labels(pull_number, &[ci_failed_label.to_string()])
+                            //    .await?;
                         }
                     }
                 }
