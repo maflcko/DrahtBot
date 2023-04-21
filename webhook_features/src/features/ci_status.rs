@@ -50,10 +50,14 @@ impl Feature for CiStatusFeature {
         match event {
             GitHubEvent::CheckSuite if action == "completed" => {
                 // https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#check_suite
-                let success = "success"
-                    == payload["check_suite"]["conclusion"]
-                        .as_str()
-                        .ok_or(DrahtBotError::KeyNotFound)?;
+                let conclusion = payload["check_suite"]["conclusion"]
+                    .as_str()
+                    .ok_or(DrahtBotError::KeyNotFound)?;
+                if conclusion == "cancelled" || conclusion == "neutral" {
+                    // Return early and wait for a new check_suite result
+                    return Ok(());
+                }
+                let success = "success" == conclusion;
                 let pull_number = {
                     // Hacky way to get the pull number. See also https://github.com/bitcoin/bitcoin/issues/27178#issuecomment-1503475232
                     let suite_id = payload["check_suite"]["id"]
