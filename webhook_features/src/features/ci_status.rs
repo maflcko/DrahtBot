@@ -97,8 +97,11 @@ impl Feature for CiStatusFeature {
                         .map_err(|_| DrahtBotError::KeyNotFound)?["data"]["task"]["build"]
                         ["pullRequest"]
                         .as_u64()
-                        .ok_or(DrahtBotError::KeyNotFound)?
                 };
+                if pull_number.is_none() {
+                    return Ok(());
+                }
+                let pull_number = pull_number.unwrap();
                 let issues_api = ctx.octocrab.issues(repo_user, repo_name);
                 let issue = issues_api.get(pull_number).await?;
                 if issue.state != octocrab::models::IssueState::Open {
