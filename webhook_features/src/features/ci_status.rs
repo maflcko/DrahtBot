@@ -88,13 +88,9 @@ impl Feature for CiStatusFeature {
                         .header("Content-Type", "application/json")
                         .body(query)
                         .send()
-                        .await
-                        .map_err(|_| DrahtBotError::KeyNotFound)?;
+                        .await?;
 
-                    response
-                        .json::<serde_json::Value>()
-                        .await
-                        .map_err(|_| DrahtBotError::KeyNotFound)?["data"]["task"]["build"]
+                    response.json::<serde_json::Value>().await?["data"]["task"]["build"]
                         ["pullRequest"]
                         .as_u64()
                 };
