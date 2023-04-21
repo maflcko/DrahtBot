@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4"
+anyhow = { version = "1.0.70", features = ["backtrace"] }
 async-trait = "0.1"
 chrono = "0.4"
 clap = { version = "4", features = ["derive"] }

@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-pub type Result<T> = std::result::Result<T, DrahtBotError>;
+pub type Result<T> = anyhow::Result<T>;
 
 #[derive(Error, Debug)]
 pub enum DrahtBotError {

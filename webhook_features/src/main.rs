@@ -147,6 +147,6 @@ async fn main() -> Result<()> {
     })
     .bind(format!("{}:{}", args.host, args.port))?
     .run()
-    .await
-    .map_err(DrahtBotError::IOError)
+    .await?;
+    Ok(())
 }
