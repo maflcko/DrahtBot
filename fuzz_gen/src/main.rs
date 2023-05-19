@@ -3,7 +3,21 @@ use std::process::Command;
 use util::{chdir, check_call, git};
 
 #[derive(clap::Parser)]
-#[command(about = "Generate fuzz seeds until a crash.", long_about = None)]
+#[command(long_about = r#"
+
+Generate fuzz inputs until a crash.
+
+To prepare, install:
+wget cargo sed git python3 ccache screen + Bitcoin Core deps
+#
+# https://apt.llvm.org/
+#
+# wget https://apt.llvm.org/llvm.sh
+# chmod +x llvm.sh
+# ./llvm.sh 17
+#
+# echo 'defscrollback 10000' > ~/.screenrc
+"#)]
 struct Args {
     /// The local scratch folder.
     #[arg(long)]
@@ -30,22 +44,16 @@ pub fn ensure_init_git(folder: &std::path::Path, url: &str) {
 fn main() {
     let args = Args::parse();
 
-    println!();
-    println!("To prepare, install:");
-    println!("sed git ccache + Bitcoin Core deps");
-    println!("#");
-    println!("# https://apt.llvm.org/");
-    println!("#");
-    println!("# wget https://apt.llvm.org/llvm.sh");
-    println!("# chmod +x llvm.sh");
-    println!("# ./llvm.sh 17");
-    println!();
-
     let url_code = format!("https://github.com/{}", "bitcoin/bitcoin");
     let url_seed = format!("https://github.com/{}", "bitcoin-core/qa-assets");
-    let dir_code = args.scratch_folder.join("code");
-    let dir_assets = args.scratch_folder.join("assets");
-    let dir_generate_seeds = args.scratch_folder.join("generate_seeds");
+    std::fs::create_dir_all(&args.scratch_folder).expect("Failed to create scratch folder");
+    let temp_dir = args
+        .scratch_folder
+        .canonicalize()
+        .expect("Failed to canonicalize scratch dir folder");
+    let dir_code = temp_dir.join("code");
+    let dir_assets = temp_dir.join("assets");
+    let dir_generate_seeds = temp_dir.join("generate_seeds");
 
     ensure_init_git(&dir_code, &url_code);
     ensure_init_git(&dir_assets, &url_seed);
