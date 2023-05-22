@@ -70,7 +70,8 @@ pub fn git() -> std::process::Command {
 }
 
 pub fn check_call(cmd: &mut std::process::Command) {
-    check_output(cmd);
+    let status = cmd.status().expect("command error");
+    assert!(status.success());
 }
 
 pub fn call(cmd: &mut std::process::Command) -> bool {
