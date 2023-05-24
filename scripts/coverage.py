@@ -152,7 +152,7 @@ def calc_coverage(pulls, base_ref, dir_code, dir_cov_report, make_jobs, dry_run,
             #'type=bind,src={},dst={}'.format(dir_cov_report, dir_cov_report),
             '-e',
             'LC_ALL=C.UTF-8',
-            'debian:bullseye-slim',  # Use debian 11 for lcov 1.14
+            'ubuntu:devel',  # Use latest lcov to avoid bugs in earlier versions
         ],
         universal_newlines=True,
     ).strip()
