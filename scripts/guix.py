@@ -55,7 +55,7 @@ def main():
     url = 'https://github.com/{}'.format(args.github_repo)
     guix_www_folder = '/var/www/html/guix/{}/'.format(args.github_repo)
     external_url = '{}/guix/{}/'.format(args.domain, args.github_repo)
-    temp_dir = os.path.normpath(os.path.join(args.guix_folder, ''))
+    temp_dir = os.path.abspath(os.path.join(args.guix_folder, ''))
 
     if args.dry_run:
         guix_www_folder = os.path.join(temp_dir, 'www_output')

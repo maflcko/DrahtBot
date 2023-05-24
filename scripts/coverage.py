@@ -222,7 +222,7 @@ def main():
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
     args = parser.parse_args()
 
-    args.scratch_dir = os.path.normpath(os.path.join(args.scratch_dir, ''))
+    args.scratch_dir = os.path.abspath(os.path.join(args.scratch_dir, ''))
     os.makedirs(args.scratch_dir, exist_ok=True)
 
     code_dir = os.path.join(args.scratch_dir, 'code', args.repo_code)

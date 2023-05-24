@@ -22,7 +22,7 @@ def main():
         login_tuple = args.mediawiki_login_tuple.split(':', 1)
         site.login(login_tuple[0], login_tuple[1])
 
-    args.scratch_dir = os.path.normpath(os.path.join(args.scratch_dir, ''))
+    args.scratch_dir = os.path.abspath(os.path.join(args.scratch_dir, ''))
     os.makedirs(args.scratch_dir, exist_ok=True)
 
     code_dir = os.path.join(args.scratch_dir, 'bips_git', args.github_repo)
