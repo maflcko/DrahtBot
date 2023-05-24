@@ -94,13 +94,12 @@ def calc_coverage(assets_dir, dir_code, dir_cov_report, make_jobs, args):
 
 
 def main():
-    THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Run fuzz coverage reports for one fuzz target.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--repo_report', help='The repo slug of the remote on GitHub for reports.', default='DrahtBot/reports')
     parser.add_argument('--remote_url', help='The remote url of the hosted html reports.', default='https://drahtbot.space/host_reports/DrahtBot/reports')
     parser.add_argument('--make_jobs', help='The number of make jobs.', default='2', type=int)
-    parser.add_argument('--scratch_dir', help='The local dir used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'coverage_fuzz'))
-    parser.add_argument('--ssh_key', help='The ssh key for "repo_report"', default=os.path.join(THIS_FILE_PATH, '..', 'ssh_env', 'id_rsa_drahtbot'))
+    parser.add_argument('--scratch_dir', help='The local dir used for scratching')
+    parser.add_argument('--ssh_key', help='The ssh key for "repo_report"')
     parser.add_argument('--git_ref_code', help='Which git ref in the code repo to build.', default='master')
     parser.add_argument('--git_ref_qa_assets', help='Which git ref in the qa-assets repo to use.', default='main')
     parser.add_argument('--fuzz_targets', help='Which targets to build.', default='')

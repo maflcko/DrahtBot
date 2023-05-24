@@ -207,7 +207,6 @@ def calc_coverage(pulls, base_ref, dir_code, dir_cov_report, make_jobs, dry_run,
 
 
 def main():
-    THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
     parser = argparse.ArgumentParser(description='Run coverage reports for all pull requests.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--commit_only', help='Generate the coverage for this commit and exit.', default='')
     parser.add_argument('--pull_id', type=int, help='Update the comment for this pull request.', default=0)
@@ -218,8 +217,8 @@ def main():
     parser.add_argument('--remote_url', help='The remote url of the hosted html reports.', default='https://drahtbot.space/host_reports/DrahtBot/reports')
     parser.add_argument('--make_jobs', help='The number of make jobs.', default='2', type=int)
     parser.add_argument('--dry_run', help='Print changes/edits instead of calling the GitHub API.', action='store_true', default=False)
-    parser.add_argument('--scratch_dir', help='The local dir used for scratching', default=os.path.join(THIS_FILE_PATH, '..', 'scratch', 'coverage'))
-    parser.add_argument('--ssh_key', help='The ssh key for "repo_report"', default=os.path.join(THIS_FILE_PATH, '..', 'ssh_env', 'id_rsa_drahtbot'))
+    parser.add_argument('--scratch_dir', help='The local dir used for scratching')
+    parser.add_argument('--ssh_key', help='The ssh key for "repo_report"')
     parser.add_argument('--base_name', help='The name of the base branch.', default='master')
     args = parser.parse_args()
 
