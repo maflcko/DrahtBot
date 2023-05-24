@@ -31,7 +31,6 @@ def gen_coverage(docker_exec, assets_dir, dir_code, dir_result, git_ref, make_jo
 
     print('Make coverage data in docker ...')
     os.chdir(dir_code)
-    call_git(['checkout', '{}'.format(git_ref)])
     docker_exec('./autogen.sh')
     os.chdir(dir_build)
 
@@ -87,10 +86,12 @@ def calc_coverage(assets_dir, dir_code, dir_cov_report, make_jobs, args):
     print('Generate coverage')
     os.chdir(dir_code)
     base_git_ref = get_git(['log', '--format=%H', '-1', 'HEAD'])[:16]
-    dir_result_base = os.path.join(dir_cov_report, f'{base_git_ref}')
-    gen_coverage(docker_exec, assets_dir, dir_code, dir_result_base, base_git_ref, make_jobs)
+    os.chdir(assets_dir)
+    assets_git_ref = get_git(["log", "--format=%H", "-1", "HEAD"])[:16]
+    dir_result_base = os.path.join(dir_cov_report, base_git_ref, assets_git_ref)
+    gen_coverage(docker_exec, assets_dir, dir_code, dir_result_base, git_ref=f"{base_git_ref}-code {assets_git_ref}-assets", make_jobs=make_jobs)
 
-    print(f'{args.remote_url}/coverage_fuzz/monotree/{base_git_ref}/fuzz.coverage/index.html')
+    print(f"{args.remote_url}/coverage_fuzz/monotree/{base_git_ref}/{assets_git_ref}/fuzz.coverage/index.html")
 
 
 def main():
