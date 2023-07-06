@@ -11,7 +11,7 @@ struct Args {
     #[arg(long)]
     github_repo: Vec<util::Slug>,
     /// Update the conflict comment and label for this pull request. Format: owner/repo/number
-    #[arg(long)]
+    #[arg(long, value_parser=parse_pull_id)]
     pull_id: Option<String>,
     /// Update all conflicts comments and labels.
     #[arg(long, default_value_t = false)]
@@ -25,6 +25,13 @@ struct Args {
     /// Print changes/edits instead of calling the GitHub API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
+}
+
+fn parse_pull_id(val: &str) -> Result<String, String> {
+    if 3 == val.split('/').count() {
+        return Ok(val.to_string());
+    }
+    Err("".to_string())
 }
 
 #[derive(serde::Deserialize)]
