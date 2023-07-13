@@ -27,7 +27,10 @@ struct Args {
     #[arg(long, default_value_t = 1)]
     jobs: u8,
     /// The sanitizers to enable (must include fuzzer)
-    #[arg(long, default_value = "address,fuzzer,undefined,integer,float-divide-by-zero")]
+    #[arg(
+        long,
+        default_value = "address,fuzzer,undefined,integer,float-divide-by-zero"
+    )]
     sanitizers: String,
 }
 
