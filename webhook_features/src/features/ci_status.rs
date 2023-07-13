@@ -73,6 +73,8 @@ impl Feature for CiStatusFeature {
                         .first()
                         .ok_or(DrahtBotError::KeyNotFound)?
                         .details_url
+                        .as_ref()
+                        .ok_or(DrahtBotError::KeyNotFound)?
                         .split('/')
                         .last()
                         .ok_or(DrahtBotError::KeyNotFound)?

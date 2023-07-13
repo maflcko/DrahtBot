@@ -210,7 +210,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .collect::<Vec<_>>();
     let mut all_review_comments = ctx
         .octocrab
-        .all_pages(pulls_api.list_reviews(pr_number).await?)
+        .all_pages(pulls_api.list_reviews(pr_number).send().await?)
         .await?
         .into_iter()
         .filter(|c| c.user.is_some())
