@@ -84,7 +84,7 @@ fn main() {
     check_call(&mut Command::new("./autogen.sh"));
     check_call(
         Command::new("./configure")
-            .args(["CC=clang-17", "CXX=clang++-17", "--enable-fuzz"])
+            .args(["CC=clang-18", "CXX=clang++-18", "--enable-fuzz"])
             .arg(format!("--with-sanitizers={}", args.sanitizers)),
     );
     check_call(Command::new("make").arg("clean"));
