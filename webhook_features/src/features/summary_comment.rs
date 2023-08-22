@@ -309,10 +309,11 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
             .await?;
     }
     // Done last to work around https://github.com/MarcoFalke/DrahtBot/issues/29
-    if !stale_reviewers.is_empty() {
-        println!(" ... Request review from {:?}", stale_reviewers);
+    // Done one-by-one to also work around the same issue.
+    for stale_reviewer in &stale_reviewers {
+        println!(" ... Request review from {}", stale_reviewer);
         if let Err(err) = pulls_api
-            .request_reviews(pr_number, stale_reviewers, [])
+            .request_reviews(pr_number, [stale_reviewer.to_string()], [])
             .await
         {
             println!(" ... ERROR when requesting review {:?}", err);
