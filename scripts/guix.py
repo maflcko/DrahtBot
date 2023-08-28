@@ -1,4 +1,5 @@
 from github import Github, GithubException
+import platform
 import time
 import itertools
 import shutil
@@ -214,7 +215,7 @@ def main():
 
         text = ID_GUIX_COMMENT
         text += '\n'
-        text += '### Guix builds\n\n'
+        text += '### Guix builds (on {})\n\n'.format(platform.machine())
         text += '| File '
         text += '| commit {}<br>({}) '.format(base_commit, args.base_name)
         text += '| commit {}<br>({} and this pull) '.format(commit, args.base_name)
