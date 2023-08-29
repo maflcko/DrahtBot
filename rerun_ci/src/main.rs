@@ -39,7 +39,7 @@ struct Args {
     #[arg(long)]
     task: Vec<String>,
     /// How many minutes to sleep between pulls.
-    #[arg(long, default_value_t = 55)]
+    #[arg(long, default_value_t = 25)]
     sleep_min: u64,
     /// Print changes/edits instead of calling the GitHub/CI API.
     #[arg(long, default_value_t = false)]
