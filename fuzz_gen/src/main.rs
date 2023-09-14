@@ -14,7 +14,7 @@ wget cargo sed git python3 ccache screen + Bitcoin Core deps
 #
 # wget https://apt.llvm.org/llvm.sh
 # chmod +x llvm.sh
-# ./llvm.sh 17
+# ./llvm.sh 18
 #
 # echo 'defscrollback 10000' > ~/.screenrc
 # apt update && apt upgrade -y && apt autoremove -y && htop
