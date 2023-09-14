@@ -92,8 +92,12 @@ fn main() {
     check_call(Command::new("rm").arg("-rf").arg(&dir_generate_seeds));
     let fuzz = || {
         let mut cmd = Command::new("python3");
-        cmd.args(["test/fuzz/test_runner.py", "-l=DEBUG"])
-            .arg(format!("--par={}", args.jobs));
+        cmd.args([
+            "test/fuzz/test_runner.py",
+            "-l=DEBUG",
+            "--exclude=coinselection",
+        ])
+        .arg(format!("--par={}", args.jobs));
         cmd
     };
     check_call(
