@@ -124,6 +124,8 @@ impl Feature for CiStatusFeature {
                             .add_labels(pull_number, &[ci_failed_label.to_string()])
                             .await?;
                     }
+                    // TODO check if *compile* failed and add comment
+                    // (functional tests are ignored due to intermittent issues)
                 }
             }
             _ => {}
