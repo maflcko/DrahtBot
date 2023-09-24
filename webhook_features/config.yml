@@ -1,4 +1,4 @@
-apply_labels:
+repositories:
   - repo_slug: bitcoin/bitcoin
     backport_label: Backport
     repo_labels:
@@ -84,3 +84,4 @@ apply_labels:
         - '^refactor(ing)?:'
         - '^move-?only:'
         - '^scripted-diff:'
+    corecheck: true

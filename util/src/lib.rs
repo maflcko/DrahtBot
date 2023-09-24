@@ -47,6 +47,7 @@ pub enum IdComment {
     SecConflicts,
     SecCoverage,
     SecReviews,
+    SecCodeCoverage,
 }
 
 #[cfg(feature = "github")]
@@ -58,6 +59,7 @@ impl IdComment {
             Self::InactiveRebase => "<!--13523179cfe9479db18ec6c5d236f789-->",
             Self::InactiveStale => "<!--8ac04cdde196e94527acabf64b896448-->",
             Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",
+            Self::SecCodeCoverage => "<!--006a51241073e994b41acfe9ec718e94-->",
             Self::SecConflicts => "<!--174a7506f384e20aa4161008e828411d-->",
             Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",
             Self::SecReviews => "<!--021abf342d371248e50ceaed478a90ca-->",
@@ -182,7 +184,7 @@ pub fn get_metadata_sections_from_comments(
 #[cfg(feature = "github")]
 pub async fn update_metadata_comment(
     api_issues: &octocrab::issues::IssueHandler<'_>,
-    mut comment: MetaComment,
+    comment: &mut MetaComment,
     text: &str,
     section: IdComment,
     dry_run: bool,
@@ -196,10 +198,13 @@ pub async fn update_metadata_comment(
         let full_text = comment.join_metadata_comment();
         println!("... Create new metadata comment");
         if !dry_run {
-            api_issues
+            let c = api_issues
                 .create_comment(comment.pull_num, full_text)
                 .await?;
+
+            comment.id = Some(c.id);
         }
+
         return Ok(());
     }
     let full_text = comment.join_metadata_comment();

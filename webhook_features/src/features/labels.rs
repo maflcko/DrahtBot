@@ -21,18 +21,6 @@ impl LabelsFeature {
     }
 }
 
-#[derive(serde::Deserialize)]
-struct Repo {
-    repo_slug: String,
-    backport_label: String,
-    repo_labels: std::collections::HashMap<String, Vec<String>>,
-}
-
-#[derive(serde::Deserialize)]
-pub struct Config {
-    apply_labels: Vec<Repo>,
-}
-
 #[async_trait]
 impl Feature for LabelsFeature {
     fn meta(&self) -> &FeatureMeta {
@@ -65,7 +53,7 @@ impl Feature for LabelsFeature {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
                 if let Some(config_repo) = ctx
                     .config
-                    .apply_labels
+                    .repositories
                     .iter()
                     .find(|r| r.repo_slug == format!("{repo_user}/{repo_name}"))
                 {
@@ -98,7 +86,7 @@ impl Feature for LabelsFeature {
 async fn apply_labels_one(
     github: &octocrab::Octocrab,
     issues_api: &octocrab::issues::IssueHandler<'_>,
-    config_repo: &Repo,
+    config_repo: &crate::config::Repo,
     base_name: &str,
     pull: &octocrab::models::pulls::PullRequest,
     dry_run: bool,

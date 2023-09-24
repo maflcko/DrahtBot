@@ -164,7 +164,7 @@ async fn update_comment(
     pulls_conflict: &Vec<&MetaPull>,
 ) -> octocrab::Result<()> {
     let api_issues = api.issues(&pull.slug.owner, &pull.slug.repo);
-    let cmt = util::get_metadata_sections(api, &api_issues, pull.pull.number).await?;
+    let mut cmt = util::get_metadata_sections(api, &api_issues, pull.pull.number).await?;
     if pulls_conflict.is_empty() {
         if cmt.id.is_none() || !cmt.has_section(&util::IdComment::SecConflicts) {
             // No conflict and no section to update
@@ -173,7 +173,7 @@ async fn update_comment(
         // Update section for no conflicts
         util::update_metadata_comment(
             &api_issues,
-            cmt,
+            &mut cmt,
             &format!(
                 "\n### {hd}\n{txt}",
                 hd = config.conflicts_heading,
@@ -188,7 +188,7 @@ async fn update_comment(
 
     util::update_metadata_comment(
         &api_issues,
-        cmt,
+        &mut cmt,
         &format!(
             "\n### {hd}\n{txt}",
             hd = config.conflicts_heading,

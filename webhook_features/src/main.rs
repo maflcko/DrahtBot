@@ -1,3 +1,4 @@
+mod config;
 mod errors;
 mod features;
 
@@ -11,6 +12,7 @@ use lazy_static::lazy_static;
 use octocrab::Octocrab;
 use strum::{Display, EnumString};
 
+use crate::config::Config;
 use crate::errors::{DrahtBotError, Result};
 
 #[derive(Parser)]
@@ -49,7 +51,7 @@ async fn index() -> &'static str {
 pub struct Context {
     octocrab: Octocrab,
     bot_username: String,
-    config: crate::features::labels::Config,
+    pub config: Config,
     dry_run: bool,
 }
 
@@ -104,7 +106,7 @@ async fn emit_event(
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let config: crate::features::labels::Config = serde_yaml::from_reader(
+    let config: Config = serde_yaml::from_reader(
         std::fs::File::open(args.config_file).expect("config file path error"),
     )
     .expect("yaml error");

@@ -181,7 +181,25 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .all_pages(issues_api.list_comments(pr_number).send().await?)
         .await?;
 
-    let cmt = util::get_metadata_sections_from_comments(&all_comments, pr_number);
+    let mut cmt = util::get_metadata_sections_from_comments(&all_comments, pr_number);
+
+    if let Some(config_repo) = ctx
+        .config
+        .repositories
+        .iter()
+        .find(|r| r.repo_slug == format!("{}/{}", repo.owner, repo.name))
+    {
+        if config_repo.corecheck {
+            util::update_metadata_comment(
+            &issues_api,
+            &mut cmt,
+            format!("\n### Code Coverage\nFor detailed information about the code coverage, see the [test coverage report](https://corecheck.dev/{}/{}/pulls/{}).\n", repo.owner, repo.name, pr_number).as_str(),
+            util::IdComment::SecCodeCoverage,
+            ctx.dry_run,
+        )
+        .await?;
+        }
+    }
 
     let ignored_users = if let Some(cmt_id) = cmt.id {
         let reactions = ctx
@@ -293,7 +311,7 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     let comment = summary_comment_template(parsed_acks);
     util::update_metadata_comment(
         &issues_api,
-        cmt,
+        &mut cmt,
         &comment,
         util::IdComment::SecReviews,
         ctx.dry_run,
