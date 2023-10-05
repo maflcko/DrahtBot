@@ -190,14 +190,21 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
         .find(|r| r.repo_slug == format!("{}/{}", repo.owner, repo.name))
     {
         if config_repo.corecheck {
+            let coverage = r#"
+### Code Coverage
+For detailed information about the code coverage, see the [test coverage report](https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}).
+"#;
             util::update_metadata_comment(
-            &issues_api,
-            &mut cmt,
-            format!("\n### Code Coverage\nFor detailed information about the code coverage, see the [test coverage report](https://corecheck.dev/{}/{}/pulls/{}).\n", repo.owner, repo.name, pr_number).as_str(),
-            util::IdComment::SecCodeCoverage,
-            ctx.dry_run,
-        )
-        .await?;
+                &issues_api,
+                &mut cmt,
+                &coverage
+                    .replace("{owner}", &repo.owner)
+                    .replace("{repo}", &repo.name)
+                    .replace("{pull_num}", &pr_number.to_string()),
+                util::IdComment::SecCodeCoverage,
+                ctx.dry_run,
+            )
+            .await?;
         }
     }
 

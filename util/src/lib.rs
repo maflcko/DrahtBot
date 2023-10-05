@@ -44,10 +44,10 @@ pub enum IdComment {
     InactiveRebase,
     InactiveStale,
     Metadata, // The "root" section
+    SecCodeCoverage,
     SecConflicts,
     SecCoverage,
     SecReviews,
-    SecCodeCoverage,
 }
 
 #[cfg(feature = "github")]
