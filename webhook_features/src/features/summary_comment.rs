@@ -299,11 +299,19 @@ For detailed information about the code coverage, see the [test coverage report]
     // * If the last push date was available, stale reviewers could be filtered to exclude ones
     //   that submitted a review comment after the last push. This could avoid requesting a review
     //   when the users already left a comment yet to be addressed?
-    // * Reviews could be requested from any AckType other than Ack and ConceptNack?
     let stale_reviewers = if parsed_acks.iter().any(|r| r.ack_type == AckType::Ack) {
         parsed_acks
             .iter()
-            .filter(|r| r.ack_type == AckType::StaleAck)
+            .filter(|r| match r.ack_type {
+                AckType::ApproachAck => true,
+                AckType::ConceptAck => true,
+                AckType::StaleAck => true,
+
+                AckType::Ack => false,
+                AckType::ApproachNack => false,
+                AckType::ConceptNack => false,
+                AckType::Ignored => false,
+            })
             .map(|r| r.user.clone())
             .collect::<Vec<_>>()
     } else {
