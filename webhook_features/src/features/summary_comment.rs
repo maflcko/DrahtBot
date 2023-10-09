@@ -282,10 +282,16 @@ For detailed information about the code coverage, see the [test coverage report]
         }
     }
 
-    let parsed_acks = user_reviews
+    let user_reviews = user_reviews
         .into_iter()
         .map(|e| e.1.into_iter().max_by_key(|r| r.date).unwrap())
         .collect::<Vec<_>>();
+
+    let max_ack_date = user_reviews
+        .iter()
+        .filter(|r| r.ack_type == AckType::Ack)
+        .max_by_key(|r| r.date)
+        .map(|r| r.date);
 
     // Re-request reviewers.
     // Ideally, do this after some time (7 days) after the last push to avoid requesting reviewers
@@ -295,16 +301,16 @@ For detailed information about the code coverage, see the [test coverage report]
     // For now, if there was 1 ACK, assume it happened after sufficient time.
     // This also helps to avoid notification email spam, because the review request is most likely
     // sent out along with the previous ACK comment notification email.
-    // Improvements:
-    // * If the last push date was available, stale reviewers could be filtered to exclude ones
-    //   that submitted a review comment after the last push. This could avoid requesting a review
-    //   when the users already left a comment yet to be addressed?
-    let stale_reviewers = if parsed_acks.iter().any(|r| r.ack_type == AckType::Ack) {
-        parsed_acks
+    let stale_reviewers = if max_ack_date.is_some() {
+        let max_ack_date = max_ack_date.unwrap();
+        user_reviews
             .iter()
             .filter(|r| match r.ack_type {
-                AckType::ApproachAck => true,
-                AckType::ConceptAck => true,
+                // Only mark "weak" reviews as stale when they were done before max_ack_date. This
+                // avoids requesting a review when the users just now left a review comment yet to
+                // be addressed.
+                AckType::ApproachAck => r.date < max_ack_date,
+                AckType::ConceptAck => r.date < max_ack_date,
                 AckType::StaleAck => true,
 
                 AckType::Ack => false,
@@ -317,13 +323,13 @@ For detailed information about the code coverage, see the [test coverage report]
     } else {
         Vec::new()
     };
-    let maybe_leftover_review_requests = parsed_acks
+    let maybe_leftover_review_requests = user_reviews
         .iter()
         .filter(|r| r.ack_type == AckType::Ack)
         .map(|r| r.user.clone())
         .collect::<Vec<_>>();
 
-    let comment = summary_comment_template(parsed_acks);
+    let comment = summary_comment_template(user_reviews);
     util::update_metadata_comment(
         &issues_api,
         &mut cmt,
@@ -341,7 +347,7 @@ For detailed information about the code coverage, see the [test coverage report]
             .remove_requested_reviewers(pr_number, maybe_leftover_review_requests, [])
             .await?;
     }
-    // Done last to work around https://github.com/MarcoFalke/DrahtBot/issues/29
+    // Done last to work around https://github.com/maflcko/DrahtBot/issues/29
     // Done one-by-one to also work around the same issue.
     for stale_reviewer in &stale_reviewers {
         println!(" ... Request review from {}", stale_reviewer);
