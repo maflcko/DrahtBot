@@ -118,7 +118,10 @@ impl Feature for CiStatusFeature {
                             .await?;
                     }
                 } else if !found_label && !success {
-                    println!("... {} add label '{}'", pull_number, ci_failed_label);
+                    println!(
+                        "... {} add label '{}' due to {}",
+                        pull_number, ci_failed_label, conclusion
+                    );
                     if !ctx.dry_run {
                         issues_api
                             .add_labels(pull_number, &[ci_failed_label.to_string()])

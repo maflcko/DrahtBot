@@ -301,8 +301,7 @@ For detailed information about the code coverage, see the [test coverage report]
     // For now, if there was 1 ACK, assume it happened after sufficient time.
     // This also helps to avoid notification email spam, because the review request is most likely
     // sent out along with the previous ACK comment notification email.
-    let stale_reviewers = if max_ack_date.is_some() {
-        let max_ack_date = max_ack_date.unwrap();
+    let stale_reviewers = if let Some(max_ack_date) = max_ack_date {
         user_reviews
             .iter()
             .filter(|r| match r.ack_type {
@@ -310,7 +309,7 @@ For detailed information about the code coverage, see the [test coverage report]
                 // avoids requesting a review when the users just now left a review comment yet to
                 // be addressed.
                 AckType::ApproachAck => r.date < max_ack_date,
-                AckType::ApproachNack => r.date < max_ack_date,  // ApproachNack implies ConceptAck
+                AckType::ApproachNack => r.date < max_ack_date, // ApproachNack implies ConceptAck
                 AckType::ConceptAck => r.date < max_ack_date,
                 AckType::StaleAck => true,
 
