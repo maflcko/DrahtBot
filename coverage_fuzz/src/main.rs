@@ -1,3 +1,6 @@
+use clap::Parser;
+use util::{chdir, check_call, check_output, git};
+
 fn gen_coverage(
     docker_exec: &dyn Fn(&str),
     assets_dir: &std::path::Path,
@@ -136,9 +139,6 @@ fn calc_coverage(
     println!("{remote_url}/coverage_fuzz/monotree/{base_git_ref}/{assets_git_ref}/fuzz.coverage/index.html");
 }
 
-use clap::Parser;
-use util::{chdir, check_call, check_output, git};
-
 #[derive(clap::Parser)]
 #[command(about = "Run fuzz coverage reports.", long_about = None)]
 struct Args {
@@ -159,7 +159,7 @@ struct Args {
     scratch_dir: std::path::PathBuf,
     /// The ssh key for "repo_report".
     #[arg(long)]
-    ssh_key: String,
+    ssh_key: std::path::PathBuf,
     /// Which git ref in the code repo to build.
     #[arg(long, default_value = "master")]
     git_ref_code: String,
@@ -186,6 +186,13 @@ fn main() {
         .scratch_dir
         .canonicalize()
         .expect("Failed to canonicalize scratch folder");
+    let ssh_cmd = format!(
+        "ssh -i {} -F /dev/null",
+        args.ssh_key
+            .canonicalize()
+            .expect("Failed to canonicalize ssh key")
+            .display()
+    );
 
     let code_dir = temp_dir.join("code").join("monotree");
     let code_url = "https://github.com/bitcoin/bitcoin";
@@ -206,11 +213,7 @@ fn main() {
         "39886733+DrahtBot@users.noreply.github.com",
     ]));
     check_call(git().args(["config", "user.name", "DrahtBot"]));
-    check_call(git().args([
-        "config",
-        "core.sshCommand",
-        &format!("ssh -i {} -F /dev/null", args.ssh_key),
-    ]));
+    check_call(git().args(["config", "core.sshCommand", &ssh_cmd]));
 
     println!("Fetching diffs ...");
     chdir(&code_dir);
