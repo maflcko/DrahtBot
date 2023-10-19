@@ -69,7 +69,7 @@ def calc_coverage(base_ref, dir_code, dir_cov_report, make_jobs, slug, remote_ur
             #'type=bind,src={},dst={}'.format(dir_cov_report, dir_cov_report),
             '-e',
             'LC_ALL=C.UTF-8',
-            'ubuntu:devel',  # Use latest lcov to avoid bugs in earlier versions
+            "ubuntu:lunar",  # Use "devel" once and if https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1043009 is fixed
         ],
         universal_newlines=True,
     ).strip()
