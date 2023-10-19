@@ -4,7 +4,7 @@ import os
 import time
 import glob
 
-from util.util import get_git, call_git, UPSTREAM_PULL
+from util.util import get_git, call_git
 
 
 def main():
