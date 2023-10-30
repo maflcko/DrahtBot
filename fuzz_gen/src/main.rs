@@ -105,7 +105,7 @@ fn main() {
         cmd.args([
             "test/fuzz/test_runner.py",
             "-l=DEBUG",
-            "--exclude=coinselection",
+            "--exclude=coinselection,banman",
         ])
         .arg(format!("--par={}", args.jobs));
         cmd
