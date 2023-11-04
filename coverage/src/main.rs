@@ -3,7 +3,6 @@ use util::{chdir, check_call, check_output, git};
 
 fn gen_coverage(
     docker_exec: &dyn Fn(&str),
-    assets_dir: &std::path::Path,
     dir_code: &std::path::Path,
     dir_result: &std::path::Path,
     git_ref: &str,
@@ -35,14 +34,11 @@ fn gen_coverage(
     docker_exec("./autogen.sh");
     chdir(&dir_build);
 
-    docker_exec("../configure --enable-fuzz --with-sanitizers=fuzzer --enable-lcov --enable-lcov-branch-coverage CC=clang CXX=clang++");
+    docker_exec("../configure --enable-zmq --with-incompatible-bdb --enable-lcov --enable-lcov-branch-coverage CC=clang CXX=clang++");
     docker_exec(&format!("make -j{}", make_jobs));
 
     println!("Make coverage ...");
-    docker_exec(&format!(
-        "make cov_fuzz DIR_FUZZ_SEED_CORPUS={}/fuzz_seed_corpus",
-        assets_dir.display()
-    ));
+    docker_exec("make cov");
     docker_exec(&format!(
         "mv {}/*coverage* {}/",
         dir_build.display(),
@@ -54,7 +50,7 @@ fn gen_coverage(
     check_call(git().args([
         "commit",
         "-m",
-        &format!("Add fuzz coverage results for {}", git_ref),
+        &format!("Add coverage results for {}", git_ref),
     ]));
     check_call(git().args(["push", "origin", "main"]));
 
@@ -65,7 +61,6 @@ fn gen_coverage(
 }
 
 fn calc_coverage(
-    assets_dir: &std::path::Path,
     dir_code: &std::path::Path,
     dir_cov_report: &std::path::Path,
     make_jobs: u8,
@@ -77,11 +72,6 @@ fn calc_coverage(
         "run",
         "-idt",
         "--rm",
-        &format!(
-            "--volume={}:{}:rw,z",
-            assets_dir.display(),
-            assets_dir.display()
-        ),
         &format!(
             "--volume={}:{}:rw,z",
             dir_code.display(),
@@ -124,23 +114,20 @@ fn calc_coverage(
     println!("Generate coverage");
     chdir(dir_code);
     let base_git_ref = &check_output(git().args(["log", "--format=%H", "-1", "HEAD"]))[..16];
-    chdir(assets_dir);
-    let assets_git_ref = &check_output(git().args(["log", "--format=%H", "-1", "HEAD"]))[..16];
-    let dir_result_base = dir_cov_report.join(base_git_ref).join(assets_git_ref);
+    let dir_result_base = dir_cov_report.join(base_git_ref);
     gen_coverage(
         &docker_exec,
-        assets_dir,
         dir_code,
         &dir_result_base,
-        &format!("{base_git_ref}-code {assets_git_ref}-assets"),
+        &format!("{base_git_ref}-code"),
         make_jobs,
     );
 
-    println!("{remote_url}/coverage_fuzz/monotree/{base_git_ref}/{assets_git_ref}/fuzz.coverage/index.html");
+    println!("{remote_url}/coverage/monotree/{base_git_ref}/total.coverage/index.html");
 }
 
 #[derive(clap::Parser)]
-#[command(about = "Run fuzz coverage reports.", long_about = None)]
+#[command(about = "Run coverage reports.", long_about = None)]
 struct Args {
     /// The repo slug of the remote on GitHub for reports.
     #[arg(long, default_value = "DrahtBot/reports")]
@@ -160,15 +147,9 @@ struct Args {
     /// The ssh key for "repo_report".
     #[arg(long)]
     ssh_key: std::path::PathBuf,
-    /// Which git ref in the code repo to build.
-    #[arg(long, default_value = "master")]
-    git_ref_code: String,
-    /// Which git ref in the qa-assets repo to use.
-    #[arg(long, default_value = "main")]
-    git_ref_qa_assets: String,
-    /// Which targets to build.
-    #[arg(long, default_value = "")]
-    fuzz_targets: String,
+    /// Generate the coverage for this commit and exit.
+    #[arg(long)]
+    commit_only: String,
 }
 
 fn ensure_init_git(folder: &std::path::Path, url: &str) {
@@ -198,12 +179,9 @@ fn main() {
     let code_url = "https://github.com/bitcoin/bitcoin";
     let report_dir = temp_dir.join("reports");
     let report_url = format!("git@github.com:{}.git", args.repo_report.str());
-    let assets_dir = temp_dir.join("assets");
-    let assets_url = "https://github.com/bitcoin-core/qa-assets";
 
     ensure_init_git(&code_dir, code_url);
     ensure_init_git(&report_dir, &report_url);
-    ensure_init_git(&assets_dir, assets_url);
 
     println!("Set git metadata");
     chdir(&report_dir);
@@ -217,32 +195,19 @@ fn main() {
 
     println!("Fetching diffs ...");
     chdir(&code_dir);
-    check_call(git().args(["fetch", "origin", "--quiet", &args.git_ref_code]));
+    check_call(git().args(["fetch", "origin", "--quiet", &args.commit_only]));
     check_call(git().args(["checkout", "FETCH_HEAD", "--force"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
-    check_call(std::process::Command::new("sed").args([
-        "-i",
-        &format!(
-            "s/DIR_FUZZ_SEED_CORPUS) -l DEBUG/DIR_FUZZ_SEED_CORPUS) {} -l DEBUG/g",
-            args.fuzz_targets
-        ),
-        "Makefile.am",
-    ]));
     chdir(&report_dir);
     check_call(git().args(["fetch", "--quiet", "--all"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["checkout", "main"]));
     check_call(git().args(["reset", "--hard", "origin/main"]));
-    chdir(&assets_dir);
-    check_call(git().args(["fetch", "origin", "--quiet", &args.git_ref_qa_assets]));
-    check_call(git().args(["checkout", "FETCH_HEAD", "--force"]));
-    check_call(git().args(["clean", "-dfx"]));
 
     calc_coverage(
-        &assets_dir,
         &code_dir,
-        &report_dir.join("coverage_fuzz").join("monotree"),
+        &report_dir.join("coverage").join("monotree"),
         args.make_jobs,
         &args.remote_url,
     );
