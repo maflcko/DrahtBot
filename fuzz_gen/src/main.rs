@@ -68,21 +68,14 @@ fn main() {
     check_call(git().args(["checkout", "origin/master", "--force"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
-    check_call(Command::new("sed").args([
-        "-i",
+    for replacement in [
+        r#"s/llvm-symbolizer"/llvm-symbolizer-18"/g"#,
         r#"s/set_cover_merge=1/merge=1/g"#,
-        "test/fuzz/test_runner.py",
-    ]));
-    check_call(Command::new("sed").args([
-        "-i",
         r#"s/use_value_profile=0/use_value_profile=1/g"#,
-        "test/fuzz/test_runner.py",
-    ]));
-    check_call(Command::new("sed").args([
-        "-i",
         r#"s/runs=100000/use_value_profile=1","-entropic=1","-cross_over=1","-cross_over_uniform_dist=1","-rss_limit_mb=8000","-max_total_time=6000/g"#,
-        "test/fuzz/test_runner.py",
-    ]));
+    ] {
+        check_call(Command::new("sed").args(["-i", replacement, "test/fuzz/test_runner.py"]));
+    }
 
     chdir(&dir_assets);
     check_call(git().args(["fetch", "--quiet", "--all"]));
