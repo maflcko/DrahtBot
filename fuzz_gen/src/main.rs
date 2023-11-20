@@ -57,7 +57,7 @@ fn main() {
         .expect("Failed to canonicalize scratch dir folder");
     let dir_code = temp_dir.join("code");
     let dir_assets = temp_dir.join("assets");
-    let dir_generate_seeds = temp_dir.join("generate_seeds");
+    let dir_generate_seeds = temp_dir.join("fuzz_inputs_generate");
 
     ensure_init_git(&dir_code, &url_code);
     ensure_init_git(&dir_assets, &url_seed);
