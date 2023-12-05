@@ -83,8 +83,6 @@ def main():
             f.write('    url = {}\n'.format(url))
             f.write('    fetch = +refs/pull/*:refs/remotes/upstream-pull/*\n')
             f.flush()
-        call_git(['config', 'user.email', 'no@ne.nl'])
-        call_git(['config', 'user.name', 'none'])
 
     print('Start docker process ...')
     docker_id = subprocess.check_output(
@@ -101,7 +99,7 @@ def main():
             #'type=bind,src={},dst={}'.format(dir_code, dir_code),
             #'-e',
             #'LC_ALL=C.UTF-8',
-            'ubuntu:focal',
+            'ubuntu:noble',
         ],
         universal_newlines=True,
     ).strip()
