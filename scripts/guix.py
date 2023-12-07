@@ -15,8 +15,8 @@ ID_GUIX_COMMENT = '<!--9cd9c72976c961c55c7acef8f6ba82cd-->'
 UPSTREAM_PULL = 'upstream-pull'
 
 # Only update this after the change is merged to the main development branch of --github_repo
-# wget https://bitcoincore.org/depends-sources/sdks/Xcode-12.2-12B45b-extracted-SDK-with-libcxx-headers.tar.gz
-CURRENT_XCODE_FILENAME = "Xcode-12.2-12B45b-extracted-SDK-with-libcxx-headers.tar.gz"
+# wget https://bitcoincore.org/depends-sources/sdks/Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers.tar.gz
+CURRENT_XCODE_FILENAME = "Xcode-15.0-15A240d-extracted-SDK-with-libcxx-headers.tar.gz"
 
 
 def calculate_diffs(folder_1, folder_2):
