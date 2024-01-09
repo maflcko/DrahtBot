@@ -129,12 +129,12 @@ impl Feature for CiStatusFeature {
                             .await?;
                         // Check if *compile* failed and add comment
                         // (functional tests are ignored due to intermittent issues)
-                        if check_runs.iter().any(|r| {
+                        if let Some(first_fail) = check_runs.iter().find(|r| {
                             let text = r.output.text.clone().unwrap_or_default();
                             text.contains("make: *** [Makefile") || text.contains("clang-tidy-")
                         }) {
                             let comment = format!(
-                                "{}\n{}",
+                                "{}\n{}\n<sub>Debug: {}</sub>",
                                 util::IdComment::CiFailed.str(),
                                 r#"
 🚧 At least one of the CI tasks failed. Make sure to run all tests locally, according to the
@@ -145,7 +145,8 @@ incompatible with the current code in the target branch). If so, make sure to re
 commit of the target branch.
 
 Leave a comment here, if you need help tracking down a confusing failure.
-"#
+"#,
+                                first_fail.html_url.clone().unwrap_or_default()
                             );
                             issues_api.create_comment(pull_number, comment).await?;
                         }
