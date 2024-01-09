@@ -40,7 +40,7 @@ pub fn get_octocrab(token: Option<String>) -> octocrab::Result<octocrab::Octocra
 #[cfg(feature = "github")]
 pub enum IdComment {
     NeedsRebase,
-    ReviewersRequested,
+    CiFailed,
     InactiveRebase,
     InactiveStale,
     Metadata, // The "root" section
@@ -55,7 +55,7 @@ impl IdComment {
     pub fn str(&self) -> &'static str {
         match self {
             Self::NeedsRebase => "<!--cf906140f33d8803c4a75a2196329ecb-->",
-            Self::ReviewersRequested => "<!--4a62be1de6b64f3ed646cdc7932c8cf5-->",
+            Self::CiFailed=> "<!--85328a0da195eb286784d51f73fa0af9-->",
             Self::InactiveRebase => "<!--13523179cfe9479db18ec6c5d236f789-->",
             Self::InactiveStale => "<!--8ac04cdde196e94527acabf64b896448-->",
             Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",

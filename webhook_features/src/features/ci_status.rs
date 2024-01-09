@@ -58,18 +58,19 @@ impl Feature for CiStatusFeature {
                     return Ok(());
                 }
                 let success = "success" == conclusion;
+                let suite_id = payload["check_suite"]["id"]
+                    .as_u64()
+                    .ok_or(DrahtBotError::KeyNotFound)?;
+                let checks_api = ctx.octocrab.checks(repo_user, repo_name);
+                let check_runs = checks_api
+                    .list_check_runs_in_a_check_suite(suite_id.into())
+                    .per_page(99)
+                    .send()
+                    .await?
+                    .check_runs;
                 let pull_number = {
                     // Hacky way to get the pull number. See also https://github.com/bitcoin/bitcoin/issues/27178#issuecomment-1503475232
-                    let suite_id = payload["check_suite"]["id"]
-                        .as_u64()
-                        .ok_or(DrahtBotError::KeyNotFound)?;
-                    let checks_api = ctx.octocrab.checks(repo_user, repo_name);
-                    let cirrus_task_id = checks_api
-                        .list_check_runs_in_a_check_suite(suite_id.into())
-                        .per_page(1)
-                        .send()
-                        .await?
-                        .check_runs
+                    let cirrus_task_id = check_runs
                         .first()
                         .ok_or(DrahtBotError::KeyNotFound)?
                         .details_url
@@ -126,9 +127,29 @@ impl Feature for CiStatusFeature {
                         issues_api
                             .add_labels(pull_number, &[ci_failed_label.to_string()])
                             .await?;
+                        // Check if *compile* failed and add comment
+                        // (functional tests are ignored due to intermittent issues)
+                        if check_runs.iter().any(|r| {
+                            let text = r.output.text.clone().unwrap_or_default();
+                            text.contains("make: *** [Makefile") || text.contains("clang-tidy-")
+                        }) {
+                            let comment = format!(
+                                "{}\n{}",
+                                util::IdComment::CiFailed.str(),
+                                r#"
+🚧 At least one of the CI tasks failed. Make sure to run all tests locally, according to the
+documentation.
+
+Possibly this is due to a silent merge conflict (the changes in this pull request being
+incompatible with the current code in the target branch). If so, make sure to rebase on the latest
+commit of the target branch.
+
+Leave a comment here, if you need help tracking down a confusing failure.
+"#
+                            );
+                            issues_api.create_comment(pull_number, comment).await?;
+                        }
                     }
-                    // TODO check if *compile* failed and add comment
-                    // (functional tests are ignored due to intermittent issues)
                 }
             }
             _ => {}
