@@ -88,7 +88,7 @@ fn calc_coverage(
         //'type=bind,src={},dst={}'.format(dir_cov_report, dir_cov_report),
         "-e",
         "LC_ALL=C.UTF-8",
-        "ubuntu:lunar", // Use "devel" once and if https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1043009 is fixed
+        "ubuntu:lunar", // Use "devel" once and if https://github.com/bitcoin/bitcoin/issues/28468#issuecomment-1790901853 is fixed
     ]));
 
     let docker_exec = |cmd: &str| {
