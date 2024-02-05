@@ -128,7 +128,14 @@ async fn inactive_ci(
                 repo,
                 item.number,
             );
-            let text = format!("{}\n{}", id_inactive_ci_comment, config.inactive_ci_comment);
+            let text = format!(
+                "{}\n{}",
+                id_inactive_ci_comment,
+                config
+                    .inactive_ci_comment
+                    .replace("{owner}", owner)
+                    .replace("{repo}", repo)
+            );
             if !dry_run {
                 issues_api.create_comment(item.number, text).await?;
             }
