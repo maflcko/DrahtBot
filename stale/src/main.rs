@@ -4,6 +4,7 @@ use clap::Parser;
 #[command(about = "\
 Handle stale issues and pull requests:
 * Comment on pull requests that needed a rebase for too long.\n\
+* Comment on pull requests that a failing CI for too long.\n\
 * Comment on pull requests that are inactive for too long.\n\
 * Update the label that indicates a rebase is required.\n\
 ", long_about = None)]
@@ -26,9 +27,12 @@ struct Args {
 struct Config {
     inactive_rebase_days: i64,
     inactive_rebase_comment: String,
+    inactive_ci_days: i64,
+    inactive_ci_comment: String,
     inactive_stale_days: i64,
     inactive_stale_comment: String,
     needs_rebase_label: String,
+    ci_failed_label: String,
     needs_rebase_comment: String,
 }
 
@@ -76,6 +80,55 @@ async fn inactive_rebase(
                 "{}\n{}",
                 id_inactive_rebase_comment, config.inactive_rebase_comment
             );
+            if !dry_run {
+                issues_api.create_comment(item.number, text).await?;
+            }
+        }
+    }
+    Ok(())
+}
+
+async fn inactive_ci(
+    github: &octocrab::Octocrab,
+    config: &Config,
+    github_repo: &Vec<util::Slug>,
+    dry_run: bool,
+) -> octocrab::Result<()> {
+    let id_inactive_ci_comment = util::IdComment::InactiveCi.str();
+
+    let cutoff =
+        { chrono::Utc::now() - chrono::Duration::days(config.inactive_ci_days) }.format("%F");
+    println!("Mark inactive_ci before date {} ...", cutoff);
+
+    for util::Slug { owner, repo } in github_repo {
+        println!("Get inactive_ci pull requests for {owner}/{repo} ...");
+        let search_fmt = format!(
+            "repo:{owner}/{repo} is:open is:pr label:\"{label}\" updated:<={cutoff}",
+            owner = owner,
+            repo = repo,
+            label = config.ci_failed_label,
+            cutoff = cutoff
+        );
+        let items = github
+            .all_pages(
+                github
+                    .search()
+                    .issues_and_pull_requests(&search_fmt)
+                    .send()
+                    .await?,
+            )
+            .await?;
+        let issues_api = github.issues(owner, repo);
+        for (i, item) in items.iter().enumerate() {
+            println!(
+                "{}/{} (Item: {}/{}#{})",
+                i,
+                items.len(),
+                owner,
+                repo,
+                item.number,
+            );
+            let text = format!("{}\n{}", id_inactive_ci_comment, config.inactive_ci_comment);
             if !dry_run {
                 issues_api.create_comment(item.number, text).await?;
             }
@@ -245,6 +298,7 @@ async fn main() -> octocrab::Result<()> {
     let github = util::get_octocrab(args.github_access_token)?;
 
     inactive_rebase(&github, &config, &args.github_repo, args.dry_run).await?;
+    inactive_ci(&github, &config, &args.github_repo, args.dry_run).await?;
     inactive_stale(&github, &config, &args.github_repo, args.dry_run).await?;
     rebase_label(&github, &config, &args.github_repo, args.dry_run).await?;
 

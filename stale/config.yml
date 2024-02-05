@@ -6,6 +6,11 @@ inactive_rebase_comment: |
   * Is it still relevant? ➡️ Please solve the conflicts to make it ready for review and to ensure the CI passes.
   * Is it no longer relevant? ➡️ Please close.
   * Did the author lose interest or time to work on this? ➡️ Please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.
+inactive_ci_days: 90
+inactive_ci_comment: |
+  🤔 There hasn't been much activity lately and the CI seems to be failing.
+
+  If no one reviewed the current pull request by commit hash, a [rebase](https://github.com/{owner}/{repo}/blob/master/CONTRIBUTING.md#rebasing-changes) can be considered. While the CI failure may be a false positive, the CI hasn't been running for some time, so there may be a real issue hiding as well. A rebase triggers the latest CI and makes sure that no silent merge conflicts have snuck in.
 inactive_stale_days: 180
 # The comment may contain {owner} and {repo}, which will be substituted
 inactive_stale_comment: |
@@ -14,6 +19,7 @@ inactive_stale_comment: |
   [Finding reviewers](https://github.com/{owner}/{repo}/blob/master/CONTRIBUTING.md#finding-reviewers) may take time. However, if the patch is no longer relevant, please close this pull request. If the author lost interest or time to work on this, please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.
 # Apply the label and comment to indicate a rebase is required
 needs_rebase_label: "Needs rebase"
+ci_failed_label: "CI failed"
 # The comment may contain {owner} and {repo}, which will be substituted
 needs_rebase_comment: |
   🐙 This pull request conflicts with the target branch and [needs rebase](https://github.com/{owner}/{repo}/blob/master/CONTRIBUTING.md#rebasing-changes).
