@@ -72,7 +72,6 @@ fn main() {
         r#"s/llvm-symbolizer"/llvm-symbolizer-18"/g"#,
         r#"s/set_cover_merge=1/merge=1/g"#,
         r#"s/use_value_profile=0/use_value_profile=1/g"#,
-        r#"s/runs=100000/use_value_profile=1","-entropic=1","-cross_over=1","-cross_over_uniform_dist=1","-rss_limit_mb=8000","-max_total_time=6000/g"#,
     ] {
         check_call(Command::new("sed").args(["-i", replacement, "test/fuzz/test_runner.py"]));
     }
