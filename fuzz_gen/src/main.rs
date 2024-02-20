@@ -14,7 +14,7 @@ wget cargo sed git python3 ccache screen + Bitcoin Core deps
 #
 # wget https://apt.llvm.org/llvm.sh
 # chmod +x llvm.sh
-# ./llvm.sh 18
+# ./llvm.sh 19
 #
 # echo 'defscrollback 10000' > ~/.screenrc
 # apt update && apt upgrade -y && apt autoremove -y && htop
@@ -69,7 +69,7 @@ fn main() {
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
     for replacement in [
-        r#"s/llvm-symbolizer"/llvm-symbolizer-18"/g"#,
+        r#"s/llvm-symbolizer"/llvm-symbolizer-19"/g"#,
         r#"s/set_cover_merge=1/merge=1/g"#,
         r#"s/use_value_profile=0/use_value_profile=1/g"#,
     ] {
@@ -86,7 +86,7 @@ fn main() {
     check_call(&mut Command::new("./autogen.sh"));
     check_call(
         Command::new("./configure")
-            .args(["CC=clang-18", "CXX=clang++-18", "--enable-fuzz"])
+            .args(["CC=clang-19", "CXX=clang++-19", "--enable-fuzz"])
             .arg(format!("--with-sanitizers={}", args.sanitizers)),
     );
     check_call(Command::new("make").arg("clean"));
