@@ -342,9 +342,10 @@ For detailed information about the code coverage, see the [test coverage report]
             " ... Unrequest review from {:?}",
             maybe_leftover_review_requests
         );
-        pulls_api
-            .remove_requested_reviewers(pr_number, maybe_leftover_review_requests, [])
-            .await?;
+        // Temporarily disabled due to https://support.github.com/ticket/personal/0/2621973
+        //pulls_api
+        //    .remove_requested_reviewers(pr_number, maybe_leftover_review_requests, [])
+        //    .await?;
     }
     // Done last to work around https://github.com/maflcko/DrahtBot/issues/29
     // Done one-by-one to also work around the same issue.
