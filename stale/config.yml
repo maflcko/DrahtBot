@@ -1,5 +1,5 @@
 # Comment on a pull request needing rebase after this many days of inactivity
-inactive_rebase_days: 90
+inactive_rebase_days: 89
 inactive_rebase_comment: |
   ⌛ There hasn't been much activity lately and the patch still needs rebase. What is the status here?
 
