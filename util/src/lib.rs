@@ -56,9 +56,9 @@ impl IdComment {
     pub fn str(&self) -> &'static str {
         match self {
             Self::NeedsRebase => "<!--cf906140f33d8803c4a75a2196329ecb-->",
-            Self::CiFailed=> "<!--85328a0da195eb286784d51f73fa0af9-->",
+            Self::CiFailed => "<!--85328a0da195eb286784d51f73fa0af9-->",
             Self::InactiveRebase => "<!--13523179cfe9479db18ec6c5d236f789-->",
-            Self::InactiveCi=> "<!--2e250dc3d92b2c9115b66051148d6e47-->",
+            Self::InactiveCi => "<!--2e250dc3d92b2c9115b66051148d6e47-->",
             Self::InactiveStale => "<!--8ac04cdde196e94527acabf64b896448-->",
             Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",
             Self::SecCodeCoverage => "<!--006a51241073e994b41acfe9ec718e94-->",
