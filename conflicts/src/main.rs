@@ -161,7 +161,7 @@ async fn update_comment(
     api: &octocrab::Octocrab,
     dry_run: bool,
     pull: &MetaPull,
-    pulls_conflict: &Vec<&MetaPull>,
+    pulls_conflict: &[&MetaPull],
 ) -> octocrab::Result<()> {
     let api_issues = api.issues(&pull.slug.owner, &pull.slug.repo);
     let mut cmt = util::get_metadata_sections(api, &api_issues, pull.pull.number).await?;
