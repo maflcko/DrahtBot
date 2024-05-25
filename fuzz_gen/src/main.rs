@@ -16,8 +16,6 @@ wget cargo sed git python3 ccache screen + Bitcoin Core deps
 # chmod +x llvm.sh
 # ./llvm.sh 19
 #
-# echo 'defscrollback 10000' > ~/.screenrc
-# apt update && apt upgrade -y && apt autoremove -y && htop
 "#)]
 struct Args {
     /// The local scratch folder.
