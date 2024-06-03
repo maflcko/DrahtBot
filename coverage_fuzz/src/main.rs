@@ -35,7 +35,7 @@ fn gen_coverage(
     docker_exec("./autogen.sh");
     chdir(&dir_build);
 
-    docker_exec("../configure --enable-fuzz --with-sanitizers=fuzzer --enable-lcov --enable-lcov-branch-coverage CC=clang CXX=clang++");
+    docker_exec("../configure --enable-fuzz --with-sanitizers=fuzzer --enable-lcov CC=clang CXX=clang++ LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,inconsistent'");
     docker_exec(&format!("make -j{}", make_jobs));
 
     println!("Make coverage ...");
@@ -98,7 +98,7 @@ fn calc_coverage(
         //'type=bind,src={},dst={}'.format(dir_cov_report, dir_cov_report),
         "-e",
         "LC_ALL=C.UTF-8",
-        "ubuntu:lunar", // Use "devel" once and if https://github.com/bitcoin/bitcoin/issues/28468#issuecomment-1790901853 is fixed
+        "ubuntu:devel",
     ]));
 
     let docker_exec = |cmd: &str| {
@@ -118,6 +118,7 @@ fn calc_coverage(
     println!("Docker running with id {}.", docker_id);
 
     println!("Installing packages ...");
+    docker_exec("sed -i 's/noble/oracular/g' /etc/apt/sources.list.d/ubuntu.sources"); // Remove temporary workaround once oracular is tagged in https://hub.docker.com/_/ubuntu
     docker_exec("apt-get update");
     docker_exec(&format!("apt-get install -qq {}", "clang llvm ccache python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils"));
 
