@@ -108,7 +108,6 @@ fn calc_coverage(
     println!("Docker running with id {}.", docker_id);
 
     println!("Installing packages ...");
-    docker_exec("sed -i 's/noble/oracular/g' /etc/apt/sources.list.d/ubuntu.sources"); // Remove temporary workaround once oracular is tagged in https://hub.docker.com/_/ubuntu
     docker_exec("apt-get update");
     docker_exec(&format!("apt-get install -qq {}", "clang llvm ccache python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils"));
 
