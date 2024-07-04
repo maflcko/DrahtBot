@@ -284,7 +284,17 @@ For detailed information about the code coverage, see the [test coverage report]
 
     let user_reviews = user_reviews
         .into_iter()
-        .map(|e| e.1.into_iter().max_by_key(|r| r.date).unwrap())
+        .map(|e| {
+            let e = e.1;
+            if let Some(ack) = e.iter().find(|r| r.ack_type == AckType::Ack) {
+                // Prefer ACK commit_hash over anything, to match the behavior of
+                // https://github.com/bitcoin-core/bitcoin-maintainer-tools/blob/f9b845614f7aecb9423d0621375e1bad17f92fde/github-merge.py#L208
+                ack.clone()
+            } else {
+                // Fallback to the most recent comment, otherwise
+                e.into_iter().max_by_key(|r| r.date).unwrap()
+            }
+        })
         .collect::<Vec<_>>();
 
     let max_ack_date = user_reviews
@@ -401,6 +411,7 @@ lazy_static! {
     .collect::<Vec::<_>>();
 }
 
+#[derive(Clone)]
 struct Review {
     user: String,
     ack_type: AckType,
