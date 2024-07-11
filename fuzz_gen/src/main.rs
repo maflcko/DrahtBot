@@ -66,6 +66,10 @@ fn main() {
     check_call(git().args(["checkout", "origin/master", "--force"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
+    check_call(Command::new("wget").arg(
+        "https://github.com/bitcoin/bitcoin/commit/9999b602983887002ff5d06bcd593ad91b81639c.diff",
+    ));
+    check_call(git().args(["apply", "9999b602983887002ff5d06bcd593ad91b81639c.diff"]));
     for replacement in [
         r#"s/llvm-symbolizer"/llvm-symbolizer-19"/g"#,
         r#"s/set_cover_merge=1/merge=1/g"#,
