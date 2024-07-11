@@ -136,19 +136,30 @@ impl Feature for CiStatusFeature {
                                 || text.contains("ailure generated from")
                         }) {
                             let comment = format!(
-                                "{}\n{}\n<sub>Debug: {}</sub>",
+                                "{}\n{}\n<sub>Debug: {}</sub>\n{}",
                                 util::IdComment::CiFailed.str(),
+                                "🚧 At least one of the CI tasks failed.",
+                                first_fail.html_url.clone().unwrap_or_default(),
                                 r#"
-🚧 At least one of the CI tasks failed. Make sure to run all tests locally, according to the
-documentation.
+<details><summary>Hints</summary>
 
-Possibly this is due to a silent merge conflict (the changes in this pull request being
+Make sure to run all tests locally, according to the documentation.
+
+The failure may happen due to a number of reasons, for example:
+
+* Possibly due to a silent merge conflict (the changes in this pull request being
 incompatible with the current code in the target branch). If so, make sure to rebase on the latest
 commit of the target branch.
 
+* A sanitizer issue, which can only be found by compiling with the sanitizer and running the
+  affected test.
+
+* An intermittent issue.
+
 Leave a comment here, if you need help tracking down a confusing failure.
+
+</details>
 "#,
-                                first_fail.html_url.clone().unwrap_or_default()
                             );
                             issues_api.create_comment(pull_number, comment).await?;
                         }
