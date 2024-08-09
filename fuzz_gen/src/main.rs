@@ -14,7 +14,7 @@ wget cargo sed git python3 ccache screen + Bitcoin Core deps
 #
 # wget https://apt.llvm.org/llvm.sh
 # chmod +x llvm.sh
-# ./llvm.sh 19
+# ./llvm.sh 20
 #
 "#)]
 struct Args {
@@ -31,6 +31,8 @@ struct Args {
     )]
     sanitizers: String,
 }
+
+const LLVM_VER: &str = "20";
 
 pub fn ensure_init_git(folder: &std::path::Path, url: &str) {
     println!("Clone {url} repo to {dir}", dir = folder.display());
@@ -71,7 +73,6 @@ fn main() {
     ));
     check_call(git().args(["apply", "9999b602983887002ff5d06bcd593ad91b81639c.diff"]));
     for replacement in [
-        r#"s/llvm-symbolizer"/llvm-symbolizer-19"/g"#,
         r#"s/set_cover_merge=1/merge=1/g"#,
         r#"s/use_value_profile=0/use_value_profile=1/g"#,
     ] {
@@ -88,15 +89,23 @@ fn main() {
     check_call(&mut Command::new("./autogen.sh"));
     check_call(
         Command::new("./configure")
-            .args(["CC=clang-19", "CXX=clang++-19", "--enable-fuzz"])
-            .arg(format!("--with-sanitizers={}", args.sanitizers)),
+            .args([
+                format!("CC=clang-{}", LLVM_VER),
+                format!("CXX=clang++-{}", LLVM_VER),
+                format!("--with-sanitizers={}", args.sanitizers),
+            ])
+            .arg("--enable-fuzz"),
     );
     check_call(Command::new("make").arg("clean"));
     check_call(Command::new("make").arg(format!("-j{}", args.jobs)));
     check_call(Command::new("rm").arg("-rf").arg(&dir_generate_seeds));
     let fuzz = || {
         let mut cmd = Command::new("python3");
-        cmd.args([
+        cmd.env(
+            "LLVM_SYMBOLIZER_PATH",
+            format!("/usr/bin/llvm-symbolizer-{}", LLVM_VER),
+        )
+        .args([
             "test/fuzz/test_runner.py",
             "-l=DEBUG",
             //"--exclude=coinselection",
