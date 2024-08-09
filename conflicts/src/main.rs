@@ -83,10 +83,9 @@ struct MetaPull {
     merge_commit: Option<String>,
 }
 
-fn merge_strategy() -> &'static str {
+const MERGE_STRATEGY: &str =
     // https://github.blog/changelog/2022-09-12-merge-commits-now-created-using-the-merge-ort-strategy/
-    "--strategy=ort"
-}
+    "--strategy=ort";
 
 fn calc_mergeable(pulls: Vec<MetaPull>, base_branch: &str) -> Vec<MetaPull> {
     let base_id = util::check_output(
@@ -99,7 +98,7 @@ fn calc_mergeable(pulls: Vec<MetaPull>, base_branch: &str) -> Vec<MetaPull> {
         util::check_call(util::git().args(["checkout", &base_id, "--quiet"]));
         let mergeable = util::call(
             util::git()
-                .args(["merge", merge_strategy(), "--quiet", &p.head_commit, "-m"])
+                .args(["merge", MERGE_STRATEGY, "--quiet", &p.head_commit, "-m"])
                 .arg(format!("Prepare base for {id}", id = p.slug_num)),
         );
 
@@ -138,7 +137,7 @@ fn calc_conflicts<'a>(
             util::git()
                 .args([
                     "merge",
-                    merge_strategy(),
+                    MERGE_STRATEGY,
                     "--quiet",
                     &pull_other.head_commit,
                     "-m",
