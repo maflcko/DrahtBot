@@ -8,7 +8,7 @@ example cmd
 ( cd rerun_ci && cargo run -- --help )
 ```
 
-install (python scripts only)
+install (legacy python scripts only)
 -------
 
 ```
