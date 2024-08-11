@@ -49,7 +49,6 @@ pub enum IdComment {
     SecConflicts,
     SecCoverage,
     SecReviews,
-    SecLmCheck,
 }
 
 #[cfg(feature = "github")]
@@ -66,7 +65,6 @@ impl IdComment {
             Self::SecConflicts => "<!--174a7506f384e20aa4161008e828411d-->",
             Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",
             Self::SecReviews => "<!--021abf342d371248e50ceaed478a90ca-->",
-            Self::SecLmCheck => "<!--5faf32d7da4f0f540f40219e4f7537a3-->",
         }
     }
 }
