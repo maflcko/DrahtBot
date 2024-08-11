@@ -215,10 +215,12 @@ For detailed information about the code coverage, see the [test coverage report]
             )
             .await?;
         }
-        if let Some(url) = llm_diff_pr {
-            match get_llm_check(&url, &ctx.llm_token).await {
-                Ok(reply) => {
-                    let section = r#"
+    }
+
+    if let Some(url) = llm_diff_pr {
+        match get_llm_check(&url, &ctx.llm_token).await {
+            Ok(reply) => {
+                let section = r#"
 ### LLM Linter
 
 <details><summary>Possible typos and grammar fixes (LLM generated, experimental)</summary>
@@ -227,18 +229,17 @@ For detailed information about the code coverage, see the [test coverage report]
 
 </details>
 "#;
-                    util::update_metadata_comment(
-                        &issues_api,
-                        &mut cmt,
-                        &section.replace("{llm_reply}", &reply),
-                        util::IdComment::SecLmCheck,
-                        ctx.dry_run,
-                    )
-                    .await?;
-                }
-                Err(err) => {
-                    println!(" ... ERROR when requesting llm check {:?}", err);
-                }
+                util::update_metadata_comment(
+                    &issues_api,
+                    &mut cmt,
+                    &section.replace("{llm_reply}", &reply),
+                    util::IdComment::SecLmCheck,
+                    ctx.dry_run,
+                )
+                .await?;
+            }
+            Err(err) => {
+                println!(" ... ERROR when requesting llm check {:?}", err);
             }
         }
     }
@@ -479,6 +480,7 @@ fn parse_review(comment: &str) -> Option<AckCommit> {
 
 async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
+    println!(" ... Run LLM check.");
     let diff = client.get(llm_diff_pr).send().await?.text().await?;
     let payload = serde_json::json!({
         "model": "gpt-4o-mini",
