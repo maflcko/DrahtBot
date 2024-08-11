@@ -23,7 +23,7 @@ impl SummaryCommentFeature {
         Self {
             meta: FeatureMeta::new(
                 "Summary Comment",
-                "Creates a summary comment on pull requests which tracks reviews.",
+                "Creates a summary comment on pull requests which tracks code-review related details.",
                 vec![
                     GitHubEvent::IssueComment,
                     GitHubEvent::PullRequest,
@@ -70,7 +70,11 @@ impl Feature for SummaryCommentFeature {
                 let pr_number = payload["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-                refresh_summary_comment(ctx, repo, pr_number).await?
+                let diff_url = payload["pull_request"]["diff_url"]
+                    .as_str()
+                    .ok_or(DrahtBotError::KeyNotFound)?
+                    .to_string();
+                refresh_summary_comment(ctx, repo, pr_number, Some(diff_url)).await?
             }
             GitHubEvent::IssueComment if payload["issue"].get("pull_request").is_some() => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issue_comment
@@ -86,7 +90,7 @@ impl Feature for SummaryCommentFeature {
                     == "open"
                     && comment_author != ctx.bot_username
                 {
-                    refresh_summary_comment(ctx, repo, pr_number).await?
+                    refresh_summary_comment(ctx, repo, pr_number, None).await?
                 }
             }
             GitHubEvent::PullRequestReview => {
@@ -99,7 +103,7 @@ impl Feature for SummaryCommentFeature {
                     .ok_or(DrahtBotError::KeyNotFound)?
                     == "open"
                 {
-                    refresh_summary_comment(ctx, repo, pr_number).await?
+                    refresh_summary_comment(ctx, repo, pr_number, None).await?
                 }
             }
             _ => {}
@@ -170,7 +174,12 @@ struct GitHubReviewComment {
     date: chrono::DateTime<chrono::Utc>,
 }
 
-async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64) -> Result<()> {
+async fn refresh_summary_comment(
+    ctx: &Context,
+    repo: Repository,
+    pr_number: u64,
+    llm_diff_pr: Option<String>,
+) -> Result<()> {
     println!("Refresh summary comment for {pr_number}");
     let issues_api = ctx.octocrab.issues(&repo.owner, &repo.name);
     let pulls_api = ctx.octocrab.pulls(&repo.owner, &repo.name);
@@ -205,6 +214,32 @@ For detailed information about the code coverage, see the [test coverage report]
                 ctx.dry_run,
             )
             .await?;
+        }
+        if let Some(url) = llm_diff_pr {
+            match get_llm_check(&url, &ctx.llm_token).await {
+                Ok(reply) => {
+                    let section = r#"
+### LLM Linter
+
+<details><summary>Possible typos and grammar fixes (LLM generated, experimental)</summary>
+
+{llm_reply}
+
+</details>
+"#;
+                    util::update_metadata_comment(
+                        &issues_api,
+                        &mut cmt,
+                        &section.replace("{llm_reply}", &reply),
+                        util::IdComment::SecLmCheck,
+                        ctx.dry_run,
+                    )
+                    .await?;
+                }
+                Err(err) => {
+                    println!(" ... ERROR when requesting llm check {:?}", err);
+                }
+            }
         }
     }
 
@@ -440,6 +475,38 @@ fn parse_review(comment: &str) -> Option<AckCommit> {
         }
     }
     None
+}
+
+async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
+    let client = reqwest::Client::new();
+    let diff = client.get(llm_diff_pr).send().await?.text().await?;
+    let payload = serde_json::json!({
+        "model": "gpt-4o-mini",
+        "messages": [
+            {
+                "role": "system",
+                "content":"You are a developer and a fluent, professional, native English speaker. Reply with any typographic or grammatical errors in the following git diff in code comments or documentation. Make sure to only reply with real errors, that make it invalid or incomprehensible English. Ignore style preferences, such as the Oxford comma. Also, ignore any other missing or superfluous comma; Ignore other awkward but harmless language use. If there are no relevant errors, say that no typos were found."
+            },
+            {
+                "role": "user",
+                "content":diff
+            }
+        ],
+        "temperature": 0.0
+    });
+    let response = client
+        .post("https://api.openai.com/v1/chat/completions")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", llm_token))
+        .json(&payload)
+        .send()
+        .await?
+        .json::<serde_json::Value>()
+        .await?["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or(DrahtBotError::KeyNotFound)?
+        .to_string();
+    Ok(response)
 }
 
 // Test that parse_review works

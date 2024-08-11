@@ -18,8 +18,10 @@ use crate::errors::{DrahtBotError, Result};
 #[derive(Parser)]
 #[command(about="Run features on webhooks", long_about = None)]
 struct Args {
-    #[arg(short, long, help = "GitHub token")]
+    #[arg(long, help = "GitHub token")]
     token: String,
+    #[arg(long, help = "LLM token", default_value = "")]
+    llm_token: String,
     #[arg(long, help = "Host to listen on", default_value = "localhost")]
     host: String,
     #[arg(long, help = "Port to listen on", default_value = "1337")]
@@ -52,6 +54,7 @@ pub struct Context {
     octocrab: Octocrab,
     bot_username: String,
     pub config: Config,
+    llm_token: String,
     dry_run: bool,
 }
 
@@ -138,6 +141,7 @@ async fn main() -> Result<()> {
         octocrab,
         bot_username,
         config,
+        llm_token: args.llm_token,
         dry_run: args.dry_run,
     });
 
