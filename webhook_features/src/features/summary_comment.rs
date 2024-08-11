@@ -487,7 +487,18 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
         "messages": [
             {
                 "role": "system",
-                "content":"You are a developer and a fluent, professional, native English speaker. Reply with any typographic or grammatical errors in the following git diff in code comments or documentation. Make sure to only reply with real errors, that make it invalid or incomprehensible English. Ignore style preferences, such as the Oxford comma. Also, ignore any other missing or superfluous comma; Ignore other awkward but harmless language use. If there are no relevant errors, say that no typos were found."
+                "content":
+r#"
+You are a developer and a fluent, professional, native English speaker. Reply with any typographic
+or grammatical errors in the following git diff in code comments or documentation. Make sure to
+only reply with real errors, that make it invalid or incomprehensible English. Ignore style
+preferences, such as the Oxford comma. Also, ignore any other missing or superfluous comma; Ignore
+awkward but harmless language use. Do not evaluate the content, or suggest word replacments. Do not
+suggest the documentation could be clearer. Ignore missing and inconsistent punctuation. Only
+comment on lines that are added (starting with a + in the diff). Focus only on English typographic
+and English grammatical errors. Reply with at most 5 typographic or grammatical errors. If there
+are no relevant errors, say that no typos were found.
+"#
             },
             {
                 "role": "user",
