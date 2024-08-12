@@ -357,8 +357,7 @@ For detailed information about the code coverage, see the [test coverage report]
         //    .remove_requested_reviewers(pr_number, maybe_leftover_review_requests, [])
         //    .await?;
     }
-    // Done last to work around https://github.com/maflcko/DrahtBot/issues/29
-    // Done one-by-one to also work around the same issue.
+    // Done one-by-one to work around https://github.com/maflcko/DrahtBot/issues/29
     for stale_reviewer in &stale_reviewers {
         println!(" ... Request review from {}", stale_reviewer);
         if let Err(err) = pulls_api
