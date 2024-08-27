@@ -35,7 +35,7 @@ fn gen_coverage(
     docker_exec("./autogen.sh");
     chdir(&dir_build);
 
-    docker_exec("../configure --enable-fuzz --with-sanitizers=fuzzer --enable-lcov CC=clang CXX=clang++ LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,inconsistent'");
+    docker_exec("../configure CFLAGS='-fprofile-update=atomic' CXXFLAGS='-fprofile-update=atomic' --enable-fuzz --enable-lcov LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,inconsistent'");
     docker_exec(&format!("make -j{}", make_jobs));
 
     println!("Make coverage ...");
@@ -119,7 +119,7 @@ fn calc_coverage(
 
     println!("Installing packages ...");
     docker_exec("apt-get update");
-    docker_exec(&format!("apt-get install -qq {}", "clang llvm ccache python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils"));
+    docker_exec(&format!("apt-get install -qq {}", "python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libnatpmp-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils"));
 
     println!("Generate coverage");
     chdir(dir_code);
@@ -221,6 +221,13 @@ fn main() {
     check_call(git().args(["checkout", "FETCH_HEAD", "--force"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
+    check_call(git().args([
+        "fetch",
+        "origin",
+        "--quiet",
+        "6dc4fcd0694379c5ffe87ad5b2a4ed82b1650bdc",
+    ]));
+    check_call(git().args(["merge", "--no-edit", "FETCH_HEAD"])); // Ensure cmake base + timeout-factor
     check_call(std::process::Command::new("sed").args([
         "-i",
         &format!(
