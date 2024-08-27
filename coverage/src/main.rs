@@ -31,28 +31,14 @@ fn gen_coverage(
 
     println!("Make coverage data in docker ...");
     chdir(dir_code);
-    docker_exec(&format!(
-        "cmake -B {} \
-         -DBUILD_BENCH=ON -DWITH_ZMQ=ON -DWITH_MINIUPNPC=ON -DWITH_NATPMP=ON \
-         -DWITH_BDB=ON -DWARN_INCOMPATIBLE_BDB=OFF \
-         -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ \
-         -DCMAKE_BUILD_TYPE=Coverage",
-        dir_build.display()
-    ));
-    docker_exec(&format!(
-        "cmake --build {} -j{}",
-        dir_build.display(),
-        make_jobs
-    ));
+    docker_exec("./autogen.sh");
+    chdir(&dir_build);
+
+    docker_exec("../configure --enable-zmq --with-incompatible-bdb --enable-lcov CC=clang CXX=clang++ LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,inconsistent'");
+    docker_exec(&format!("make -j{}", make_jobs));
 
     println!("Make coverage ...");
-    docker_exec(&format!(
-        "cmake -DJOBS={} \
-         -DLCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,inconsistent' \
-         -P {}/Coverage.cmake",
-        make_jobs,
-        dir_build.display()
-    ));
+    docker_exec("make cov");
     docker_exec(&format!(
         "mv {}/*coverage* {}/",
         dir_build.display(),
@@ -123,7 +109,7 @@ fn calc_coverage(
 
     println!("Installing packages ...");
     docker_exec("apt-get update");
-    docker_exec(&format!("apt-get install -qq {}", "clang llvm ccache python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libnatpmp-dev libminiupnpc-dev libzmq3-dev lcov build-essential cmake pkg-config bsdmainutils"));
+    docker_exec(&format!("apt-get install -qq {}", "clang llvm ccache python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils"));
 
     println!("Generate coverage");
     chdir(dir_code);
@@ -213,13 +199,6 @@ fn main() {
     check_call(git().args(["checkout", "FETCH_HEAD", "--force"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
-    check_call(git().args([
-        "fetch",
-        "origin",
-        "--quiet",
-        "fa680ac6c016533ac512857647555c688c071b63",
-    ]));
-    check_call(git().args(["merge", "--no-edit", "FETCH_HEAD"])); // Ensure cmake base
     chdir(&report_dir);
     check_call(git().args(["fetch", "--quiet", "--all"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
