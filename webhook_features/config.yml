@@ -5,6 +5,7 @@ repositories:
       Build system:
         - '^guix:'
         - '^build:'
+        - '^cmake:'
         - '^depends:'
       TX fees and policy:
         - '^policy:'
