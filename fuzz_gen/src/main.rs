@@ -86,18 +86,19 @@ fn main() {
     check_call(git().args(["merge", "--no-edit", "origin/main"]));
 
     chdir(&dir_code);
-    check_call(&mut Command::new("./autogen.sh"));
-    check_call(
-        Command::new("./configure")
-            .args([
-                format!("CC=clang-{}", LLVM_VER),
-                format!("CXX=clang++-{}", LLVM_VER),
-                format!("--with-sanitizers={}", args.sanitizers),
-            ])
-            .arg("--enable-fuzz"),
-    );
-    check_call(Command::new("make").arg("clean"));
-    check_call(Command::new("make").arg(format!("-j{}", args.jobs)));
+    check_call(Command::new("cmake").args([
+        "-B",
+        "./bld",
+        "-DBUILD_FOR_FUZZING=ON ",
+        &format!("-DCMAKE_C_COMPILER=clang-{}", LLVM_VER),
+        &format!("-DCMAKE_CXX_COMPILER=clang++-{}", LLVM_VER),
+        &format!("-DSANITIZERS={}", args.sanitizers),
+    ]));
+    check_call(Command::new("cmake").args([
+        "--build",
+        "./bld",
+        &format!("--parallel={}", args.jobs),
+    ]));
     check_call(Command::new("rm").arg("-rf").arg(&dir_generate_seeds));
     let fuzz = || {
         let mut cmd = Command::new("python3");
@@ -106,7 +107,7 @@ fn main() {
             format!("/usr/bin/llvm-symbolizer-{}", LLVM_VER),
         )
         .args([
-            "test/fuzz/test_runner.py",
+            "./bld/test/fuzz/test_runner.py",
             "-l=DEBUG",
             //"--exclude=coinselection",
         ])
