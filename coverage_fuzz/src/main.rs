@@ -35,7 +35,7 @@ fn gen_coverage(
     docker_exec("./autogen.sh");
     chdir(&dir_build);
 
-    docker_exec("../configure CFLAGS='-fprofile-update=atomic' CXXFLAGS='-fprofile-update=atomic' --enable-fuzz --enable-lcov LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,inconsistent'");
+    docker_exec("../configure CFLAGS='-fprofile-update=atomic' CXXFLAGS='-fprofile-update=atomic' --enable-fuzz --enable-lcov LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,mismatch,inconsistent,inconsistent'");
     docker_exec(&format!("make -j{}", make_jobs));
 
     println!("Make coverage ...");
@@ -227,7 +227,7 @@ fn main() {
         "--quiet",
         "6dc4fcd0694379c5ffe87ad5b2a4ed82b1650bdc",
     ]));
-    check_call(git().args(["merge", "--no-edit", "FETCH_HEAD"])); // Ensure cmake base + timeout-factor
+    //check_call(git().args(["merge", "--no-edit", "FETCH_HEAD"])); // Ensure cmake base + timeout-factor
     check_call(std::process::Command::new("sed").args([
         "-i",
         &format!(
