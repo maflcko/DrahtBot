@@ -33,6 +33,7 @@ struct Args {
 }
 
 const LLVM_VER: &str = "20";
+const FUZZ_CORPORA_PATH_ELEMENT: &str = "fuzz_corpora";
 
 pub fn ensure_init_git(folder: &std::path::Path, url: &str) {
     println!("Clone {url} repo to {dir}", dir = folder.display());
@@ -118,12 +119,12 @@ fn main() {
         fuzz()
             .arg(&dir_generate_seeds)
             .arg("--m_dir")
-            .arg(dir_assets.join("fuzz_seed_corpus")),
+            .arg(dir_assets.join(FUZZ_CORPORA_PATH_ELEMENT)),
     );
     check_call(fuzz().arg(&dir_generate_seeds).arg("--generate"));
     check_call(
         fuzz()
-            .arg(dir_assets.join("fuzz_seed_corpus"))
+            .arg(dir_assets.join(FUZZ_CORPORA_PATH_ELEMENT))
             .arg("--m_dir")
             .arg(&dir_generate_seeds),
     );
