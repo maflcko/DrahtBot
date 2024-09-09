@@ -3,7 +3,7 @@ use std::process::Command;
 use util::{chdir, check_call, git};
 
 #[derive(clap::Parser)]
-#[command(long_about = r#"
+#[command(long_about = format!(r#"
 
 Generate fuzz inputs until a crash.
 
@@ -12,11 +12,9 @@ wget cargo sed git python3 ccache screen + Bitcoin Core deps
 #
 # https://apt.llvm.org/
 #
-# wget https://apt.llvm.org/llvm.sh
-# chmod +x llvm.sh
-# ./llvm.sh 20
+# wget https://apt.llvm.org/llvm.sh && chmod +x llvm.sh && ./llvm.sh {}
 #
-"#)]
+"#, LLVM_VER))]
 struct Args {
     /// The local scratch folder.
     #[arg(long)]
