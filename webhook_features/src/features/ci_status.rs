@@ -132,6 +132,7 @@ impl Feature for CiStatusFeature {
                         if let Some(first_fail) = check_runs.iter().find(|r| {
                             let text = r.output.text.clone().unwrap_or_default();
                             text.contains("make: *** [Makefile")
+                                || text.contains("Errors while running CTest")
                                 || text.contains("clang-tidy-")
                                 || text.contains("ailure generated from")
                         }) {
