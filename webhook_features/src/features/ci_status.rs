@@ -145,9 +145,8 @@ impl Feature for CiStatusFeature {
                                 r#"
 <details><summary>Hints</summary>
 
-Make sure to run all tests locally, according to the documentation.
-
-The failure may happen due to a number of reasons, for example:
+Try to run the tests locally, according to the documentation. However, a CI failure may still
+happen due to a number of reasons, for example:
 
 * Possibly due to a silent merge conflict (the changes in this pull request being
 incompatible with the current code in the target branch). If so, make sure to rebase on the latest
