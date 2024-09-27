@@ -131,10 +131,11 @@ impl Feature for CiStatusFeature {
                         // (functional tests are ignored due to intermittent issues)
                         if let Some(first_fail) = check_runs.iter().find(|r| {
                             let text = r.output.text.clone().unwrap_or_default();
-                            text.contains("make: *** [Makefile")
+                            text.contains("make: *** [Makefile") // build
                                 || text.contains("Errors while running CTest")
                                 || text.contains("clang-tidy-")
-                                || text.contains("ailure generated from")
+                                || text.contains("ailure generated from") // lint
+                                || text.contains("Test unit written to ") // fuzz
                         }) {
                             let comment = format!(
                                 "{}\n{}\n<sub>Debug: {}</sub>\n{}",
