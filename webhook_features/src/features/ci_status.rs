@@ -135,7 +135,6 @@ impl Feature for CiStatusFeature {
                                 || text.contains("Errors while running CTest")
                                 || text.contains("clang-tidy-")
                                 || text.contains("ailure generated from") // lint
-                                || text.contains("Test unit written to ") // fuzz
                         }) {
                             let comment = format!(
                                 "{}\n{}\n<sub>Debug: {}</sub>\n{}",
