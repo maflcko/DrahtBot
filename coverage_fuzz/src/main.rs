@@ -32,16 +32,28 @@ fn gen_coverage(
 
     println!("Make coverage data in docker ...");
     chdir(dir_code);
-    docker_exec("./autogen.sh");
-    chdir(&dir_build);
 
-    docker_exec("../configure CFLAGS='-fprofile-update=atomic' CXXFLAGS='-fprofile-update=atomic' --enable-fuzz --enable-lcov LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,mismatch,inconsistent,inconsistent'");
-    docker_exec(&format!("make -j{}", make_jobs));
+    docker_exec(&format!(
+        "cmake -B {} -DBUILD_FOR_FUZZING=ON \
+         -DAPPEND_CXXFLAGS='-fprofile-update=atomic' \
+         -DAPPEND_CFLAGS='-fprofile-update=atomic' \
+         -DCMAKE_BUILD_TYPE=Coverage",
+        dir_build.display()
+    ));
+    docker_exec(&format!(
+        "cmake --build {} -j{}",
+        dir_build.display(),
+        make_jobs
+    ));
 
     println!("Make coverage ...");
     docker_exec(&format!(
-        "make cov_fuzz DIR_FUZZ_SEED_CORPUS={}/fuzz_seed_corpus",
-        assets_dir.display()
+        "cmake -DJOBS={} -DFUZZ_CORPORA_DIR={}/fuzz_corpora \
+         -DLCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,mismatch,inconsistent,inconsistent' \
+         -P {}/CoverageFuzz.cmake",
+        make_jobs,
+        assets_dir.display(),
+        dir_build.display()
     ));
     docker_exec(&format!(
         "mv {}/*coverage* {}/",
@@ -119,7 +131,7 @@ fn calc_coverage(
 
     println!("Installing packages ...");
     docker_exec("apt-get update");
-    docker_exec(&format!("apt-get install -qq {}", "python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libnatpmp-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils"));
+    docker_exec(&format!("apt-get install -qq {}", "python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential cmake pkg-config"));
 
     println!("Generate coverage");
     chdir(dir_code);
@@ -221,20 +233,10 @@ fn main() {
     check_call(git().args(["checkout", "FETCH_HEAD", "--force"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
-    check_call(git().args([
-        "fetch",
-        "origin",
-        "--quiet",
-        "6dc4fcd0694379c5ffe87ad5b2a4ed82b1650bdc",
-    ]));
-    //check_call(git().args(["merge", "--no-edit", "FETCH_HEAD"])); // Ensure cmake base + timeout-factor
     check_call(std::process::Command::new("sed").args([
         "-i",
-        &format!(
-            "s/DIR_FUZZ_SEED_CORPUS) -l DEBUG/DIR_FUZZ_SEED_CORPUS) {} -l DEBUG/g",
-            args.fuzz_targets
-        ),
-        "Makefile.am",
+        &format!("s/test_runner.py /test_runner.py {}/g", args.fuzz_targets),
+        "cmake/script/CoverageFuzz.cmake",
     ]));
     chdir(&report_dir);
     check_call(git().args(["fetch", "--quiet", "--all"]));
