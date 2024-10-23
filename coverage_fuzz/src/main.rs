@@ -235,7 +235,10 @@ fn main() {
     check_call(git().args(["clean", "-dfx"]));
     check_call(std::process::Command::new("sed").args([
         "-i",
-        &format!("s/test_runner.py /test_runner.py {}/g", args.fuzz_targets),
+        &format!(
+            "s/FUZZ_CORPORA_DIR}}/FUZZ_CORPORA_DIR}} {} /g",
+            args.fuzz_targets
+        ),
         "cmake/script/CoverageFuzz.cmake",
     ]));
     chdir(&report_dir);
