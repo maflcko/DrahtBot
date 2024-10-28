@@ -34,7 +34,7 @@ fn gen_coverage(
 
     docker_exec(&format!(
         "cmake -B {} \
-         -DWITH_ZMQ=ON -DWITH_BDB -DWARN_INCOMPATIBLE_BDB=OFF \
+         -DWITH_ZMQ=ON -DWITH_BDB=ON -DWARN_INCOMPATIBLE_BDB=OFF \
          -DCMAKE_C_COMPILER='gcc;-fprofile-update=atomic' \
          -DCMAKE_CXX_COMPILER='g++;-fprofile-update=atomic' \
          -DCMAKE_BUILD_TYPE=Coverage",
@@ -52,7 +52,6 @@ fn gen_coverage(
          -DLCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,mismatch,inconsistent,inconsistent' \
          -P {}/Coverage.cmake",
         make_jobs,
-        assets_dir.display(),
         dir_build.display()
     ));
     docker_exec(&format!(
@@ -215,13 +214,11 @@ fn main() {
     check_call(git().args(["checkout", "FETCH_HEAD", "--force"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
     check_call(git().args(["clean", "-dfx"]));
-    check_call(git().args([
-        "fetch",
-        "origin",
-        "--quiet",
-        "ac205299421c5703fc314aea513fc33a6dfb81e1",
+    check_call(std::process::Command::new("sed").args([
+        "-i",
+        "s|functional/test_runner.py|functional/test_runner.py --timeout-factor=10 --exclude=feature_dbcrash|g",
+        "./cmake/script/Coverage.cmake",
     ]));
-    check_call(git().args(["merge", "--no-edit", "FETCH_HEAD"])); // Ensure timeout-factor
     chdir(&report_dir);
     check_call(git().args(["fetch", "--quiet", "--all"]));
     check_call(git().args(["reset", "--hard", "HEAD"]));
