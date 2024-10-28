@@ -131,7 +131,7 @@ fn calc_coverage(
 
     println!("Installing packages ...");
     docker_exec("apt-get update");
-    docker_exec(&format!("apt-get install -qq {}", "python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev lcov build-essential cmake pkg-config"));
+    docker_exec(&format!("apt-get install -qq {}", "python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libzmq3-dev lcov build-essential cmake pkg-config"));
 
     println!("Generate coverage");
     chdir(dir_code);

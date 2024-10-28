@@ -31,14 +31,30 @@ fn gen_coverage(
 
     println!("Make coverage data in docker ...");
     chdir(dir_code);
-    docker_exec("./autogen.sh");
-    chdir(&dir_build);
 
-    docker_exec("../configure CFLAGS='-fprofile-update=atomic' CXXFLAGS='-fprofile-update=atomic' --enable-zmq --with-incompatible-bdb --enable-lcov LCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,mismatch,inconsistent,inconsistent'");
-    docker_exec(&format!("make -j{}", make_jobs));
+    docker_exec(&format!(
+        "cmake -B {} \
+         -DWITH_ZMQ=ON -DWITH_BDB -DWARN_INCOMPATIBLE_BDB=OFF \
+         -DCMAKE_C_COMPILER='gcc;-fprofile-update=atomic' \
+         -DCMAKE_CXX_COMPILER='g++;-fprofile-update=atomic' \
+         -DCMAKE_BUILD_TYPE=Coverage",
+        dir_build.display()
+    ));
+    docker_exec(&format!(
+        "cmake --build {} -j{}",
+        dir_build.display(),
+        make_jobs
+    ));
 
     println!("Make coverage ...");
-    docker_exec("make cov");
+    docker_exec(&format!(
+        "cmake -DJOBS={} \
+         -DLCOV_OPTS='--rc branch_coverage=1 --ignore-errors mismatch,mismatch,inconsistent,inconsistent' \
+         -P {}/Coverage.cmake",
+        make_jobs,
+        assets_dir.display(),
+        dir_build.display()
+    ));
     docker_exec(&format!(
         "mv {}/*coverage* {}/",
         dir_build.display(),
@@ -109,7 +125,7 @@ fn calc_coverage(
 
     println!("Installing packages ...");
     docker_exec("apt-get update");
-    docker_exec(&format!("apt-get install -qq {}", "python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libnatpmp-dev libminiupnpc-dev libzmq3-dev lcov build-essential libtool autotools-dev automake pkg-config bsdmainutils"));
+    docker_exec(&format!("apt-get install -qq {}", "python3-zmq libsqlite3-dev libevent-dev libboost-dev libdb5.3++-dev libzmq3-dev lcov build-essential cmake pkg-config"));
 
     println!("Generate coverage");
     chdir(dir_code);
