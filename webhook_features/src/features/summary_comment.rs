@@ -191,8 +191,8 @@ async fn refresh_summary_comment(ctx: &Context, repo: Repository, pr_number: u64
     {
         if config_repo.corecheck {
             let coverage = r#"
-### Code Coverage
-For detailed information about the code coverage, see the [test coverage report](https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}).
+### Code Coverage & Benchmarks
+For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
 "#;
             util::update_metadata_comment(
                 &issues_api,
