@@ -105,6 +105,15 @@ async fn emit_event(
 #[actix_web::main]
 async fn main() -> Result<()> {
     let args = Args::parse();
+    let subscriber = tracing_subscriber::fmt()
+        .compact()
+        .with_max_level(tracing::Level::DEBUG)
+        .with_file(true)
+        .with_line_number(true)
+        .with_thread_ids(true)
+        .with_target(true)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber)?;
 
     let config: Config = serde_yaml::from_reader(
         std::fs::File::open(args.config_file).expect("config file path error"),
