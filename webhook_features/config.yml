@@ -1,4 +1,10 @@
 repositories:
+  - repo_slug: maflcko/DrahtBot
+    backport_label: Backport
+    repo_labels:
+      Dummy:
+        - '^dummy:'
+    corecheck: false
   - repo_slug: bitcoin/bitcoin
     backport_label: Backport
     repo_labels:
