@@ -133,9 +133,8 @@ impl Feature for CiStatusFeature {
                             let text = r.output.text.clone().unwrap_or_default();
                             text.contains("make: *** [Makefile") // build
                                 || text.contains("Errors while running CTest")
-                                || text.contains("clang-tidy-")
                                 || text.contains("Error: Unexpected dependencies were detected. Check previous output.") // tidy (deps)
-                                || text.contains("ailure generated from") // lint
+                                || text.contains("ailure generated from") // lint, tidy
                                 || text.contains("SUMMARY: libFuzzer: deadly signal")
                             // fuzz
                         }) {
