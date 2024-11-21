@@ -1,0 +1,71 @@
+diff --git a/src/test/fuzz/FuzzedDataProvider.h b/src/test/fuzz/FuzzedDataProvider.h
+index 5903ed8379..8cc6491178 100644
+--- a/src/test/fuzz/FuzzedDataProvider.h
++++ b/src/test/fuzz/FuzzedDataProvider.h
+@@ -25,6 +25,7 @@
+ #include <type_traits>
+ #include <utility>
+ #include <vector>
++#include <iostream>
+ 
+ // In addition to the comments below, the API is also briefly documented at
+ // https://github.com/google/fuzzing/blob/master/docs/split-inputs.md#fuzzed-data-provider
+@@ -138,6 +139,7 @@ inline std::string FuzzedDataProvider::ConsumeBytesAsString(size_t num_bytes) {
+                 "ConsumeBytesAsString cannot convert the data to a string.");
+ 
+   num_bytes = std::min(num_bytes, remaining_bytes_);
++  std::cout << "self.push_bytes([..." << num_bytes << "]);\n";
+   std::string result(
+       reinterpret_cast<const std::string::value_type *>(data_ptr_), num_bytes);
+   Advance(num_bytes);
+@@ -173,6 +175,7 @@ FuzzedDataProvider::ConsumeRandomLengthString(size_t max_length) {
+   }
+ 
+   result.shrink_to_fit();
++  std::cout << "self.push_str([..." << result.size() << "]); // Limit: " << max_length << "\n";
+   return result;
+ }
+ 
+@@ -230,6 +233,26 @@ T FuzzedDataProvider::ConsumeIntegralInRange(T min, T max) {
+   if (range != std::numeric_limits<decltype(range)>::max())
+     result = result % (range + 1);
+ 
++  if (offset) {
++    std::cout << "self.push_int(";
++    if constexpr (std::is_signed_v<T>) {
++      std::cout << int64_t{static_cast<T>(static_cast<uint64_t>(min) + result)}
++      << "i" << (sizeof(T) * 8) << ", "
++      << int64_t{min}
++      << "i" << (sizeof(T) * 8) << ", "
++      << int64_t{max}
++      << "i" << (sizeof(T) * 8) << ", ";
++    } else {
++      std::cout << uint64_t{static_cast<T>(static_cast<uint64_t>(min) + result)}
++      << "u" << (sizeof(T) * 8) << ", "
++      << uint64_t{min}
++      << "u" << (sizeof(T) * 8) << ", "
++      << uint64_t{max}
++      << "u" << (sizeof(T) * 8) << ", ";
++    }
++    std::cout << ");\n";
++  }
++
+   return static_cast<T>(static_cast<uint64_t>(min) + result);
+ }
+ 
+@@ -248,6 +271,7 @@ template <typename T>
+ T FuzzedDataProvider::ConsumeFloatingPointInRange(T min, T max) {
+   if (min > max)
+     abort();
++  std::cout << "self.push_float(UNIMPLEMENTED);\n";
+ 
+   T range = .0;
+   T result = min;
+@@ -336,6 +360,7 @@ inline size_t FuzzedDataProvider::ConsumeData(void *destination,
+ // Private methods.
+ inline void FuzzedDataProvider::CopyAndAdvance(void *destination,
+                                                size_t num_bytes) {
++  std::cout << "self.push_bytes([..." << num_bytes << "]);\n";
+   std::memcpy(destination, data_ptr_, num_bytes);
+   Advance(num_bytes);
+ }

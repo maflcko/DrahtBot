@@ -1,0 +1,11 @@
+[package]
+name = "inverse_fdp"
+version = "0.1.0"
+edition = "2021"
+build = "build.rs"
+
+[dependencies]
+cpp = "0"
+
+[build-dependencies]
+cpp_build = "0"
