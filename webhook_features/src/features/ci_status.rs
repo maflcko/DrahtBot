@@ -134,9 +134,7 @@ impl Feature for CiStatusFeature {
                             text.contains("make: *** [Makefile") // build
                                 || text.contains("Errors while running CTest")
                                 || text.contains("Error: Unexpected dependencies were detected. Check previous output.") // tidy (deps)
-                                || text.contains("ailure generated from") // lint, tidy
-                                || text.contains("SUMMARY: libFuzzer: deadly signal")
-                            // fuzz
+                                || text.contains("ailure generated from") // lint, tidy, fuzz
                         }) {
                             let comment = format!(
                                 "{}\n{}\n<sub>Debug: {}</sub>\n{}",
