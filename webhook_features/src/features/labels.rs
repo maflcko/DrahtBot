@@ -76,11 +76,48 @@ impl Feature for LabelsFeature {
                     )
                     .await?;
                 }
+                if action == "opened" {
+                    let pr_number = payload["number"]
+                        .as_u64()
+                        .ok_or(DrahtBotError::KeyNotFound)?;
+                    let issues_api = ctx.octocrab.issues(repo_user, repo_name);
+                    let pulls_api = ctx.octocrab.pulls(repo_user, repo_name);
+                    comment_archive(
+                        &ctx.octocrab,
+                        &issues_api,
+                        &pulls_api,
+                        pr_number,
+                        ctx.dry_run,
+                    )
+                    .await?;
+                }
             }
             _ => {}
         }
         Ok(())
     }
+}
+
+async fn comment_archive(
+    github: &octocrab::Octocrab,
+    issues_api: &octocrab::issues::IssueHandler<'_>,
+    pulls_api: &octocrab::pulls::PullRequestHandler<'_>,
+    pr_number: u64,
+    dry_run: bool,
+) -> Result<()> {
+    let all_files = github
+        .all_pages(pulls_api.list_files(pr_number).await?)
+        .await?;
+    if all_files
+        .iter()
+        .any(|f| f.filename.starts_with("doc/release-notes/release-notes-") && f.deletions > 0)
+    {
+        let text = "📁 Archived release notes are archived and should not be modified.";
+        if !dry_run {
+            issues_api.create_comment(pr_number, text).await?;
+        }
+    }
+    Ok(())
 }
 
 async fn apply_labels_one(
