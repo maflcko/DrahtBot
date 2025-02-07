@@ -37,6 +37,7 @@ repositories:
         - '^kernel:'
       interfaces:
         - '^interfaces:'
+        - '^multiprocess:'
       Wallet:
         - '^wallet:'
       Descriptors:
