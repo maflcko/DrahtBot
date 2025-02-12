@@ -234,9 +234,6 @@ async fn rebase_label(
                 repo,
                 pull.number
             );
-            if pull.number == 21283 {
-                continue; // Work around GH internal metadata bug
-            }
             let pull = util::get_pull_mergeable(&pulls_api, pull.number).await?;
             let pull = match pull {
                 None => {
