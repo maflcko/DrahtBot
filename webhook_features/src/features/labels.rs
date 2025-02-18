@@ -4,6 +4,7 @@ use crate::errors::Result;
 use crate::Context;
 use crate::GitHubEvent;
 use async_trait::async_trait;
+use octocrab::models::AuthorAssociation::{FirstTimer, FirstTimeContributor, Mannequin, None};
 
 pub struct LabelsFeature {
     meta: FeatureMeta,
@@ -82,7 +83,7 @@ impl Feature for LabelsFeature {
                         .ok_or(DrahtBotError::KeyNotFound)?;
                     let issues_api = ctx.octocrab.issues(repo_user, repo_name);
                     let pulls_api = ctx.octocrab.pulls(repo_user, repo_name);
-                    comment_archive(
+                    spam_detection(
                         &ctx.octocrab,
                         &issues_api,
                         &pulls_api,
@@ -98,7 +99,7 @@ impl Feature for LabelsFeature {
     }
 }
 
-async fn comment_archive(
+async fn spam_detection(
     github: &octocrab::Octocrab,
     issues_api: &octocrab::issues::IssueHandler<'_>,
     pulls_api: &octocrab::pulls::PullRequestHandler<'_>,
@@ -115,6 +116,24 @@ async fn comment_archive(
         let text = "📁 Archived release notes are archived and should not be modified.";
         if !dry_run {
             issues_api.create_comment(pr_number, text).await?;
+        }
+    }
+    if all_files
+        .iter()
+        .all(|f| f.filename.starts_with("README.md") || f.filename.starts_with("CONTRIBUTING.md"))
+    {
+        let pull_request = pulls_api.get(pr_number).await?;
+        if [FirstTimer, FirstTimeContributor, Mannequin, None].contains(&pull_request.author_association.unwrap()) {
+            let reason =
+                "Closed because you cannot edit README.md or CONTRIBUTING.md as a non-member";
+            if !dry_run {
+                issues_api
+                    .update(pr_number)
+                    .state(octocrab::models::IssueState::Closed)
+                    .body(reason)
+                    .send()
+                    .await?;
+            }
         }
     }
     Ok(())
