@@ -4,7 +4,7 @@ use crate::errors::Result;
 use crate::Context;
 use crate::GitHubEvent;
 use async_trait::async_trait;
-use octocrab::models::AuthorAssociation::{FirstTimer, FirstTimeContributor, Mannequin, None};
+use octocrab::models::AuthorAssociation::{FirstTimeContributor, FirstTimer, Mannequin, None};
 
 pub struct LabelsFeature {
     meta: FeatureMeta,
@@ -123,7 +123,9 @@ async fn spam_detection(
         .all(|f| f.filename.starts_with("README.md") || f.filename.starts_with("CONTRIBUTING.md"))
     {
         let pull_request = pulls_api.get(pr_number).await?;
-        if [FirstTimer, FirstTimeContributor, Mannequin, None].contains(&pull_request.author_association.unwrap()) {
+        if [FirstTimer, FirstTimeContributor, Mannequin, None]
+            .contains(&pull_request.author_association.unwrap())
+        {
             let reason =
                 "Closed because you cannot edit README.md or CONTRIBUTING.md as a non-member";
             if !dry_run {
