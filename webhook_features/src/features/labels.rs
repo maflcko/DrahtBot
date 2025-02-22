@@ -118,16 +118,16 @@ async fn spam_detection(
             issues_api.create_comment(pr_number, text).await?;
         }
     }
-    if all_files
-        .iter()
-        .all(|f| f.filename.starts_with("README.md") || f.filename.starts_with("CONTRIBUTING.md"))
-    {
+    if all_files.iter().all(|f| {
+        let sw = |p| f.filename.starts_with(p);
+        sw("README.md") || sw("CONTRIBUTING.md") || sw("COPYING")
+    }) {
         let pull_request = pulls_api.get(pr_number).await?;
         if [FirstTimer, FirstTimeContributor, Mannequin, None]
             .contains(&pull_request.author_association.unwrap())
         {
             let reason =
-                "Closed because you cannot edit README.md or CONTRIBUTING.md as a non-member";
+                "♻️ Automatically closing for now based on heuristics. Please leave a comment, if this was erroneous. Generally, please focus on creating high-quality, original content that demonstrates a clear understanding of the project's requirements and goals.";
             if !dry_run {
                 issues_api
                     .update(pr_number)
