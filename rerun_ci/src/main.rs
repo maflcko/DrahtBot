@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Clone)]
 struct SlugTok {
@@ -125,15 +126,27 @@ async fn main() -> octocrab::Result<()> {
     {
         println!("Get open pulls for {}/{} ...", owner, repo);
         let pulls_api = github.pulls(&owner, &repo);
-        let pulls = github
-            .all_pages(
-                pulls_api
-                    .list()
-                    .state(octocrab::params::State::Open)
-                    .send()
-                    .await?,
-            )
-            .await?;
+        let pulls = {
+            let mut pulls = github
+                .all_pages(
+                    pulls_api
+                        .list()
+                        .state(octocrab::params::State::Open)
+                        .send()
+                        .await?,
+                )
+                .await?;
+            // Rotate the vector to start at a different place each time, to account for
+            // api.cirrus-ci network errors, which would abort the program. On the next start, it
+            // would start iterating from the same place.
+            let rotate = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .expect("must be after epoch")
+                .subsec_micros() as usize
+                % (pulls.len());
+            pulls.rotate_left(rotate);
+            pulls
+        };
         println!("Open pulls: {}", pulls.len());
         for (i, pull) in pulls.iter().enumerate() {
             println!(
