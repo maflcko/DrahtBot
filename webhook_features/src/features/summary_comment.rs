@@ -266,7 +266,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
         }
         if let Some(ac) = parse_review(&comment.body) {
             let v = user_reviews.entry(comment.user.clone()).or_default();
-            let has_current_head = ac.commit.map_or(false, |c| head_commit.starts_with(&c));
+            let has_current_head = ac.commit.is_some_and(|c| head_commit.starts_with(&c));
             v.push(Review {
                 user: comment.user.clone(),
                 ack_type: if ignored_users.contains(&comment.user) {
