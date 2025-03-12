@@ -129,10 +129,10 @@ async fn spam_detection(
             let reason =
                 "♻️ Automatically closing for now based on heuristics. Please leave a comment, if this was erroneous. Generally, please focus on creating high-quality, original content that demonstrates a clear understanding of the project's requirements and goals.";
             if !dry_run {
+                issues_api.create_comment(pr_number, reason).await?;
                 issues_api
                     .update(pr_number)
                     .state(octocrab::models::IssueState::Closed)
-                    .body(reason)
                     .send()
                     .await?;
             }
