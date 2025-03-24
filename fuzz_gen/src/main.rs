@@ -88,9 +88,12 @@ fn main() {
     check_call(Command::new("cmake").args([
         "-B",
         "./bld",
-        "-DBUILD_FOR_FUZZING=ON ",
+        "-DBUILD_FOR_FUZZING=ON",
         &format!("-DCMAKE_C_COMPILER=clang-{}", LLVM_VER),
-        &format!("-DCMAKE_CXX_COMPILER=clang++-{}", LLVM_VER),
+        &format!(
+            "-DCMAKE_CXX_COMPILER=clang++-{};-D_GLIBCXX_ASSERTIONS",
+            LLVM_VER
+        ),
         &format!("-DSANITIZERS={}", args.sanitizers),
     ]));
     check_call(Command::new("cmake").args([
