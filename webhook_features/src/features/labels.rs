@@ -120,7 +120,10 @@ async fn spam_detection(
     }
     if all_files.iter().all(|f| {
         let sw = |p| f.filename.starts_with(p);
-        sw("README.md") || sw("CONTRIBUTING.md") || sw("COPYING")
+        sw("README.md")
+            || sw("CONTRIBUTING.md")
+            || sw("COPYING")
+            || sw(".devcontainer/devcontainer.json")
     }) {
         let pull_request = pulls_api.get(pr_number).await?;
         if [FirstTimer, FirstTimeContributor, Mannequin, None]
