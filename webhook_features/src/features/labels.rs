@@ -123,12 +123,13 @@ async fn spam_detection(
             issues_api.create_comment(pr_number, text).await?;
         }
     }
-    if all_files.iter().all(|f| {
+    if all_files.iter().any(|f| {
         let sw = |p| f.filename.starts_with(p);
         sw("README.md")
             || sw("CONTRIBUTING.md")
-            || sw("COPYING")
+            || sw("LICENSE")
             || sw(".devcontainer/devcontainer.json")
+            || sw(".github")
     }) || pr_title.starts_with("Create ") && all_files.len() == 1
     {
         let pull_request = pulls_api.get(pr_number).await?;
