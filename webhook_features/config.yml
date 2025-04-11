@@ -41,6 +41,7 @@ repositories:
       Wallet:
         - '^wallet:'
       Descriptors:
+        - '^descriptor:'
         - '^descriptors:'
         - '^miniscript:'
       Consensus:
