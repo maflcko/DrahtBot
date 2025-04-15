@@ -327,6 +327,8 @@ async fn main() -> octocrab::Result<()> {
         output_dir
     };
 
+    chdir(&git_repo_dir);
+
     if let Some(commit) = args.build_one_commit.as_deref() {
         for Slug { owner, repo } in &args.github_repo {
             let url = github_url(owner, repo);
