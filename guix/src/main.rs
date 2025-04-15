@@ -155,6 +155,7 @@ async fn main() -> octocrab::Result<()> {
         .scratch_dir
         .canonicalize()
         .expect("invalid scratch_dir");
+    chdir(&temp_dir);
 
     let url_element_repo = "monotree";
     let guix_www_folder = ensure_create_all(if args.dry_run {
@@ -245,8 +246,6 @@ async fn main() -> octocrab::Result<()> {
         "netbase xz-utils git make curl"
     ));
 
-    chdir(&temp_dir);
-
     if fs::read_dir(guix_store_dir)
         .expect("dir must exist")
         .next()
@@ -254,10 +253,7 @@ async fn main() -> octocrab::Result<()> {
     {
         println!("Install guix");
         let guix_tar = format!("guix-binary-1.4.0.{ARCH}-linux.tar.xz");
-        docker_exec(&format!(
-            "curl -LO 'https://ftp.gnu.org/gnu/guix/{}",
-            guix_tar
-        ));
+        docker_exec(&format!("curl -LO https://ftp.gnu.org/gnu/guix/{guix_tar}"));
         docker_exec(&format!(
             "echo '{}  ./{}' | sha256sum -c",
             "236ca7c9c5958b1f396c2924fcc5bc9d6fdebcb1b4cf3c7c6d46d4bf660ed9c9", guix_tar
