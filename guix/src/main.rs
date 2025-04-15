@@ -109,19 +109,12 @@ fn calculate_diffs(folder_1: &Path, folder_2: &Path) {
         let file_2 = folder_2.join(f);
         let diff_file = folder_2.join(format!("{}.diff", f));
 
-        assert!(
-            Command::new("sh")
-                .arg("-c")
-                .arg(format!(
-                    "diff --color {} {} > {}",
-                    ensure_path_str(&file_1),
-                    ensure_path_str(&file_2),
-                    ensure_path_str(&diff_file)
-                ))
-                .status()
-                .expect("Failed to execute command")
-                .success()
-        );
+        check_call(Command::new("sh").arg("-c").arg(format!(
+            "diff --color {} {} > {}",
+            ensure_path_str(&file_1),
+            ensure_path_str(&file_2),
+            ensure_path_str(&diff_file)
+        )));
     }
 }
 
@@ -192,6 +185,11 @@ async fn main() -> octocrab::Result<()> {
         )));
     }
 
+    for Slug { owner, repo } in &args.github_repo {
+        let url = github_url(owner, repo);
+        ensure_init_git(&git_repo_dir, &url);
+    }
+
     println!("Start docker process ...");
     let docker_id = check_output(Command::new("docker").args([
         "run",
@@ -243,7 +241,7 @@ async fn main() -> octocrab::Result<()> {
     docker_exec("apt-get update");
     docker_exec(&format!(
         "apt-get install -qq {}",
-        "netbase wget xz-utils git make curl"
+        "netbase xz-utils git make curl"
     ));
 
     chdir(&temp_dir);
@@ -331,11 +329,6 @@ async fn main() -> octocrab::Result<()> {
         ));
         output_dir
     };
-
-    for Slug { owner, repo } in &args.github_repo {
-        let url = github_url(owner, repo);
-        ensure_init_git(&git_repo_dir, &url);
-    }
 
     if let Some(commit) = args.build_one_commit.as_deref() {
         for Slug { owner, repo } in &args.github_repo {
