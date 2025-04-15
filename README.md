@@ -7,14 +7,3 @@ example cmd
 ```
 ( cd rerun_ci && cargo run -- --help )
 ```
-
-install (python scripts only)
--------
-
-```
-virtualenv --python=python3 ./env_3
-source ./env_3/bin/activate
-pip install pygithub
-#pip install github3.py
-pip install mwclient
-```

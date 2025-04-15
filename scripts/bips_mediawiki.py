@@ -1,3 +1,12 @@
+#  install
+#  -------
+#
+#  ```
+#  virtualenv --python=python3 ./env_3
+#  source ./env_3/bin/activate
+#  pip install mwclient
+#  ```
+
 import mwclient
 import argparse
 import os
