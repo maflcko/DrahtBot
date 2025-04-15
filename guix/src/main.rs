@@ -150,6 +150,7 @@ async fn main() -> octocrab::Result<()> {
     println!("# Then reboot");
     println!();
 
+    fs::create_dir_all(&args.scratch_dir).expect("invalid scratch_dir");
     let temp_dir = args
         .scratch_dir
         .canonicalize()
@@ -163,7 +164,12 @@ async fn main() -> octocrab::Result<()> {
     });
     let external_url = format!("{}/guix/{}/", args.domain, url_element_repo);
 
-    let git_repo_dir = ensure_create_all(temp_dir.join("git_monotree"));
+    let git_repo_dir = temp_dir.join("git_monotree");
+    for Slug { owner, repo } in &args.github_repo {
+        let url = github_url(owner, repo);
+        ensure_init_git(&git_repo_dir, &url);
+    }
+
     let depends_sources_dir = ensure_create_all(temp_dir.join("depends_sources"));
     let depends_cache_dir = ensure_create_all(temp_dir.join("depends_cache"));
     let guix_store_dir = ensure_create_all(temp_dir.join("root_store"));
@@ -183,11 +189,6 @@ async fn main() -> octocrab::Result<()> {
             "find {} -mindepth 1 -maxdepth 1 -type d -ctime +15 | xargs rm -rf",
             guix_www_folder_str
         )));
-    }
-
-    for Slug { owner, repo } in &args.github_repo {
-        let url = github_url(owner, repo);
-        ensure_init_git(&git_repo_dir, &url);
     }
 
     println!("Start docker process ...");
