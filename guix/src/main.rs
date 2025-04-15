@@ -390,7 +390,7 @@ async fn main() -> octocrab::Result<()> {
             }
 
             chdir(&git_repo_dir);
-            docker_exec(&format!("git fetch {url} pull/${}/merge", pull.number));
+            docker_exec(&format!("git fetch {url} pull/{}/merge", pull.number));
             let commit = check_output(git().args(["rev-parse", "FETCH_HEAD"]));
             let base_commit = check_output(git().args(["rev-parse", "FETCH_HEAD^1"]));
 
