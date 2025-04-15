@@ -6,7 +6,7 @@ use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
-use util::{Slug, chdir, check_call, check_output, get_octocrab, get_pull_mergeable, git};
+use util::{chdir, check_call, check_output, get_octocrab, get_pull_mergeable, git, Slug};
 
 #[derive(clap::Parser)]
 #[command(about="Guix build and create an issue comment to share the results.",long_about=None)]
