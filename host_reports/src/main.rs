@@ -18,7 +18,7 @@ fn main() {
     let args = Args::parse();
 
     println!();
-    println!("See guix.py for instructions on how to add write permission for /var/www to the current user");
+    println!("See guix script for instructions on how to add write permission for /var/www to the current user");
     println!();
 
     let repo_url = format!("https://github.com/{}", args.repo_report.str());
