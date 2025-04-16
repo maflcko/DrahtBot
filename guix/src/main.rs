@@ -6,7 +6,7 @@ use std::iter::FromIterator;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
-use util::{chdir, check_call, check_output, get_octocrab, get_pull_mergeable, git, Slug};
+use util::{call, chdir, check_call, check_output, get_octocrab, get_pull_mergeable, git, Slug};
 
 #[derive(clap::Parser)]
 #[command(about="Guix build and create an issue comment to share the results.",long_about=None)]
@@ -109,7 +109,7 @@ fn calculate_diffs(folder_1: &Path, folder_2: &Path) {
         let file_2 = folder_2.join(f);
         let diff_file = folder_2.join(format!("{}.diff", f));
 
-        check_call(Command::new("sh").arg("-c").arg(format!(
+        call(Command::new("sh").arg("-c").arg(format!(
             "diff --color {} {} > {}",
             ensure_path_str(&file_1),
             ensure_path_str(&file_2),
