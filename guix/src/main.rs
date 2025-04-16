@@ -73,7 +73,6 @@ fn calculate_table(
     };
     let mut set_rows = |dir: &Path, row_id: usize, commit_sha: &str| {
         let mut files = lsdir::<Vec<_>>(dir);
-        files.sort();
         for f in &files {
             let short_file_name = shorten(f);
             chdir(dir);
@@ -88,6 +87,8 @@ fn calculate_table(
     };
     set_rows(base_folder, 0, base_commit);
     set_rows(commit_folder, 1, commit);
+    let mut rows = rows.iter().collect::<Vec<_>>();
+    rows.sort_by_key(|&(short_file_name, _links)| short_file_name);
 
     let mut text = String::new();
     for (f, [link1, link2]) in &rows {
@@ -417,7 +418,7 @@ async fn main() -> octocrab::Result<()> {
             );
             text += "| File ";
             text += &format!("| commit {}<br>({}) ", &base_commit, pull.base.ref_field);
-            text += &format!("| commit {}<br>(pull/${}/merge) ", &commit, pull.number);
+            text += &format!("| commit {}<br>(pull/{}/merge) ", &commit, pull.number);
             text += "|\n";
             text += "|--|--|--|\n";
 
