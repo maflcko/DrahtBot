@@ -220,23 +220,25 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
     if let Some(url) = llm_diff_pr {
         match get_llm_check(&url, &ctx.llm_token).await {
             Ok(reply) => {
-                let section = r#"
+                if !reply.contains("No typos were found") {
+                    let section = r#"
 ### LLM Linter
 
-<details><summary>Possible typos and grammar fixes (LLM generated, experimental)</summary>
+<details><summary>Possible typos and grammar issues (✨ LLM generated, experimental)</summary>
 
 {llm_reply}
 
 </details>
 "#;
-                util::update_metadata_comment(
-                    &issues_api,
-                    &mut cmt,
-                    &section.replace("{llm_reply}", &reply),
-                    util::IdComment::SecLmCheck,
-                    ctx.dry_run,
-                )
-                .await?;
+                    util::update_metadata_comment(
+                        &issues_api,
+                        &mut cmt,
+                        &section.replace("{llm_reply}", &reply),
+                        util::IdComment::SecLmCheck,
+                        ctx.dry_run,
+                    )
+                    .await?;
+                }
             }
             Err(err) => {
                 println!(" ... ERROR when requesting llm check {:?}", err);
@@ -482,29 +484,46 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
     println!(" ... Run LLM check.");
     let diff = client.get(llm_diff_pr).send().await?.text().await?;
     let payload = serde_json::json!({
-        "model": "gpt-4o-mini",
+        "model": "o3-mini",
         "messages": [
             {
-                "role": "system",
-                "content":
+                "role": "developer",
+                "content": [
+                  {
+                    "type": "text",
+                    "text":
 r#"
-You are a developer and a fluent, professional, native English speaker. Reply with any typographic
-or grammatical errors in the following git diff in code comments or documentation. Make sure to
-only reply with real errors, that make it invalid or incomprehensible English. Ignore style
-preferences, such as the Oxford comma. Also, ignore any other missing or superfluous comma; Ignore
-awkward but harmless language use. Do not evaluate the content, or suggest word replacments. Do not
-suggest the documentation could be clearer. Ignore missing and inconsistent punctuation. Only
-comment on lines that are added (starting with a + in the diff). Focus only on English typographic
-and English grammatical errors. Reply with at most 5 typographic or grammatical errors. If there
-are no relevant errors, say that no typos were found.
+Identify and provide feedback on typographic or grammatical errors in the provided git diff comments or documentation, focusing exclusively on errors impacting comprehension.
+
+- Only address errors that make the English text invalid or incomprehensible.
+- Ignore style preferences, such as the Oxford comma, missing or superfluous commas, awkward but harmless language, and missing or inconsistent punctuation.
+- Focus solely on lines added (starting with a + in the diff).
+- Do not evaluate content or suggest word replacements.
+- Limit your feedback to a maximum of 5 typographic or grammatical errors.
+- If no errors are found, state that no typos were found.
+
+# Output Format
+
+Provide a list of typographic or grammatical errors found, each on a new line. If none are found, state "No typos were found." Do not exceed 5 mentioned errors.
 "#
+                  }
+                ]
             },
             {
                 "role": "user",
-                "content":diff
+                "content": [
+                  {
+                    "type": "text",
+                    "text": diff
+                  }
+                ]
             }
         ],
-        "temperature": 0.0
+        "response_format": {
+          "type": "text"
+        },
+        "reasoning_effort": "low",
+        "store": true
     });
     let response = client
         .post("https://api.openai.com/v1/chat/completions")
