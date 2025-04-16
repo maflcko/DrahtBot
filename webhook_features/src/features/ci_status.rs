@@ -77,7 +77,7 @@ impl Feature for CiStatusFeature {
                         .as_ref()
                         .ok_or(DrahtBotError::KeyNotFound)?
                         .split('/')
-                        .last()
+                        .next_back()
                         .ok_or(DrahtBotError::KeyNotFound)?
                         .to_string();
 
