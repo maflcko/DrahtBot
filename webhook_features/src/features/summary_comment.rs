@@ -484,14 +484,14 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
     println!(" ... Run LLM check.");
     let diff = client.get(llm_diff_pr).send().await?.text().await?;
     let payload = serde_json::json!({
-        "model": "o3-mini",
-        "messages": [
+      "model": "o4-mini",
+      "messages": [
+        {
+          "role": "developer",
+          "content": [
             {
-                "role": "developer",
-                "content": [
-                  {
-                    "type": "text",
-                    "text":
+              "type": "text",
+              "text":
 r#"
 Identify and provide feedback on typographic or grammatical errors in the provided git diff comments or documentation, focusing exclusively on errors impacting comprehension.
 
@@ -504,26 +504,27 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 
 # Output Format
 
-Provide a list of typographic or grammatical errors found, each on a new line. If none are found, state "No typos were found." Do not exceed 5 mentioned errors.
+Provide a list of typographic or grammatical errors found, each on a new line. Give the error and the replacement in the line. If none are found, state "No typos were found." Do not exceed 5 mentioned errors.
 "#
-                  }
-                ]
-            },
-            {
-                "role": "user",
-                "content": [
-                  {
-                    "type": "text",
-                    "text": diff
-                  }
-                ]
-            }
-        ],
-        "response_format": {
-          "type": "text"
+    }
+          ]
         },
-        "reasoning_effort": "low",
-        "store": true
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text":diff
+              }
+          ]
+        }
+      ],
+      "response_format": {
+        "type": "text"
+      },
+      "reasoning_effort": "low",
+      "service_tier": "flex",
+      "store": true
     });
     let response = client
         .post("https://api.openai.com/v1/chat/completions")
