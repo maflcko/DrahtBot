@@ -222,13 +222,12 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
             Ok(reply) => {
                 if !reply.contains("No typos were found") {
                     let section = r#"
-### LLM Linter
+### LLM Linter (✨ experimental)
 
-<details><summary>Possible typos and grammar issues (✨ LLM generated, experimental)</summary>
+Possible typos and grammar issues:
 
 {llm_reply}
 
-</details>
 "#;
                     util::update_metadata_comment(
                         &issues_api,
