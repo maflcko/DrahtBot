@@ -8,6 +8,7 @@ use crate::GitHubEvent;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use regex::Regex;
+use util::get_pull_mergeable;
 
 pub struct SummaryCommentFeature {
     meta: FeatureMeta,
@@ -218,10 +219,17 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
     }
 
     if let Some(url) = llm_diff_pr {
-        match get_llm_check(&url, &ctx.llm_token).await {
-            Ok(reply) => {
-                if !reply.contains("No typos were found") {
-                    let section = r#"
+        if get_pull_mergeable(&pulls_api, pr_number)
+            .await?
+            .is_some_and(|p| {
+                p.mergeable
+                    .expect("get_pull_mergeable must wait for mergeable")
+            })
+        {
+            match get_llm_check(&url, &ctx.llm_token).await {
+                Ok(reply) => {
+                    if !reply.contains("No typos were found") {
+                        let section = r#"
 ### LLM Linter (✨ experimental)
 
 Possible typos and grammar issues:
@@ -229,18 +237,19 @@ Possible typos and grammar issues:
 {llm_reply}
 
 "#;
-                    util::update_metadata_comment(
-                        &issues_api,
-                        &mut cmt,
-                        &section.replace("{llm_reply}", &reply),
-                        util::IdComment::SecLmCheck,
-                        ctx.dry_run,
-                    )
-                    .await?;
+                        util::update_metadata_comment(
+                            &issues_api,
+                            &mut cmt,
+                            &section.replace("{llm_reply}", &reply),
+                            util::IdComment::SecLmCheck,
+                            ctx.dry_run,
+                        )
+                        .await?;
+                    }
                 }
-            }
-            Err(err) => {
-                println!(" ... ERROR when requesting llm check {:?}", err);
+                Err(err) => {
+                    println!(" ... ERROR when requesting llm check {:?}", err);
+                }
             }
         }
     }
