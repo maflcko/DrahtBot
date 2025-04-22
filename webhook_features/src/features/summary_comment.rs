@@ -220,20 +220,11 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
 
     if let Some(url) = llm_diff_pr {
         let _wait_pull = get_pull_mergeable(&pulls_api, pr_number).await?; // closed or mergeable
-        let mut clear_comment = async || {
-            util::update_metadata_comment(
-                &issues_api,
-                &mut cmt,
-                "",
-                util::IdComment::SecLmCheck,
-                ctx.dry_run,
-            )
-            .await
-        };
+        let mut text = "".to_string();
         match get_llm_check(&url, &ctx.llm_token).await {
             Ok(reply) => {
                 if reply.contains("No typos were found") {
-                    clear_comment().await?;
+                    // text remains empty
                 } else {
                     let section = r#"
 ### LLM Linter (✨ experimental)
@@ -243,21 +234,22 @@ Possible typos and grammar issues:
 {llm_reply}
 
 "#;
-                    util::update_metadata_comment(
-                        &issues_api,
-                        &mut cmt,
-                        &section.replace("{llm_reply}", &reply),
-                        util::IdComment::SecLmCheck,
-                        ctx.dry_run,
-                    )
-                    .await?;
+                    text = section.replace("{llm_reply}", &reply);
                 }
             }
             Err(err) => {
                 println!(" ... ERROR when requesting llm check {:?}", err);
-                clear_comment().await?;
+                // text remains empty
             }
         }
+        util::update_metadata_comment(
+            &issues_api,
+            &mut cmt,
+            &text,
+            util::IdComment::SecLmCheck,
+            ctx.dry_run,
+        )
+        .await?;
     }
 
     let ignored_users = if let Some(cmt_id) = cmt.id {
