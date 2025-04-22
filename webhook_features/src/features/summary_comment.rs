@@ -8,7 +8,6 @@ use crate::GitHubEvent;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use regex::Regex;
-use util::get_pull_mergeable;
 
 pub struct SummaryCommentFeature {
     meta: FeatureMeta,
@@ -219,7 +218,6 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
     }
 
     if let Some(url) = llm_diff_pr {
-        let _wait_pull = get_pull_mergeable(&pulls_api, pr_number).await?; // closed or mergeable
         let mut text = "".to_string();
         match get_llm_check(&url, &ctx.llm_token).await {
             Ok(reply) => {
