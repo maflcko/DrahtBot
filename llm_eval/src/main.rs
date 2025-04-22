@@ -106,7 +106,7 @@ Provide a list of typographic or grammatical errors found, each on a new line. G
     let val = response["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .expect("Content not found");
-    fs::write(outputs.join(format!("google_ai_{}", file_name)), val)
+    fs::write(outputs.join(format!("{}.google_ai.txt", file_name)), val)
         .expect("Must be able to write file");
 }
 
@@ -183,6 +183,6 @@ Provide a list of typographic or grammatical errors found, each on a new line. G
     let val = response["choices"][0]["message"]["content"]
         .as_str()
         .expect("Content not found");
-    fs::write(outputs.join(format!("open_ai_{}", file_name)), val)
+    fs::write(outputs.join(format!("{}.open_ai.txt", file_name)), val)
         .expect("Must be able to write file");
 }
