@@ -77,6 +77,16 @@ Provide a list of typographic or grammatical errors found, each on a new line. G
         }
       ]
     });
+    let temp = outputs
+        .join("temp_scratch")
+        .to_str()
+        .expect("must be valid utf8")
+        .to_string();
+    fs::write(
+        &temp,
+        serde_json::to_string(&payload).expect("must be valid json"),
+    )
+    .expect("Must be able to write file");
     let curl_out = Command::new("curl")
         .arg(format!(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key={}"
@@ -86,7 +96,7 @@ Provide a list of typographic or grammatical errors found, each on a new line. G
         .arg("-X")
         .arg("POST")
         .arg("-d")
-        .arg(serde_json::to_string(&payload).expect("must be valid json"))
+        .arg(format!("@{}", temp))
         .output()
         .expect("curl error");
     assert!(curl_out.status.success());
@@ -142,9 +152,18 @@ Provide a list of typographic or grammatical errors found, each on a new line. G
         "type": "text"
       },
       "reasoning_effort": "low",
-      "service_tier": "flex",
       "store": true
     });
+    let temp = outputs
+        .join("temp_scratch")
+        .to_str()
+        .expect("must be valid utf8")
+        .to_string();
+    fs::write(
+        &temp,
+        serde_json::to_string(&payload).expect("must be valid json"),
+    )
+    .expect("Must be able to write file");
     let curl_out = Command::new("curl")
         .arg("-X")
         .arg("POST")
@@ -154,7 +173,7 @@ Provide a list of typographic or grammatical errors found, each on a new line. G
         .arg("-H")
         .arg(format!("Authorization: Bearer {}", cli.open_ai_token))
         .arg("-d")
-        .arg(serde_json::to_string(&payload).expect("must be valid json"))
+        .arg(format!("@{}", temp))
         .output()
         .expect("curl error");
     assert!(curl_out.status.success());
