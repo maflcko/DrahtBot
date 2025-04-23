@@ -12,8 +12,9 @@ struct Args {
     #[arg(long)]
     llm_api_key: String,
 
+    /// The 'locale' folder that contains *.ts files
     #[arg(long)]
-    translation_file: String,
+    translation_dir: String,
 
     #[arg(long)]
     cache_dir: String,
@@ -22,13 +23,34 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    // Alternative LLMs for translations could be Mistral 3.1 or OpenAI 4.1-nano
+
     let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key={}",args.llm_api_key);
-    let ts_path = fs::canonicalize(args.translation_file).expect("translation file must exist");
+    let ts_dir = fs::canonicalize(args.translation_dir).expect("locale dir must exist");
     let cache_dir = fs::canonicalize(args.cache_dir).expect("cache dir must exist");
 
-    let ts = fs::read_to_string(ts_path).expect("Unable to read translation file");
+    for entry in fs::read_dir(ts_dir).expect("locale dir must exist") {
+        let entry = entry.expect("locale file must exist");
+        let name = entry
+            .file_name()
+            .into_string()
+            .expect("file name must be utf8");
 
-    check(&cache_dir, &ts, &url);
+        if !name.ends_with(".ts") {
+            println!("Skip file {name}");
+            continue;
+        }
+
+        let lang = name
+            .strip_prefix("bitcoin_")
+            .expect("ts file name unexpected")
+            .strip_suffix(".ts")
+            .expect("ts file name unexpected");
+
+        let ts = fs::read_to_string(entry.path()).expect("Unable to read translation file");
+
+        check(lang, &cache_dir, &ts, &url);
+    }
 }
 
 fn cache_key(msg: &str) -> String {
@@ -39,21 +61,24 @@ fn cache_key(msg: &str) -> String {
     format!("cache_translation_check_{:x}", result)
 }
 
-fn print_result(file: &Path, res: &str, msg: &str) {
-    match res {
-        "YES" => {
-            println!("Erroneous translation:\n{}", msg);
-        }
-        "NO" => {
-            // no spam, all good
-        }
-        _ => {
-            panic!("File {} corrupt!\nAdjust prompt?", file.display());
-        }
+fn print_result(cache_file: &Path, res: &str, prompt: &str) {
+    if res.starts_with("NO") {
+        // no spam, all good
+    } else if res.starts_with("YES") {
+        println!(
+            "\n#### Erroneous translation:\n[cache file]: {file}\n{prompt}\n{res}\n---\n",
+            file = cache_file
+                .file_name()
+                .expect("cache file must have name")
+                .to_str()
+                .expect("cache file name must be valid utf8"),
+        );
+    } else {
+        panic!("File {} corrupt!\nAdjust prompt?", cache_file.display());
     }
 }
 
-fn check(cache_dir: &Path, ts: &str, url: &str) {
+fn check(lang: &str, cache_dir: &Path, ts: &str, url: &str) {
     // From https://ai.google.dev/gemini-api/docs/rate-limits#current-rate-limits
     let rate_limit_wait = Duration::from_secs(24 * 60 * 60) / 14400;
 
@@ -62,24 +87,33 @@ fn check(cache_dir: &Path, ts: &str, url: &str) {
             .split("</message>")
             .next()
             .expect("Must have closed message tag");
+        let msg = msg
+            // shorten msg in prompt
+            .replace("<translation type=\"unfinished\">", "<translation>")
+            // Skip &amp; in msg
+            .replace("&amp;", "");
+        let prompt = format!(
+            r#"
+Evaluate the provided translation from English to the language '{lang}' for unwanted content, erroneous content, or spam.
 
-        let cache_file = cache_dir.join(cache_key(msg));
+- Evaluate the translation from English to the specified language '{lang}' for accuracy, focusing solely on whether the content is problematic.
+- If the translation is unproblematic, output: "NO".
+- If the translation is problematic, output: "YES", followed by a brief explanation.
+
+{msg}
+
+"#,
+        );
+
+        let cache_file = cache_dir.join(cache_key(&prompt));
 
         match fs::read_to_string(&cache_file) {
             Ok(contents) => {
-                print_result(&cache_file, &contents, msg);
+                print_result(&cache_file, &contents, &prompt);
             }
             Err(_) => {
-                println!("Cache miss for msg=\n{}", msg);
+                println!("Cache miss for prompt=\n{prompt}");
                 let sleep_target = Instant::now() + rate_limit_wait;
-                let prompt = format!(
-                    r#"
-Does the following translation contain unwanted content or spam? Reply either with "YES" or "NO".
-
-{}
-        "#,
-                    msg
-                );
                 let payload = json!({
                     "contents": [
                         {
@@ -114,9 +148,8 @@ Does the following translation contain unwanted content or spam? Reply either wi
                     .as_str()
                     .expect("Content not found")
                     .trim();
-                assert!(val == "YES" || val == "NO"); // Adjust prompt on failure?
                 fs::write(&cache_file, val).expect("Must be able to write cache file");
-                print_result(&cache_file, val, msg);
+                print_result(&cache_file, val, &prompt);
                 sleep(sleep_target - Instant::now());
             }
         }
