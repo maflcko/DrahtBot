@@ -23,7 +23,8 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    // Alternative LLMs for translations could be Mistral 3.1 or OpenAI 4.1-nano
+    // Alternative LLMs for translations could be Mistral 3.1 or OpenAI 4.1-nano, or the "thinking"
+    // ones Gemini-flash-2.5, openai-o4-mini, or R1.
 
     let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key={}",args.llm_api_key);
     let ts_dir = fs::canonicalize(args.translation_dir).expect("locale dir must exist");
@@ -64,7 +65,7 @@ fn cache_key(msg: &str) -> String {
 fn print_result(cache_file: &Path, res: &str, prompt: &str) {
     if res.starts_with("NO") {
         // no spam, all good
-    } else if res.starts_with("YES") {
+    } else if res.starts_with("YES") || res.starts_with("UNK_LANG") {
         println!(
             "\n#### Erroneous translation:\n[cache file]: {file}\n{prompt}\n{res}\n---\n",
             file = cache_file
@@ -96,9 +97,19 @@ fn check(lang: &str, cache_dir: &Path, ts: &str, url: &str) {
             r#"
 Evaluate the provided translation from English to the language '{lang}' for unwanted content, erroneous content, or spam.
 
-- Evaluate the translation from English to the specified language '{lang}' for accuracy, focusing solely on whether the content is problematic.
+- Assess the translation for accuracy and whether it is problematic in any way.
+- The English text is wrapped in <source></source>
+- The '{lang}' text is wrapped in <translation></translation>
+- Ensure that format specifiers (% prefix) are taken over correctly from the source to the translation.
+
+# Output Format
+
 - If the translation is unproblematic, output: "NO".
-- If the translation is problematic, output: "YES", followed by a brief explanation.
+- If the translation is problematic, output: "YES", followed by a brief explanation and the correct translation.
+- If you are unfamiliar with the language specified by '{lang}', output: "UNK_LANG".
+- You must start your output with "NO", or "YES", or "UNK_LANG".
+
+# Translation
 
 {msg}
 
