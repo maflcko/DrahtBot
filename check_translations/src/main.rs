@@ -109,6 +109,12 @@ Evaluate the provided translation from English to the language '{lang}' for unwa
 - If you are unfamiliar with the language specified by '{lang}', output: "UNK_LANG".
 - You must start your output with "NO", or "YES", or "UNK_LANG".
 
+# Translation context
+
+The translation appears in the context of Bitcoin:
+- "address" could mean a P2P Bitcoin network address, or a Bitcoin wallet address.
+- "change" usually refers to the change amount in a Bitcoin transaction.
+
 # Translation
 
 {msg}
