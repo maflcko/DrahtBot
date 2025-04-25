@@ -18,6 +18,10 @@ struct Args {
 
     #[arg(long)]
     cache_dir: String,
+
+    /// Limit to this language file, instead of iterating over all files
+    #[arg(long)]
+    lang: Option<String>,
 }
 
 fn main() {
@@ -47,6 +51,11 @@ fn main() {
             .expect("ts file name unexpected")
             .strip_suffix(".ts")
             .expect("ts file name unexpected");
+
+        if args.lang.as_ref().is_some_and(|a_l| a_l != lang) {
+            println!("Skip file {name}");
+            continue;
+        }
 
         let ts = fs::read_to_string(entry.path()).expect("Unable to read translation file");
 
