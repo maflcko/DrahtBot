@@ -130,18 +130,25 @@ impl Feature for CiStatusFeature {
                         // Check if *compile* failed and add comment
                         // (functional tests are ignored due to intermittent issues)
                         if let Some(first_fail) = check_runs.iter().find(|r| {
-                            let text = r.output.text.clone().unwrap_or_default();
+                            let text = r.output.text.as_deref().unwrap_or_default();
                             text.contains("make: *** [Makefile") // build
                                 || text.contains("Errors while running CTest")
                                 || text.contains("Error: Unexpected dependencies were detected. Check previous output.") // tidy (deps)
                                 || text.contains("ailure generated from") // lint, tidy, fuzz
                         }) {
+                            let llm_reason = get_llm_reason(
+                                first_fail.output.text.as_deref().unwrap_or_default(),
+                                &ctx.llm_token,
+                            )
+                            .await
+                            .unwrap_or("(empty)".to_string());
                             let comment = format!(
-                                "{}\n{}\n<sub>Debug: {}</sub>\n{}",
-                                util::IdComment::CiFailed.str(),
-                                "🚧 At least one of the CI tasks failed.",
-                                first_fail.html_url.clone().unwrap_or_default(),
-                                r#"
+                                "{id}\n{msg}\n<sub>Debug: {check_name} {url}</sub>\n<sub>LLM reason (✨ experimental): {llm_reason}</sub>\n{hints}",
+                                id = util::IdComment::CiFailed.str(),
+                                msg = "🚧 At least one of the CI tasks failed.",
+                                check_name=first_fail.name,
+                                url = first_fail.html_url.as_deref().unwrap_or_default(),
+                                hints = r#"
 <details><summary>Hints</summary>
 
 Try to run the tests locally, according to the documentation. However, a CI failure may still
@@ -170,4 +177,65 @@ Leave a comment here, if you need help tracking down a confusing failure.
         }
         Ok(())
     }
+}
+
+async fn get_llm_reason(ci_log: &str, llm_token: &str) -> Result<String> {
+    let client = reqwest::Client::new();
+    println!(" ... Run LLM check.");
+    let payload = serde_json::json!({
+      "model": "gpt-4.1-nano",
+      "messages": [
+        {
+          "role": "developer",
+          "content": [
+            {
+              "type": "text",
+              "text":
+r#"
+Analyze the tail of a CI log to determine and communicate the underlying reason for the CI failure.
+
+Consider potential causes such as build errors, ctest errors, clang-tidy errors, lint test errors, or fuzz test errors, even if the log is truncated.
+
+# Steps
+
+- Read and parse the provided CI log tail.
+- If multiple errors appear, prioritize according to potential severity or probable cause of failure and identify the most significant underlying reason.
+- Formulate a concise, one-line summary that clearly communicates the identified reason for the failure in the shortest form possible.
+
+# Output Format
+
+A single short sentence summarizing the underlying reason for the CI failure.
+"#
+    }
+          ]
+        },
+        {
+          "role": "user",
+          "content": [
+            {
+              "type": "text",
+              "text":ci_log
+              }
+          ]
+        }
+      ],
+      "response_format": {
+        "type": "text"
+      },
+      "service_tier": "flex",
+      "store": true
+    });
+    let response = client
+        .post("https://api.openai.com/v1/chat/completions")
+        .header("Content-Type", "application/json")
+        .header("Authorization", format!("Bearer {}", llm_token))
+        .json(&payload)
+        .send()
+        .await?
+        .json::<serde_json::Value>()
+        .await?["choices"][0]["message"]["content"]
+        .as_str()
+        .ok_or(DrahtBotError::KeyNotFound)?
+        .to_string();
+    Ok(response)
 }
