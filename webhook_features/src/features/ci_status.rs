@@ -143,10 +143,15 @@ impl Feature for CiStatusFeature {
                             .await
                             .unwrap_or("(empty)".to_string());
                             let comment = format!(
-                                "{id}\n{msg}\n<sub>Debug: {check_name} {url}</sub>\n<sub>LLM reason (✨ experimental): {llm_reason}</sub>\n{hints}",
+                                r#"{id}
+{msg}
+<sub>Task `{check_name}`: {url}</sub>
+<sub>LLM reason (✨ experimental): {llm_reason}</sub>
+{hints}
+"#,
                                 id = util::IdComment::CiFailed.str(),
                                 msg = "🚧 At least one of the CI tasks failed.",
-                                check_name=first_fail.name,
+                                check_name = first_fail.name,
                                 url = first_fail.html_url.as_deref().unwrap_or_default(),
                                 hints = r#"
 <details><summary>Hints</summary>
