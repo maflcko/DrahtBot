@@ -129,7 +129,6 @@ async fn spam_detection(
             || sw("CONTRIBUTING.md")
             || sw("LICENSE")
             || sw(".devcontainer/devcontainer.json")
-            || sw(".github")
             || sw("SECURITY.md")
             || sw("INSTALL.md")
     }) || pr_title.starts_with("Create ") && all_files.len() == 1
