@@ -130,6 +130,8 @@ async fn spam_detection(
             || sw("LICENSE")
             || sw(".devcontainer/devcontainer.json")
             || sw(".github")
+            || sw("SECURITY.md")
+            || sw("INSTALL.md")
     }) || pr_title.starts_with("Create ") && all_files.len() == 1
     {
         let pull_request = pulls_api.get(pr_number).await?;
