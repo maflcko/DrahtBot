@@ -222,7 +222,6 @@ A single short sentence summarizing the underlying reason for the CI failure.
       "response_format": {
         "type": "text"
       },
-      "service_tier": "flex",
       "store": true
     });
     let response = client
