@@ -18,6 +18,7 @@ repositories:
       Utils/log/libs:
         - '^log:'
         - '^util:'
+        - '^random:'
         - '^crypto:'
         - '^libs:'
         - '^compat:'
