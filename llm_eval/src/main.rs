@@ -2,7 +2,6 @@ use clap::Parser;
 use std::fs;
 use std::path::Path;
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Parser)]
 struct Cli {
@@ -19,10 +18,17 @@ fn main() {
 
     let outputs = format!(
         "./outputs-{id}",
-        id = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .expect("Time went backwards")
-            .as_nanos()
+        id = {
+            let date = Command::new("date")
+                .arg("--iso-8601=ns")
+                .output()
+                .expect("Failed to execute date command");
+            assert!(date.status.success());
+            String::from_utf8(date.stdout)
+                .expect("must be utf8")
+                .trim()
+                .to_string()
+        }
     );
     fs::create_dir(&outputs).expect("folder must be creatable");
     let outputs = fs::canonicalize(outputs).expect("folder must exist");
@@ -56,13 +62,16 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 - Only address errors that make the English text invalid or incomprehensible.
 - Ignore style preferences, such as the Oxford comma, missing or superfluous commas, awkward but harmless language, and missing or inconsistent punctuation.
 - Focus solely on lines added (starting with a + in the diff).
-- Do not evaluate content or suggest word replacements.
+- Address only code comments (for example C++ or Python comments) or documentation (for example markdown).
 - Limit your feedback to a maximum of 5 typographic or grammatical errors.
 - If no errors are found, state that no typos were found.
 
 # Output Format
 
-Provide a list of typographic or grammatical errors found, each on a new line. Give the error and the replacement in the line. If none are found, state "No typos were found." Do not exceed 5 mentioned errors.
+List each error with minimal context in the format:
+- typo -> replacement
+
+If none are found, state: "No typos were found".
 "#
            },
          ]
@@ -106,6 +115,10 @@ Provide a list of typographic or grammatical errors found, each on a new line. G
     let val = response["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .expect("Content not found");
+    if val.is_empty() {
+        // Could be due to https://discuss.ai.google.dev/t/gemini-2-5-pro-with-empty-response-text/81175/23 or just hitting the output token limit
+        println!("EMPTY:\n{response}");
+    }
     fs::write(outputs.join(format!("{}.google_ai.txt", file_name)), val)
         .expect("Must be able to write file");
 }
@@ -127,13 +140,16 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 - Only address errors that make the English text invalid or incomprehensible.
 - Ignore style preferences, such as the Oxford comma, missing or superfluous commas, awkward but harmless language, and missing or inconsistent punctuation.
 - Focus solely on lines added (starting with a + in the diff).
-- Do not evaluate content or suggest word replacements.
+- Address only code comments (for example C++ or Python comments) or documentation (for example markdown).
 - Limit your feedback to a maximum of 5 typographic or grammatical errors.
 - If no errors are found, state that no typos were found.
 
 # Output Format
 
-Provide a list of typographic or grammatical errors found, each on a new line. Give the error and the replacement in the line. If none are found, state "No typos were found." Do not exceed 5 mentioned errors.
+List each error with minimal context in the format:
+- typo -> replacement
+
+If none are found, state: "No typos were found".
 "#
     }
           ]

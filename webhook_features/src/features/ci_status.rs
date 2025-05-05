@@ -188,14 +188,10 @@ async fn get_llm_reason(ci_log: &str, llm_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
     println!(" ... Run LLM summary for CI failure.");
     let payload = serde_json::json!({
-      "model": "gpt-4.1-nano",
-      "messages": [
-        {
-          "role": "developer",
-          "content": [
-            {
-              "type": "text",
-              "text":
+      "systemInstruction": {
+         "parts": [
+           {
+               "text":
 r#"
 Analyze the tail of a CI log to determine and communicate the underlying reason for the CI failure.
 
@@ -211,35 +207,29 @@ Consider potential causes such as build errors, ctest errors, clang-tidy errors,
 
 A single short sentence summarizing the underlying reason for the CI failure.
 "#
-    }
-          ]
-        },
+           },
+         ]
+       },
+       "contents": [
         {
-          "role": "user",
-          "content": [
+          "parts": [
             {
-              "type": "text",
-              "text":ci_log
-              }
+              "text": ci_log
+            }
           ]
         }
-      ],
-      "response_format": {
-        "type": "text"
-      },
-      "store": true
+      ]
     });
     let response = client
-        .post("https://api.openai.com/v1/chat/completions")
+        .post(format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent?key={}", llm_token))
         .header("Content-Type", "application/json")
-        .header("Authorization", format!("Bearer {}", llm_token))
         .json(&payload)
         .send()
         .await?
-        .json::<serde_json::Value>()
-        .await?["choices"][0]["message"]["content"]
+        .json::<serde_json::Value>().await?;
+    let text = response["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .ok_or(DrahtBotError::KeyNotFound)?
         .to_string();
-    Ok(response)
+    Ok(text)
 }

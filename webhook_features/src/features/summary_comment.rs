@@ -488,61 +488,57 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
     println!(" ... Run LLM check.");
     let diff = client.get(llm_diff_pr).send().await?.text().await?;
     let payload = serde_json::json!({
-      "model": "o4-mini",
-      "messages": [
-        {
-          "role": "developer",
-          "content": [
-            {
-              "type": "text",
-              "text":
+      "systemInstruction": {
+         "parts": [
+           {
+               "text":
 r#"
 Identify and provide feedback on typographic or grammatical errors in the provided git diff comments or documentation, focusing exclusively on errors impacting comprehension.
 
 - Only address errors that make the English text invalid or incomprehensible.
 - Ignore style preferences, such as the Oxford comma, missing or superfluous commas, awkward but harmless language, and missing or inconsistent punctuation.
 - Focus solely on lines added (starting with a + in the diff).
-- Do not evaluate content or suggest word replacements.
+- Address only code comments (for example C++ or Python comments) or documentation (for example markdown).
 - Limit your feedback to a maximum of 5 typographic or grammatical errors.
 - If no errors are found, state that no typos were found.
 
 # Output Format
 
-Provide a list of typographic or grammatical errors found, each on a new line. Give the error and the replacement in the line. If none are found, state "No typos were found." Do not exceed 5 mentioned errors.
+List each error with minimal context in the format:
+- typo -> replacement
+
+If none are found, state: "No typos were found".
 "#
-    }
-          ]
-        },
+           },
+         ]
+       },
+       "contents": [
         {
-          "role": "user",
-          "content": [
+          "parts": [
             {
-              "type": "text",
-              "text":diff
-              }
+              "text": diff
+            }
           ]
         }
-      ],
-      "response_format": {
-        "type": "text"
-      },
-      "reasoning_effort": "low",
-      "service_tier": "flex",
-      "store": true
+      ]
     });
     let response = client
-        .post("https://api.openai.com/v1/chat/completions")
+        .post(format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key={}", llm_token))
         .header("Content-Type", "application/json")
-        .header("Authorization", format!("Bearer {}", llm_token))
         .json(&payload)
         .send()
         .await?
         .json::<serde_json::Value>()
-        .await?["choices"][0]["message"]["content"]
+        .await?;
+    let mut text = response["candidates"][0]["content"]["parts"][0]["text"]
         .as_str()
         .ok_or(DrahtBotError::KeyNotFound)?
         .to_string();
-    Ok(response)
+    if text.is_empty() {
+        println!("empty llm response: {response}");
+        text = "No typos were found".to_string();
+    }
+    Ok(text)
 }
 
 // Test that parse_review works
