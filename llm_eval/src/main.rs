@@ -49,14 +49,7 @@ fn main() {
     }
 }
 
-fn check_google_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
-    println!("Check {file_name} via google_ai");
-    let payload = serde_json::json!({
-      "systemInstruction": {
-         "parts": [
-           {
-               "text":
-r#"
+const SYS_PROMPT: &str = r#"
 Identify and provide feedback on typographic or grammatical errors in the provided git diff comments or documentation, focusing exclusively on errors impacting comprehension.
 
 - Only address errors that make the English text invalid or incomprehensible.
@@ -68,11 +61,19 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 
 # Output Format
 
-List each error with minimal context in the format:
-- typo -> replacement
+List each error with minimal context, followed by a very brief rationale:
+- typo -> replacement [explanation]
 
 If none are found, state: "No typos were found".
-"#
+"#;
+
+fn check_google_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
+    println!("Check {file_name} via google_ai");
+    let payload = serde_json::json!({
+      "systemInstruction": {
+         "parts": [
+           {
+               "text":SYS_PROMPT
            },
          ]
        },
@@ -133,24 +134,7 @@ fn check_open_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
           "content": [
             {
               "type": "text",
-              "text":
-r#"
-Identify and provide feedback on typographic or grammatical errors in the provided git diff comments or documentation, focusing exclusively on errors impacting comprehension.
-
-- Only address errors that make the English text invalid or incomprehensible.
-- Ignore style preferences, such as the Oxford comma, missing or superfluous commas, awkward but harmless language, and missing or inconsistent punctuation.
-- Focus solely on lines added (starting with a + in the diff).
-- Address only code comments (for example C++ or Python comments) or documentation (for example markdown).
-- Limit your feedback to a maximum of 5 typographic or grammatical errors.
-- If no errors are found, state that no typos were found.
-
-# Output Format
-
-List each error with minimal context in the format:
-- typo -> replacement
-
-If none are found, state: "No typos were found".
-"#
+              "text":SYS_PROMPT
     }
           ]
         },

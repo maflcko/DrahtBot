@@ -504,8 +504,8 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 
 # Output Format
 
-List each error with minimal context in the format:
-- typo -> replacement
+List each error with minimal context, followed by a very brief rationale:
+- typo -> replacement [explanation]
 
 If none are found, state: "No typos were found".
 "#
