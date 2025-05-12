@@ -487,6 +487,13 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
     println!(" ... Run LLM check.");
     let diff = client.get(llm_diff_pr).send().await?.text().await?;
+
+    let diff = diff
+        .lines()
+        .filter(|line| !line.starts_with('-') && !line.starts_with('@'))
+        .collect::<Vec<_>>()
+        .join("\n");
+
     let payload = serde_json::json!({
       "systemInstruction": {
          "parts": [

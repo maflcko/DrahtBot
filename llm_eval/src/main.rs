@@ -44,6 +44,12 @@ fn main() {
             .to_string();
         let diff = fs::read_to_string(entry.path()).expect("Must be able to read diff");
 
+        let diff = diff
+            .lines()
+            .filter(|line| !line.starts_with('-') && !line.starts_with('@'))
+            .collect::<Vec<_>>()
+            .join("\n");
+
         check_google_ai(&cli, &outputs, &file_name, &diff);
         check_open_ai(&cli, &outputs, &file_name, &diff);
     }
@@ -120,6 +126,11 @@ fn check_google_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
         // Could be due to https://discuss.ai.google.dev/t/gemini-2-5-pro-with-empty-response-text/81175/23 or just hitting the output token limit
         println!("EMPTY:\n{response}");
     }
+    fs::write(
+        outputs.join(format!("{}.google_ai.dbg", file_name)),
+        format!("{response}"),
+    )
+    .expect("Must be able to write file");
     fs::write(outputs.join(format!("{}.google_ai.txt", file_name)), val)
         .expect("Must be able to write file");
 }
