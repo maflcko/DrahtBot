@@ -62,7 +62,6 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 - Ignore style preferences, such as the Oxford comma, missing or superfluous commas, awkward but harmless language, and missing or inconsistent punctuation.
 - Focus solely on lines added (starting with a + in the diff).
 - Address only code comments (for example C++ or Python comments) or documentation (for example markdown).
-- Limit your feedback to a maximum of 5 typographic or grammatical errors.
 - If no errors are found, state that no typos were found.
 
 # Output Format

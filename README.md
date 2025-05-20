@@ -1,5 +1,5 @@
-Experimental bot scripts to help maintainers of large open source projects.
-Also includes some Bitcoin related scripts.
+Experimental bot scripts to help to maintain Bitcoin Core (or other large open
+source projects).
 
 example cmd
 -----------
