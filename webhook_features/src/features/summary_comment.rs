@@ -219,7 +219,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
 
     if let Some(url) = llm_diff_pr {
         let mut text = "".to_string();
-        match get_llm_check(&url, &ctx.llm_token).await {
+        match get_llm_check(&url, "gemini-2.5-flash-preview-05-20", &ctx.llm_token).await {
             Ok(reply) => {
                 if reply.contains("No typos were found") {
                     // text remains empty
@@ -231,8 +231,26 @@ Possible typos and grammar issues:
 
 {llm_reply}
 
+<sup>drahtbot_id_{d_id}</sup>
 "#;
-                    text = section.replace("{llm_reply}", &reply);
+                    text = section
+                        .replace("{llm_reply}", &reply)
+                        .replace("{d_id}", "0520");
+                    match get_llm_check(&url, "gemini-2.5-pro-exp-03-25", &ctx.llm_token).await {
+                        Ok(reply) => {
+                            if reply.contains("No typos were found") {
+                                text = "".to_string();
+                            } else {
+                                text = section
+                                    .replace("{llm_reply}", &reply)
+                                    .replace("{d_id}", "0325");
+                            }
+                        }
+                        Err(err) => {
+                            println!(" ... ERROR when requesting llm check {:?}", err);
+                            // text remains previous model reply
+                        }
+                    }
                 }
             }
             Err(err) => {
@@ -483,7 +501,7 @@ fn parse_review(comment: &str) -> Option<AckCommit> {
     None
 }
 
-async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
+async fn get_llm_check(llm_diff_pr: &str, model: &str, llm_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
     println!(" ... Run LLM check.");
     let diff = client.get(llm_diff_pr).send().await?.text().await?;
@@ -529,7 +547,10 @@ If none are found, state: "No typos were found".
       ]
     });
     let response = client
-        .post(format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key={}", llm_token))
+        .post(format!(
+            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+            model, llm_token
+        ))
         .header("Content-Type", "application/json")
         .json(&payload)
         .send()
