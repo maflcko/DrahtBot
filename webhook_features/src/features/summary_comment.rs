@@ -219,7 +219,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
 
     if let Some(url) = llm_diff_pr {
         let mut text = "".to_string();
-        match get_llm_check(&url, "gemini-2.5-flash-preview-05-20", &ctx.llm_token).await {
+        match get_llm_check(&url, &ctx.llm_token).await {
             Ok(reply) => {
                 if reply.contains("No typos were found") {
                     // text remains empty
@@ -235,22 +235,7 @@ Possible typos and grammar issues:
 "#;
                     text = section
                         .replace("{llm_reply}", &reply)
-                        .replace("{d_id}", "0520");
-                    match get_llm_check(&url, "gemini-2.5-pro-exp-03-25", &ctx.llm_token).await {
-                        Ok(reply) => {
-                            if reply.contains("No typos were found") {
-                                text = "".to_string();
-                            } else {
-                                text = section
-                                    .replace("{llm_reply}", &reply)
-                                    .replace("{d_id}", "0325");
-                            }
-                        }
-                        Err(err) => {
-                            println!(" ... ERROR when requesting llm check {:?}", err);
-                            // text remains previous model reply
-                        }
-                    }
+                        .replace("{d_id}", "4_m");
                 }
             }
             Err(err) => {
@@ -501,7 +486,7 @@ fn parse_review(comment: &str) -> Option<AckCommit> {
     None
 }
 
-async fn get_llm_check(llm_diff_pr: &str, model: &str, llm_token: &str) -> Result<String> {
+async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
     println!(" ... Run LLM check.");
     let diff = client.get(llm_diff_pr).send().await?.text().await?;
@@ -513,11 +498,14 @@ async fn get_llm_check(llm_diff_pr: &str, model: &str, llm_token: &str) -> Resul
         .join("\n");
 
     let payload = serde_json::json!({
-      "systemInstruction": {
-         "parts": [
-           {
-               "text":
-r#"
+      "model": "o4-mini",
+      "messages": [
+        {
+          "role": "developer",
+          "content": [
+            {
+              "type": "text",
+              "text":r#"
 Identify and provide feedback on typographic or grammatical errors in the provided git diff comments or documentation, focusing exclusively on errors impacting comprehension.
 
 - Only address errors that make the English text invalid or incomprehensible.
@@ -533,36 +521,41 @@ List each error with minimal context, followed by a very brief rationale:
 
 If none are found, state: "No typos were found".
 "#
-           },
-         ]
-       },
-       "contents": [
+    }
+          ]
+        },
         {
-          "parts": [
+          "role": "user",
+          "content": [
             {
-              "text": diff
-            }
+              "type": "text",
+              "text":diff
+              }
           ]
         }
-      ]
+      ],
+      "response_format": {
+        "type": "text"
+      },
+      "reasoning_effort": "low",
+      "service_tier": "flex",
+      "store": true
     });
     let response = client
-        .post(format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
-            model, llm_token
-        ))
+        .post("https://api.openai.com/v1/chat/completions")
+        .header("Authorization", format!("Bearer {}", llm_token))
         .header("Content-Type", "application/json")
         .json(&payload)
         .send()
         .await?
         .json::<serde_json::Value>()
         .await?;
-    let mut text = response["candidates"][0]["content"]["parts"][0]["text"]
+    let mut text = response["choices"][0]["message"]["content"]
         .as_str()
         .ok_or(DrahtBotError::KeyNotFound)?
         .to_string();
     if text.is_empty() {
-        println!("empty llm response: {response}");
+        println!("ERROR: empty llm response: {response}");
         text = "No typos were found".to_string();
     }
     Ok(text)
