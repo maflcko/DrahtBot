@@ -152,7 +152,7 @@ See [the guideline]({review_url}) for information on the review process.
             AckType::Ignored,
         ] {
             if discourage_voting && ack_type != &AckType::Ack {
-                comment+=&format!("| *other* | This list is hidden due to its size. Generally, this list is not meant to *register* a *vote*. Review comments should contain original content relevant to the technical aspects of the code change. Please also refer to the [review guideline]({review_url}). |");
+                comment+=&format!("| *other* | This list is hidden due to its size. Generally, this list is not meant to *register* a *vote*. Review comments should contain original content relevant to the technical aspects of the code change. Please also refer to the [review guideline]({review_url}). |\n");
                 break;
             }
             if let Some(mut users) = ack_map.remove(ack_type) {
