@@ -113,12 +113,13 @@ impl Feature for SummaryCommentFeature {
 }
 
 fn summary_comment_template(reviews: Vec<Review>) -> String {
-    let mut comment = r#"
+    let review_url = "https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review";
+    let mut comment = format!(
+        r#"
 ### Reviews
-See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review) for information on the review process.
+See [the guideline]({review_url}) for information on the review process.
 "#
-    .to_string();
-
+    );
     if reviews.is_empty() {
         comment += "A summary of reviews will appear here.\n";
     } else {
@@ -134,6 +135,12 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
             acc
         });
 
+        // A flood of non-code review comments can mean brigading. Discourage it by hiding the
+        // likely redundant and likely low-value reviews in the summary.
+        let discourage_voting = ack_map
+            .iter()
+            .any(|(ack_type, users)| ack_type != &AckType::Ack && users.len() > 6);
+
         // Display ACKs in the following order
         for ack_type in &[
             AckType::Ack,
@@ -144,6 +151,10 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
             AckType::StaleAck,
             AckType::Ignored,
         ] {
+            if discourage_voting && ack_type != &AckType::Ack {
+                comment+=&format!("| *other* | This list is hidden due to its size. Generally, this list is not meant to *register* a *vote*. Review comments should contain original content relevant to the technical aspects of the code change. Please also refer to the [review guideline]({review_url}). |");
+                break;
+            }
             if let Some(mut users) = ack_map.remove(ack_type) {
                 // Sort by date
                 users.sort_by_key(|u| u.2);
