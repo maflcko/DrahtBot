@@ -135,23 +135,6 @@ See [the guideline]({review_url}) for information on the review process.
             acc
         });
 
-        let is_conceptual = |ack_type| match ack_type {
-            AckType::ConceptNack => true,
-            AckType::ConceptAck => true,
-            AckType::ApproachAck => true,
-            AckType::ApproachNack => true,
-            AckType::Ignored => true,
-            AckType::Ack => false,
-            AckType::StaleAck => false,
-        };
-        // A flood of non-code review comments can mean brigading. Discourage it by hiding the
-        // likely redundant and likely low-value conceptual reviews in the summary.
-        let discourage_voting = ack_map
-            .iter()
-            .any(|(ack_type, users)| is_conceptual(*ack_type) && users.len() > 6);
-
-        let mut once_discourage_voting = false;
-
         // Display ACKs in the following order
         for ack_type in &[
             AckType::Ack,
@@ -162,13 +145,6 @@ See [the guideline]({review_url}) for information on the review process.
             AckType::StaleAck,
             AckType::Ignored,
         ] {
-            if discourage_voting && is_conceptual(*ack_type) {
-                if !once_discourage_voting {
-                    comment+=&format!("| *conceptual review types* | This list is hidden due to its size. Generally, this list is not meant to *register* a *vote* for or against. Review comments should contain original content relevant to the technical aspects of the code change. Please also refer to the [review guideline]({review_url}). |\n");
-                }
-                once_discourage_voting = true;
-                continue;
-            }
             if let Some(mut users) = ack_map.remove(ack_type) {
                 // Sort by date
                 users.sort_by_key(|u| u.2);
