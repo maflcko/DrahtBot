@@ -1,5 +1,5 @@
 use clap::Parser;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::hash::{BuildHasher, Hasher, RandomState};
 
 #[derive(Clone)]
 struct SlugTok {
@@ -139,11 +139,7 @@ async fn main() -> octocrab::Result<()> {
             // Rotate the vector to start at a different place each time, to account for
             // api.cirrus-ci network errors, which would abort the program. On the next start, it
             // would start iterating from the same place.
-            let rotate = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .expect("must be after epoch")
-                .subsec_micros() as usize
-                % (pulls.len());
+            let rotate = RandomState::new().build_hasher().finish() as usize % (pulls.len());
             pulls.rotate_left(rotate);
             pulls
         };
