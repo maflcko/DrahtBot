@@ -437,7 +437,7 @@ impl AckType {
             AckType::ApproachAck => "Approach ACK",
             AckType::ApproachNack => "Approach NACK",
             AckType::StaleAck => "Stale ACK",
-            AckType::Ignored => "Ignored review",
+            AckType::Ignored => "User requested bot ignore",
         }
     }
 }
