@@ -9,4 +9,5 @@ pub struct Repo {
 #[derive(serde::Deserialize)]
 pub struct Config {
     pub repositories: Vec<Repo>,
+    pub hide_summary_label: String,
 }

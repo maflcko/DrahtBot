@@ -65,16 +65,24 @@ impl Feature for SummaryCommentFeature {
 
         println!("Handling: {repo_user}/{repo_name} {event}::{action}");
         match event {
-            GitHubEvent::PullRequest if action == "synchronize" || action == "opened" => {
+            GitHubEvent::PullRequest => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
-                let pr_number = payload["number"]
-                    .as_u64()
-                    .ok_or(DrahtBotError::KeyNotFound)?;
-                let diff_url = payload["pull_request"]["diff_url"]
-                    .as_str()
-                    .ok_or(DrahtBotError::KeyNotFound)?
-                    .to_string();
-                refresh_summary_comment(ctx, repo, pr_number, Some(diff_url)).await?
+                let label_trigger = action == "labeled" ||  action == "unlabeled";
+                if action == "synchronize" || action == "opened" || label_trigger {
+                    let pr_number = payload["number"]
+                        .as_u64()
+                        .ok_or(DrahtBotError::KeyNotFound)?;
+                    let diff_url = payload["pull_request"]["diff_url"]
+                        .as_str()
+                        .ok_or(DrahtBotError::KeyNotFound)?
+                        .to_string();
+                    let hide_summary = payload["pull_request"]["labels"]
+                        .as_array()
+                        .ok_or(DrahtBotError::KeyNotFound)?
+                        .iter()
+                        .any(|label| label["name"] == ctx.config.hide_summary_label);
+                    refresh_summary_comment(ctx, repo, pr_number, hide_summary, Some(diff_url)).await?
+                }
             }
             GitHubEvent::IssueComment if payload["issue"].get("pull_request").is_some() => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#issue_comment
@@ -84,13 +92,18 @@ impl Feature for SummaryCommentFeature {
                 let pr_number = payload["issue"]["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
+                let hide_summary = payload["issue"]["labels"]
+                    .as_array()
+                    .ok_or(DrahtBotError::KeyNotFound)?
+                    .iter()
+                    .any(|label| label["name"] == ctx.config.hide_summary_label);
                 if payload["issue"]["state"]
                     .as_str()
                     .ok_or(DrahtBotError::KeyNotFound)?
                     == "open"
                     && comment_author != ctx.bot_username
                 {
-                    refresh_summary_comment(ctx, repo, pr_number, None).await?
+                    refresh_summary_comment(ctx, repo, pr_number, hide_summary, None).await?
                 }
             }
             GitHubEvent::PullRequestReview => {
@@ -98,12 +111,17 @@ impl Feature for SummaryCommentFeature {
                 let pr_number = payload["pull_request"]["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
+                let hide_summary = payload["pull_request"]["labels"]
+                    .as_array()
+                    .ok_or(DrahtBotError::KeyNotFound)?
+                    .iter()
+                    .any(|label| label["name"] == ctx.config.hide_summary_label);
                 if payload["pull_request"]["state"]
                     .as_str()
                     .ok_or(DrahtBotError::KeyNotFound)?
                     == "open"
                 {
-                    refresh_summary_comment(ctx, repo, pr_number, None).await?
+                    refresh_summary_comment(ctx, repo, pr_number, hide_summary, None).await?
                 }
             }
             _ => {}
@@ -112,7 +130,7 @@ impl Feature for SummaryCommentFeature {
     }
 }
 
-fn summary_comment_template(reviews: Vec<Review>) -> String {
+fn summary_comment_template(reviews: Vec<Review>, hide_summary: bool) -> String {
     let review_url = "https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review";
     let mut comment = format!(
         r#"
@@ -120,7 +138,9 @@ fn summary_comment_template(reviews: Vec<Review>) -> String {
 See [the guideline]({review_url}) for information on the review process.
 "#
     );
-    if reviews.is_empty() {
+    if hide_summary {
+        comment += "Review summary table will appear after conceptual review.\n";
+    } else if reviews.is_empty() {
         comment += "A summary of reviews will appear here.\n";
     } else {
         comment += "| Type | Reviewers |\n";
@@ -179,6 +199,7 @@ async fn refresh_summary_comment(
     ctx: &Context,
     repo: Repository,
     pr_number: u64,
+    hide_summary: bool,
     llm_diff_pr: Option<String>,
 ) -> Result<()> {
     println!("Refresh summary comment for {pr_number}");
@@ -384,7 +405,7 @@ Possible typos and grammar issues:
         .map(|r| r.user.clone())
         .collect::<Vec<_>>();
 
-    let comment = summary_comment_template(user_reviews);
+    let comment = summary_comment_template(user_reviews, hide_summary);
     util::update_metadata_comment(
         &issues_api,
         &mut cmt,

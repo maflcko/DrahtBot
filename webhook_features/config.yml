@@ -95,3 +95,4 @@ repositories:
         - '^move-?only:'
         - '^scripted-diff:'
     corecheck: true
+hide_summary_label: "Needs Conceptual Review"
