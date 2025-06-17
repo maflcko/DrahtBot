@@ -4,6 +4,7 @@ mod features;
 
 use std::str::FromStr;
 
+use crate::features::spam_detection::SpamDetectionFeature;
 use crate::features::summary_comment::SummaryCommentFeature;
 use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
 use clap::Parser;
@@ -82,6 +83,7 @@ fn features() -> Vec<Box<dyn Feature>> {
         Box::new(SummaryCommentFeature::new()),
         Box::new(crate::features::ci_status::CiStatusFeature::new()),
         Box::new(crate::features::labels::LabelsFeature::new()),
+        Box::new(SpamDetectionFeature::new()),
     ]
 }
 

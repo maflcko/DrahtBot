@@ -1,5 +1,6 @@
 pub mod ci_status;
 pub mod labels;
+pub mod spam_detection;
 pub mod summary_comment;
 
 use crate::errors::Result;
