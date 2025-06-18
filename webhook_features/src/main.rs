@@ -4,6 +4,8 @@ mod features;
 
 use std::str::FromStr;
 
+use crate::features::ci_status::CiStatusFeature;
+use crate::features::labels::LabelsFeature;
 use crate::features::spam_detection::SpamDetectionFeature;
 use crate::features::summary_comment::SummaryCommentFeature;
 use actix_web::{get, post, web, App, HttpRequest, HttpServer, Responder};
@@ -80,10 +82,10 @@ async fn postreceive_handler(
 
 fn features() -> Vec<Box<dyn Feature>> {
     vec![
-        Box::new(SummaryCommentFeature::new()),
-        Box::new(crate::features::ci_status::CiStatusFeature::new()),
-        Box::new(crate::features::labels::LabelsFeature::new()),
+        Box::new(CiStatusFeature::new()),
+        Box::new(LabelsFeature::new()),
         Box::new(SpamDetectionFeature::new()),
+        Box::new(SummaryCommentFeature::new()),
     ]
 }
 
