@@ -45,7 +45,10 @@ impl Feature for LabelsFeature {
             .as_str()
             .ok_or(DrahtBotError::KeyNotFound)?;
 
-        println!("Handling: {repo_user}/{repo_name} {event}::{action}");
+        println!(
+            "Handling: {repo_user}/{repo_name} {event}::{action} ({feature_name})",
+            feature_name = self.meta().name()
+        );
         match event {
             GitHubEvent::PullRequest
                 if action == "unlabeled" || action == "opened" || action == "edited" =>

@@ -46,7 +46,10 @@ impl Feature for CiStatusFeature {
             .as_str()
             .ok_or(DrahtBotError::KeyNotFound)?;
 
-        println!("Handling: {repo_user}/{repo_name} {event}::{action}");
+        println!(
+            "Handling: {repo_user}/{repo_name} {event}::{action} ({feature_name})",
+            feature_name = self.meta().name()
+        );
         match event {
             GitHubEvent::CheckSuite if action == "completed" => {
                 // https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#check_suite
