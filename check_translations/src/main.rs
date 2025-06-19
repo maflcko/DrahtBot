@@ -1,6 +1,7 @@
 use clap::Parser;
 use serde_json::json;
 use std::fs;
+use std::io::Write;
 use std::path::Path;
 use std::process::{Command, Stdio};
 use std::thread::sleep;
@@ -16,8 +17,13 @@ struct Args {
     #[arg(long)]
     translation_dir: String,
 
+    /// A scratch folder to put temporary files for caching results
     #[arg(long)]
     cache_dir: String,
+
+    /// A file to export the report to
+    #[arg(long)]
+    report_file: String,
 
     /// Limit to this language file, instead of iterating over all files
     #[arg(long)]
@@ -29,10 +35,21 @@ fn main() {
 
     // Alternative LLMs for translations could be Mistral 3.1 or OpenAI 4.1-nano, or the "thinking"
     // ones Gemini-flash-2.5, openai-o4-mini, or R1.
+    // For now use a model that has no rate limits.
+    // From https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
+    let rate_limit_wait = 0;
 
-    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemma-3-27b-it:generateContent?key={}",args.llm_api_key);
+    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key={}",args.llm_api_key);
     let ts_dir = fs::canonicalize(args.translation_dir).expect("locale dir must exist");
-    let cache_dir = fs::canonicalize(args.cache_dir).expect("cache dir must exist");
+    let cache_dir = fs::canonicalize(args.cache_dir).expect("cache dir must exist (can be empty)");
+    let report_file =
+        fs::canonicalize(args.report_file).expect("report file must exist (will be overwritten)");
+
+    let mut report_file =
+        fs::File::create(report_file).expect("must be able to create empty report file");
+    report_file
+        .write_all("# Translations Review by LLM (✨ experimental)\n\n".as_bytes())
+        .unwrap();
 
     for entry in fs::read_dir(ts_dir).expect("locale dir must exist") {
         let entry = entry.expect("locale file must exist");
@@ -59,7 +76,7 @@ fn main() {
 
         let ts = fs::read_to_string(entry.path()).expect("Unable to read translation file");
 
-        check(lang, &cache_dir, &ts, &url);
+        check(lang, &cache_dir, &ts, &url, rate_limit_wait, &report_file);
     }
 }
 
@@ -71,10 +88,20 @@ fn cache_key(msg: &str) -> String {
     format!("cache_translation_check_{:x}", result)
 }
 
-fn print_result(cache_file: &Path, res: &str, prompt: &str) {
+fn print_result(cache_file: &Path, res: &str, prompt: &str, msg: &str, mut report_file: &fs::File) {
     if res.starts_with("NO") {
         // no spam, all good
     } else if res.starts_with("YES") || res.starts_with("UNK_LANG") {
+        report_file
+            .write_all(
+                format!(
+                    "\n```\n{msg}\n{res}\n```\n",
+                    msg = msg.trim_matches('\n'),
+                    res = res.trim_matches('\n')
+                )
+                .as_bytes(),
+            )
+            .unwrap();
         println!(
             "\n#### Erroneous translation:\n[cache file]: {file}\n{prompt}\n{res}\n---\n",
             file = cache_file
@@ -88,9 +115,18 @@ fn print_result(cache_file: &Path, res: &str, prompt: &str) {
     }
 }
 
-fn check(lang: &str, cache_dir: &Path, ts: &str, url: &str) {
-    // From https://ai.google.dev/gemini-api/docs/rate-limits#current-rate-limits
-    let rate_limit_wait = Duration::from_secs(24 * 60 * 60) / 14400;
+fn check(
+    lang: &str,
+    cache_dir: &Path,
+    ts: &str,
+    url: &str,
+    rate_limit_wait: u64,
+    mut report_file: &fs::File,
+) {
+    let rate_limit_wait = Duration::from_secs(rate_limit_wait);
+    report_file
+        .write_all(format!("<details><summary>{lang}</summary>\n").as_bytes())
+        .unwrap();
 
     for msg in ts.split("<message>").skip(1) {
         let msg = msg
@@ -135,10 +171,13 @@ The translation appears in the context of Bitcoin:
 
         match fs::read_to_string(&cache_file) {
             Ok(contents) => {
-                print_result(&cache_file, &contents, &prompt);
+                print_result(&cache_file, &contents, &prompt, &msg, report_file);
             }
             Err(_) => {
-                println!("Cache miss for prompt=\n{prompt}");
+                println!(
+                    "Cache miss [file= {file}] for prompt=\n{prompt}",
+                    file = cache_file.display()
+                );
                 let sleep_target = Instant::now() + rate_limit_wait;
                 let payload = json!({
                     "contents": [
@@ -175,7 +214,7 @@ The translation appears in the context of Bitcoin:
                     .expect("Content not found")
                     .trim();
                 fs::write(&cache_file, val).expect("Must be able to write cache file");
-                print_result(&cache_file, val, &prompt);
+                print_result(&cache_file, val, &prompt, &msg, report_file);
                 sleep(sleep_target - Instant::now());
             }
         }
