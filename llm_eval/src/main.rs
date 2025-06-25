@@ -1,5 +1,6 @@
 use clap::Parser;
 use std::fs;
+use std::hash::{BuildHasher, Hasher, RandomState};
 use std::path::Path;
 use std::process::Command;
 
@@ -44,11 +45,19 @@ fn main() {
             .to_string();
         let diff = fs::read_to_string(entry.path()).expect("Must be able to read diff");
 
-        let diff = diff
-            .lines()
-            .filter(|line| !line.starts_with('-') && !line.starts_with('@'))
-            .collect::<Vec<_>>()
-            .join("\n");
+        let diff = format!("{}\n", RandomState::new().build_hasher().finish()) // Inject seed to avoid cached input
+            + &diff
+                .lines()
+                .filter(|line| !line.starts_with('-')) // Drop needless lines to avoid confusion and reduce token use
+                .map(|line| {
+                    if line.starts_with('@') {
+                        "@@ (hunk header) @@" // Rewrite hunk header to avoid typos in hunk header truncated by git
+                    } else {
+                        line
+                    }
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
 
         check_google_ai(&cli, &outputs, &file_name, &diff);
         check_open_ai(&cli, &outputs, &file_name, &diff);
@@ -104,7 +113,7 @@ fn check_google_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
     .expect("Must be able to write file");
     let curl_out = Command::new("curl")
         .arg(format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-04-17:generateContent?key={}"
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key={}"
             ,cli.google_ai_token))
         .arg("-H")
         .arg("Content-Type: application/json")

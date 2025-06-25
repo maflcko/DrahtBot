@@ -497,7 +497,14 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
 
     let diff = diff
         .lines()
-        .filter(|line| !line.starts_with('-') && !line.starts_with('@'))
+        .filter(|line| !line.starts_with('-')) // Drop needless lines to avoid confusion and reduce token use
+        .map(|line| {
+            if line.starts_with('@') {
+                "@@ (hunk header) @@" // Rewrite hunk header to avoid typos in hunk header truncated by git
+            } else {
+                line
+            }
+        })
         .collect::<Vec<_>>()
         .join("\n");
 
