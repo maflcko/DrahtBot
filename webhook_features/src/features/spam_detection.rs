@@ -98,12 +98,14 @@ async fn spam_detection(
     }
     if all_files.iter().any(|f| {
         let sw = |p| f.filename.starts_with(p);
+        let ct = |p| f.filename.contains(p);
         sw("README.md")
-            || sw("CONTRIBUTING.md")
-            || sw("LICENSE")
-            || sw(".devcontainer/devcontainer.json")
-            || sw("SECURITY.md")
+            || ct("CONTRIBUTING")
+            || ct("LICENSE")
+            || ct(".devcontainer/devcontainer.json")
+            || ct("SECURITY.md")
             || sw("INSTALL.md")
+            || ct("FUNDING")
     }) || pr_title.starts_with("Create ") && all_files.len() == 1
     {
         let pull_request = pulls_api.get(pr_number).await?;
