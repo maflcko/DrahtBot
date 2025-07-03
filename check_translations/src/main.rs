@@ -48,7 +48,7 @@ fn main() {
     let mut report_file =
         fs::File::create(report_file).expect("must be able to create empty report file");
     report_file
-        .write_all("# Translations Review by LLM (✨ experimental)\n\n".as_bytes())
+        .write_all("# Translations Review by LLM (✨ experimental)\n\nThe review quality depends on the LLM and the language. Currently, a fast LLM without rate limits is used. If you are interested in better quality for a specific language, please file an issue to ask for it to be re-run with a stronger model.\n\n".as_bytes())
         .unwrap();
 
     for entry in fs::read_dir(ts_dir).expect("locale dir must exist") {
@@ -80,12 +80,12 @@ fn main() {
     }
 }
 
-fn cache_key(msg: &str) -> String {
+fn cache_key(lang: &str, msg: &str) -> String {
     use sha2::{Digest, Sha256};
     let mut hasher = Sha256::new();
     hasher.update(msg);
     let result = hasher.finalize();
-    format!("cache_translation_check_{:x}", result)
+    format!("cache_translation_check_{}_{:x}", lang, result)
 }
 
 fn print_result(cache_file: &Path, res: &str, prompt: &str, msg: &str, mut report_file: &fs::File) {
@@ -167,7 +167,7 @@ The translation appears in the context of Bitcoin:
 "#,
         );
 
-        let cache_file = cache_dir.join(cache_key(&prompt));
+        let cache_file = cache_dir.join(cache_key(lang, &prompt));
 
         match fs::read_to_string(&cache_file) {
             Ok(contents) => {
