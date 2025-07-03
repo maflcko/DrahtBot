@@ -100,11 +100,12 @@ async fn spam_detection(
         let sw = |p| f.filename.starts_with(p);
         let ct = |p| f.filename.contains(p);
         sw("README.md")
+            || sw("doc/release-notes/release-notes-")
+            || sw("INSTALL.md")
             || ct("CONTRIBUTING")
             || ct("LICENSE")
             || ct(".devcontainer/devcontainer.json")
-            || ct("SECURITY.md")
-            || sw("INSTALL.md")
+            || ct("SECURITY")
             || ct("FUNDING")
     }) || pr_title.starts_with("Create ") && all_files.len() == 1
     {
