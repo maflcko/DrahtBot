@@ -3,6 +3,7 @@ use crate::errors::{DrahtBotError, Result};
 use crate::Context;
 use crate::GitHubEvent;
 use async_trait::async_trait;
+use octocrab::models::repos::DiffEntryStatus;
 use octocrab::models::AuthorAssociation::{FirstTimeContributor, FirstTimer, Mannequin, None};
 
 pub struct SpamDetectionFeature {
@@ -108,6 +109,9 @@ async fn spam_detection(
             || ct("SECURITY")
             || ct("FUNDING")
     }) || pr_title.starts_with("Create ") && all_files.len() == 1
+        || all_files
+            .iter()
+            .any(|f| f.filename.starts_with(".github") && f.status == DiffEntryStatus::Added)
     {
         let pull_request = pulls_api.get(pr_number).await?;
         if [FirstTimer, FirstTimeContributor, Mannequin, None]
