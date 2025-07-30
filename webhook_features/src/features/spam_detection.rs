@@ -56,9 +56,6 @@ impl Feature for SpamDetectionFeature {
                 let pr_number = payload["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-                let pr_title = payload["pull_request"]["title"]
-                    .as_str()
-                    .ok_or(DrahtBotError::KeyNotFound)?;
                 let issues_api = ctx.octocrab.issues(repo_user, repo_name);
                 let pulls_api = ctx.octocrab.pulls(repo_user, repo_name);
                 spam_detection(
@@ -66,7 +63,6 @@ impl Feature for SpamDetectionFeature {
                     &issues_api,
                     &pulls_api,
                     pr_number,
-                    pr_title,
                     ctx.dry_run,
                 )
                 .await?;
@@ -82,7 +78,6 @@ async fn spam_detection(
     issues_api: &octocrab::issues::IssueHandler<'_>,
     pulls_api: &octocrab::pulls::PullRequestHandler<'_>,
     pr_number: u64,
-    pr_title: &str,
     dry_run: bool,
 ) -> Result<()> {
     let all_files = github
@@ -108,7 +103,7 @@ async fn spam_detection(
             || ct(".devcontainer/devcontainer.json")
             || ct("SECURITY")
             || ct("FUNDING")
-    }) || pr_title.starts_with("Create ") && all_files.len() == 1
+    }) || all_files.iter().all(|f| f.status == DiffEntryStatus::Added)
         || all_files
             .iter()
             .any(|f| f.filename.starts_with(".github") && f.status == DiffEntryStatus::Added)
