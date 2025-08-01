@@ -1,46 +1,21 @@
 use clap::Parser;
+use octocrab::params::repos::Commitish;
 use std::collections::hash_map::RandomState;
 use std::hash::{BuildHasher, Hasher};
 
-#[derive(Clone)]
-struct SlugTok {
-    owner: String,
-    repo: String,
-    ci_token: String,
-}
-
-impl std::str::FromStr for SlugTok {
-    type Err = &'static str;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        // Format: a/b:c
-        let err = "Wrong format, see --help.";
-        let mut it = s.split(':');
-        let mut it_slug = it.next().ok_or(err)?.split('/');
-        let res = Self {
-            owner: it_slug.next().ok_or(err)?.to_string(),
-            repo: it_slug.next().ok_or(err)?.to_string(),
-            ci_token: it.next().ok_or(err)?.to_string(),
-        };
-        if it.next().is_none() && it_slug.next().is_none() {
-            return Ok(res);
-        }
-        Err(err)
-    }
-}
-
 #[derive(clap::Parser)]
-#[command(about = "Trigger Cirrus CI to re-run.", long_about = None)]
+#[command(about = "Trigger GHA CI to re-run.", long_about = None)]
 struct Args {
     /// The access token for GitHub.
     #[arg(long)]
     github_access_token: Option<String>,
-    /// The repo slugs of the remotes on GitHub. Format: owner/repo:cirrus_org_token
+    /// The repo slugs of the remotes on GitHub. Format: owner/repo
     #[arg(long)]
-    github_repo: Vec<SlugTok>,
+    github_repo: Vec<util::Slug>,
     /// The task names to re-run.
     #[arg(long)]
     task: Vec<String>,
-    /// How many minutes to sleep between pulls.
+    /// How many minutes to sleep between pull re-runs.
     #[arg(long, default_value_t = 25)]
     sleep_min: u64,
     /// Print changes/edits instead of calling the GitHub/CI API.
@@ -48,67 +23,34 @@ struct Args {
     dry_run: bool,
 }
 
-static ERROR_JSON_FORMAT: &str = "json format error";
-
-fn rerun_first(
+async fn rerun_first(
+    owner: &str,
+    repo: &str,
+    token: &str,
     task_name: &str,
-    tasks: &[serde_json::Value],
-    token: &String,
+    check_runs: &[octocrab::models::checks::CheckRun],
     dry_run: bool,
-) -> Result<(), String> {
-    let mut task = None;
-    for t in tasks {
-        let name = t["name"].as_str().ok_or(format!(
-            "{ERROR_JSON_FORMAT}: Missing '{key}' in '{t}'",
-            key = "name",
-        ))?;
-        if name.contains(task_name) {
-            task = Some(t);
-            break;
+) -> octocrab::Result<()> {
+    if let Some(task) = check_runs.iter().find(|t| t.name.contains(task_name)) {
+        println!("Re-run task {n} (id: {i})", n = task.name, i = task.id);
+        if !dry_run {
+            util::check_call(std::process::Command::new("curl").args([
+                "-L",
+                "-X",
+                "POST",
+                "-H",
+                "Accept: application/vnd.github+json",
+                "-H",
+                &format!("Authorization: Bearer {token}",),
+                "-H",
+                "X-GitHub-Api-Version: 2022-11-28",
+                &format!(
+                    "https://api.github.com/repos/{owner}/{repo}/actions/jobs/{id}/rerun",
+                    id = task.id
+                ),
+            ]));
+            // Ignore result, but log it. May fail if the task is older than 30 days.
         }
-    }
-    if task.is_none() {
-        return Ok(());
-    }
-    let task = task.unwrap();
-    let t_id = task["id"].as_str().ok_or(format!(
-        "{ERROR_JSON_FORMAT}: Missing {key} in '{task}'",
-        key = "id",
-    ))?;
-    let t_name = task["name"].as_str().ok_or(format!(
-        "{ERROR_JSON_FORMAT}: Missing {key} in '{task}'",
-        key = "name",
-    ))?;
-    let raw_data = format!(
-        r#"
-                        {{
-                            "query":"mutation
-                            {{
-                               rerun(
-                                 input: {{
-                                   attachTerminal: false, clientMutationId: \"rerun-{t_id}\", taskId: \"{t_id}\"
-                                 }}
-                               ) {{
-                                  newTask {{
-                                    id
-                                  }}
-                               }}
-                             }}"
-                         }}
-                     "#
-    );
-    println!("Re-run task {t_name} (id: {t_id})");
-    if !dry_run {
-        let out = util::check_output(std::process::Command::new("curl").args([
-            "https://api.cirrus-ci.com/graphql",
-            "-X",
-            "POST",
-            "-H",
-            &format!("Authorization: Bearer {token}"),
-            "--data-raw",
-            &raw_data,
-        ]));
-        println!("{out}");
     }
     Ok(())
 }
@@ -117,16 +59,12 @@ fn rerun_first(
 async fn main() -> octocrab::Result<()> {
     let args = Args::parse();
 
-    let github = util::get_octocrab(args.github_access_token)?;
+    let github = util::get_octocrab(args.github_access_token.clone())?;
 
-    for SlugTok {
-        owner,
-        repo,
-        ci_token,
-    } in args.github_repo
-    {
-        println!("Get open pulls for {}/{} ...", owner, repo);
+    for util::Slug { owner, repo } in args.github_repo {
+        println!("Get open pulls for {owner}/{repo} ...");
         let pulls_api = github.pulls(&owner, &repo);
+        let checks_api = github.checks(&owner, &repo);
         let pulls = {
             let mut pulls = github
                 .all_pages(
@@ -164,52 +102,26 @@ async fn main() -> octocrab::Result<()> {
             if !pull.mergeable.unwrap() {
                 continue;
             }
-            let pull_num = pull.number;
-            let raw_data = format!(
-                r#"
-                    {{
-                        "query":"query
-                        {{
-                            ownerRepository(platform: \"github\", owner: \"{owner}\", name: \"{repo}\") {{
-                              viewerPermission
-                              builds(last: 1, branch: \"pull/{pull_num}\") {{
-                                edges {{
-                                  node {{
-                                    tasks {{
-                                      id
-                                      name
-                                    }}
-                                  }}
-                                }}
-                              }}
-                            }}
-                        }}"
-                     }}
-                "#
-            );
-            let output = util::check_output(std::process::Command::new("curl").args([
-                "https://api.cirrus-ci.com/graphql",
-                "-X",
-                "POST",
-                "--data-raw",
-                &raw_data,
-            ]));
-            let tasks = serde_json::from_str::<serde_json::value::Value>(&output)
-                .map_err(|e| e.to_string())
-                .and_then(|json_parsed| {
-                    json_parsed["data"]["ownerRepository"]["builds"]["edges"][0]["node"]["tasks"]
-                        .as_array()
-                        .cloned()
-                        .ok_or(format!("{ERROR_JSON_FORMAT}: Missing keys in '{output}'"))
-                });
-            if let Err(msg) = tasks {
-                println!("{msg}");
-                continue;
-            }
-            let tasks = tasks.unwrap();
+            let check_runs = checks_api
+                .list_check_runs_for_git_ref(Commitish(pull.head.sha.to_string()))
+                .per_page(90)
+                .send()
+                .await?
+                .check_runs;
             for task_name in &args.task {
-                if let Err(msg) = rerun_first(task_name, &tasks, &ci_token, args.dry_run) {
-                    println!("{msg}");
+                if let Err(msg) = rerun_first(
+                    &owner,
+                    &repo,
+                    args.github_access_token
+                        .as_deref()
+                        .unwrap_or("missing_token"),
+                    task_name,
+                    &check_runs,
+                    args.dry_run,
+                )
+                .await
+                {
+                    println!("{msg:?}");
                 }
             }
             std::thread::sleep(std::time::Duration::from_secs(args.sleep_min * 60));
