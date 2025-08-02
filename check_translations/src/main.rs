@@ -220,4 +220,5 @@ The translation appears in the context of Bitcoin:
             }
         }
     }
+    report_file.write_all("</details>\n".as_bytes()).unwrap();
 }
