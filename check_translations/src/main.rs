@@ -25,7 +25,7 @@ struct Args {
     #[arg(long)]
     report_file: String,
 
-    /// Limit to this language file, instead of iterating over all files
+    /// Limit to those language files, instead of iterating over all files
     #[arg(long)]
     lang: Vec<String>,
 }
@@ -69,7 +69,7 @@ fn main() {
             .strip_suffix(".ts")
             .expect("ts file name unexpected");
 
-        if args.lang.iter().all(|a_l| a_l != lang) {
+        if !args.lang.is_empty() && args.lang.iter().all(|a_l| a_l != lang) {
             println!("Skip file {name}");
             continue;
         }
