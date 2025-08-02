@@ -125,7 +125,7 @@ fn check(
 ) {
     let rate_limit_wait = Duration::from_secs(rate_limit_wait);
     report_file
-        .write_all(format!("<details><summary>{lang}</summary>\n\n[If the result is of low quality, please file an issue to find a better LLM for this language.](../../issues/new?title=[{lang}] low quality)\n\n").as_bytes())
+        .write_all(format!("<details><summary>{lang}</summary>\n\n[If the result is of low quality, please file an issue to find a better LLM for this language.](../../issues/new?title=%5B{lang}%5D%20low%20quality)\n\n").as_bytes())
         .unwrap();
 
     for msg in ts.split("<message>").skip(1) {
