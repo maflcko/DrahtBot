@@ -85,7 +85,7 @@ fn cache_key(lang: &str, msg: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(msg);
     let result = hasher.finalize();
-    format!("cache_translation_check_{}_{:x}", lang, result)
+    format!("cache_translation_check_{lang}_{result:x}")
 }
 
 fn print_result(cache_file: &Path, res: &str, prompt: &str, msg: &str, mut report_file: &fs::File) {
@@ -125,7 +125,7 @@ fn check(
 ) {
     let rate_limit_wait = Duration::from_secs(rate_limit_wait);
     report_file
-        .write_all(format!("<details><summary>{lang}</summary>\n").as_bytes())
+        .write_all(format!("<details><summary>{lang}</summary>\n\n[If the result is of low quality, please file an issue to find a better LLM for this language.](../../issues/new?title=[{lang}] low quality)\n\n").as_bytes())
         .unwrap();
 
     for msg in ts.split("<message>").skip(1) {
@@ -146,6 +146,7 @@ Evaluate the provided translation from English to the language '{lang}' for unwa
 - The English text is wrapped in <source></source>
 - The '{lang}' text is wrapped in <translation></translation>
 - Ensure that format specifiers (% prefix) are taken over correctly from the source to the translation.
+- Ensure that no whitespace format issues exist. For example, stray spacing or double space.
 
 # Output Format
 
