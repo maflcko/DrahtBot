@@ -39,7 +39,7 @@ fn main() {
     // From https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
     let rate_limit_wait = 0;
 
-    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent?key={}",args.llm_api_key);
+    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",args.llm_api_key);
     let ts_dir = fs::canonicalize(args.translation_dir).expect("locale dir must exist");
     let cache_dir = fs::canonicalize(args.cache_dir).expect("cache dir must exist (can be empty)");
     let report_file =
