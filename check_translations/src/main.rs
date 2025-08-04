@@ -21,9 +21,9 @@ struct Args {
     #[arg(long)]
     cache_dir: String,
 
-    /// A file to export the report to
+    /// A folder to export the reports to (reports will be overwritten)
     #[arg(long)]
-    report_file: String,
+    report_folder: String,
 
     /// Limit to those language files, instead of iterating over all files
     #[arg(long)]
@@ -42,14 +42,8 @@ fn main() {
     let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",args.llm_api_key);
     let ts_dir = fs::canonicalize(args.translation_dir).expect("locale dir must exist");
     let cache_dir = fs::canonicalize(args.cache_dir).expect("cache dir must exist (can be empty)");
-    let report_file =
-        fs::canonicalize(args.report_file).expect("report file must exist (will be overwritten)");
-
-    let mut report_file =
-        fs::File::create(report_file).expect("must be able to create empty report file");
-    report_file
-        .write_all("# Translations Review by LLM (✨ experimental)\n\nThe review quality depends on the LLM and the language. Currently, a fast LLM without rate limits is used. If you are interested in better quality for a specific language, please file an issue to ask for it to be re-run with a stronger model.\n\n".as_bytes())
-        .unwrap();
+    let report_folder = fs::canonicalize(args.report_folder)
+        .expect("report folder must exist (files in it will be overwritten)");
 
     for entry in fs::read_dir(ts_dir).expect("locale dir must exist") {
         let entry = entry.expect("locale file must exist");
@@ -75,6 +69,12 @@ fn main() {
         }
 
         let ts = fs::read_to_string(entry.path()).expect("Unable to read translation file");
+
+        let mut report_file = fs::File::create(report_folder.join(format!("{lang}.md")))
+            .expect("must be able to create empty report file");
+        report_file
+        .write_all("# Translations Review by LLM (✨ experimental)\n\nThe review quality depends on the LLM and the language. Currently, a fast LLM without rate limits is used. If you are interested in better quality for a specific language, please file an issue to ask for it to be re-run with a stronger model.\n\n".as_bytes())
+        .unwrap();
 
         check(lang, &cache_dir, &ts, &url, rate_limit_wait, &report_file);
     }
