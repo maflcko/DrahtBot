@@ -168,7 +168,7 @@ The translation appears in the context of Bitcoin:
 "#,
         );
 
-        let cache_file = cache_dir.join(cache_key(lang, &prompt));
+        let cache_file = cache_dir.join(cache_key(lang, &msg));
 
         match fs::read_to_string(&cache_file) {
             Ok(contents) => {
