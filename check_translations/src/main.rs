@@ -56,7 +56,7 @@ fn main() {
             .strip_suffix(".ts")
             .expect("ts file name unexpected");
 
-        if !args.lang.is_empty() && args.lang.iter().all(|a_l| a_l != lang) {
+        if lang == "en" || !args.lang.is_empty() && args.lang.iter().all(|a_l| a_l != lang) {
             println!("Skip file {name}");
             continue;
         }
