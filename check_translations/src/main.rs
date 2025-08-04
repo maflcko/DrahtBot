@@ -33,13 +33,6 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
-    // Alternative LLMs for translations could be Mistral 3.1 or OpenAI 4.1-nano, or the "thinking"
-    // ones Gemini-flash-2.5, openai-o4-mini, or R1.
-    // For now use a model that has no rate limits.
-    // From https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
-    let rate_limit_wait = 0;
-
-    let url = format!("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",args.llm_api_key);
     let ts_dir = fs::canonicalize(args.translation_dir).expect("locale dir must exist");
     let cache_dir = fs::canonicalize(args.cache_dir).expect("cache dir must exist (can be empty)");
     let report_folder = fs::canonicalize(args.report_folder)
@@ -76,7 +69,7 @@ fn main() {
         .write_all("# Translations Review by LLM (✨ experimental)\n\nThe review quality depends on the LLM and the language. Currently, a fast LLM without rate limits is used. If you are interested in better quality for a specific language, please file an issue to ask for it to be re-run with a stronger model.\n\n".as_bytes())
         .unwrap();
 
-        check(lang, &cache_dir, &ts, &url, rate_limit_wait, &report_file);
+        check(lang, &cache_dir, &ts, &args.llm_api_key, &report_file);
     }
 }
 
@@ -115,15 +108,18 @@ fn print_result(cache_file: &Path, res: &str, prompt: &str, msg: &str, mut repor
     }
 }
 
-fn check(
-    lang: &str,
-    cache_dir: &Path,
-    ts: &str,
-    url: &str,
-    rate_limit_wait: u64,
-    mut report_file: &fs::File,
-) {
-    let rate_limit_wait = Duration::from_secs(rate_limit_wait);
+fn check(lang: &str, cache_dir: &Path, ts: &str, token: &str, mut report_file: &fs::File) {
+    // Alternative LLMs for translations could be Mistral 3.1 or OpenAI 4.1-nano, or the "thinking"
+    // ones Gemini-flash-2.5, openai-o4-mini, or R1.
+    // For now use a model that has no rate limits.
+    // From https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
+    let rate_limit_wait = Duration::from_secs(0);
+    let url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+    let model = "gemini-2.5-flash-lite";
+
+    //let url = "https://api.openai.com/v1/chat/completions";
+    //let model = "gpt-4.1";
+
     report_file
         .write_all(format!("\n\n<details><summary>{lang}</summary>\n\n[If the result is of low quality, please file an issue to find a better LLM for this language.](../../issues/new?title=%5B{lang}%5D%20low%20quality)\n\n").as_bytes())
         .unwrap();
@@ -215,16 +211,10 @@ Evaluate this '{lang}' translation:
                 );
                 let sleep_target = Instant::now() + rate_limit_wait;
                 let payload = json!({
-                    "contents": [
-                        {
-                            "role": "user",
-                            "parts": [
-                                {
-                                    "text": prompt
-                                }
-                            ]
-                        }
-                    ]
+                  "model": model,
+                  "messages": [
+                    {"role": "user", "content": prompt}
+                ]
                 });
 
                 let curl_out = Command::new("curl")
@@ -233,6 +223,8 @@ Evaluate this '{lang}' translation:
                     .arg("-H")
                     .arg("Content-Type: application/json")
                     .arg(url)
+                    .arg("-H")
+                    .arg(format!("Authorization: Bearer {token}"))
                     .arg("-d")
                     .arg(serde_json::to_string(&payload).expect("Failed to serialize payload"))
                     .stderr(Stdio::inherit())
@@ -244,7 +236,7 @@ Evaluate this '{lang}' translation:
                 )
                 .expect("must be valid json");
                 println!("... {response}");
-                let val = response["candidates"][0]["content"]["parts"][0]["text"]
+                let val = response["choices"][0]["message"]["content"]
                     .as_str()
                     .expect("Content not found")
                     .trim();
