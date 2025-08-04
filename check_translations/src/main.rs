@@ -148,6 +148,7 @@ Evaluate the provided translation from English to the language '{lang}' for unwa
 - Ensure that format specifiers (% prefix) are taken over correctly from the source to the translation.
 - Ensure that no whitespace format issues exist. For example, stray spacing or double space.
 
+
 # Output Format
 
 - If the translation is unproblematic, output: "NO".
@@ -155,13 +156,46 @@ Evaluate the provided translation from English to the language '{lang}' for unwa
 - If you are unfamiliar with the language specified by '{lang}', output: "UNK_LANG".
 - You must start your output with "NO", or "YES", or "UNK_LANG".
 
+
 # Translation context
 
 The translation appears in the context of Bitcoin:
 - "address" could mean a P2P Bitcoin network address, or a Bitcoin wallet address.
 - "change" usually refers to the change amount in a Bitcoin transaction.
 
+
+# Example (correct translation for 'zh_CN')
+
+        <source>%1 will download and store a copy of the Bitcoin block chain.</source>
+        <translation>%1 将会下载并存储比特币区块链。</translation>
+
+<reply>NO</reply>
+
+
+# Example (unknown language for 'sm')
+
+        <source>Enter address or label to search</source>
+        <translation>Tu'uina le atunu'u po'o le ata e su'e ai</translation>
+
+<reply>UNK_LANG, not familiar with the Samoan language 'sm'.</reply>
+
+
+# Example (erroneous 'de' translation)
+
+        <source>Unable to open %s for writing</source>
+        <translation>Konnte %s nicht zum Schreiben zu öffnen</translation>
+
+<reply>YES
+The German grammar is incorrect. The verb 'öffnen' should be in the infinitive without 'zu' when used with the modal verb 'konnte'.
+
+Correct translation:
+Konnte %s nicht zum Schreiben öffnen
+</reply>
+
+
 # Translation
+
+Evaluate this '{lang}' translation:
 
 {msg}
 
