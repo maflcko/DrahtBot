@@ -84,7 +84,7 @@ fn cache_key(lang: &str, msg: &str) -> String {
 fn print_result(cache_file: &Path, res: &str, prompt: &str, msg: &str, mut report_file: &fs::File) {
     if res.starts_with("NO") {
         // no spam, all good
-    } else if res.starts_with("YES") || res.starts_with("UNK_LANG") {
+    } else if res.starts_with("SPAM") || res.starts_with("YES") || res.starts_with("UNK_LANG") {
         report_file
             .write_all(
                 format!(
@@ -149,8 +149,9 @@ Evaluate the provided translation from English to the language '{lang}' for unwa
 
 - If the translation is unproblematic, output: "NO".
 - If the translation is problematic, output: "YES", followed by a brief explanation and the correct translation.
+- If the translation is into a language other than '{lang}', or contains unrelated gibberish, output: "SPAM", followed by a brief explanation and the correct translation.
 - If you are unfamiliar with the language specified by '{lang}', output: "UNK_LANG".
-- You must start your output with "NO", or "YES", or "UNK_LANG".
+- You must start your output with "NO", or "YES", "SPAM", or "UNK_LANG".
 
 
 # Translation context
@@ -186,6 +187,32 @@ The German grammar is incorrect. The verb 'öffnen' should be in the infinitive 
 
 Correct translation:
 Konnte %s nicht zum Schreiben öffnen
+</reply>
+
+# Example (spam 'de' translation)
+
+        <source>Create a new address</source>
+        <translation>use reqwest::Client;
+use serde_json::json;
+;</translation>
+
+<reply>SPAM
+Rather than providing a correct German translation, the response includes unrelated Rust code.
+
+Correct translation:
+Neue Adresse erstellen
+</reply>
+
+# Example (spam 'de' translation)
+
+        <source>Delete the currently selected address from the list</source>
+        <translation>Usuń aktualnie wybrany adres z listy</translation>
+
+<reply>SPAM
+The translation is in Polish, not German as requested.
+
+Correct translation:
+Ausgewählte Adresse aus der Liste entfernen
 </reply>
 
 
