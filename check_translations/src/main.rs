@@ -81,10 +81,18 @@ fn cache_key(lang: &str, msg: &str) -> String {
     format!("cache_translation_check_{lang}_{result:x}")
 }
 
-fn print_result(cache_file: &Path, res: &str, prompt: &str, msg: &str, mut report_file: &fs::File) {
+fn print_result(
+    num_issues: &mut u32,
+    cache_file: &Path,
+    res: &str,
+    prompt: &str,
+    msg: &str,
+    mut report_file: &fs::File,
+) {
     if res.starts_with("NO") {
         // no spam, all good
     } else if res.starts_with("SPAM") || res.starts_with("YES") || res.starts_with("UNK_LANG") {
+        *num_issues += 1;
         report_file
             .write_all(
                 format!(
@@ -117,12 +125,14 @@ fn check(lang: &str, cache_dir: &Path, ts: &str, token: &str, mut report_file: &
     let url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
     let model = "gemini-2.5-flash-lite";
 
-    //let url = "https://api.openai.com/v1/chat/completions";
-    //let model = "gpt-4.1";
+    let url = "https://api.openai.com/v1/chat/completions";
+    let model = "gpt-4.1";
 
     report_file
         .write_all(format!("\n\n<details><summary>{lang}</summary>\n\n[If the result is of low quality, please file an issue to find a better LLM for this language.](../../issues/new?title=%5B{lang}%5D%20low%20quality)\n\n").as_bytes())
         .unwrap();
+
+    let mut num_issues = 0;
 
     for msg in ts.split("<message>").skip(1) {
         let msg = msg
@@ -229,7 +239,14 @@ Evaluate this '{lang}' translation:
 
         match fs::read_to_string(&cache_file) {
             Ok(contents) => {
-                print_result(&cache_file, &contents, &prompt, &msg, report_file);
+                print_result(
+                    &mut num_issues,
+                    &cache_file,
+                    &contents,
+                    &prompt,
+                    &msg,
+                    report_file,
+                );
             }
             Err(_) => {
                 println!(
@@ -268,10 +285,19 @@ Evaluate this '{lang}' translation:
                     .expect("Content not found")
                     .trim();
                 fs::write(&cache_file, val).expect("Must be able to write cache file");
-                print_result(&cache_file, val, &prompt, &msg, report_file);
+                print_result(
+                    &mut num_issues,
+                    &cache_file,
+                    val,
+                    &prompt,
+                    &msg,
+                    report_file,
+                );
                 sleep(sleep_target - Instant::now());
             }
         }
     }
-    report_file.write_all("</details>\n".as_bytes()).unwrap();
+    report_file
+        .write_all(format!("</details>\n\nNumber of issues: {num_issues}.\n").as_bytes())
+        .unwrap();
 }
