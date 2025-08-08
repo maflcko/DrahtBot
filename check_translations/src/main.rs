@@ -91,14 +91,15 @@ fn print_result(
 ) {
     if res.starts_with("NO") {
         // no spam, all good
-    } else if res.starts_with("SPAM") || res.starts_with("YES") || res.starts_with("UNK_LANG") {
+    } else if res.starts_with("SPAM") || res.starts_with("ERR") || res.starts_with("UNK_LANG") {
         *num_issues += 1;
         report_file
             .write_all(
                 format!(
-                    "\n```\n{msg}\n{res}\n```\n",
+                    "\n<!-- {cache_key} -->\n```\n{msg}\n{res}\n```\n",
+                    cache_key = cache_file.file_name().unwrap().to_str().unwrap(),
                     msg = msg.trim_matches('\n'),
-                    res = res.trim_matches('\n')
+                    res = res.trim_matches('\n'),
                 )
                 .as_bytes(),
             )
@@ -158,10 +159,10 @@ Evaluate the provided translation from English to the language '{lang}' for unwa
 # Output Format
 
 - If the translation is unproblematic, output: "NO".
-- If the translation is problematic, output: "YES", followed by a brief explanation and the correct translation.
-- If the translation is into a language other than '{lang}', or contains unrelated gibberish, output: "SPAM", followed by a brief explanation and the correct translation.
 - If you are unfamiliar with the language specified by '{lang}', output: "UNK_LANG".
-- You must start your output with "NO", or "YES", "SPAM", or "UNK_LANG".
+- If the translation is into a language completely unrelated to '{lang}', or contains unrelated gibberish, output: "SPAM", followed by a brief explanation and the correct translation.
+- If the translation is problematic for other reasons, output: "ERR", followed by a brief explanation and the correct translation.
+- You must start your output with "NO", "ERR", "SPAM", or "UNK_LANG".
 
 
 # Translation context
@@ -192,7 +193,7 @@ The translation appears in the context of Bitcoin:
         <source>Unable to open %s for writing</source>
         <translation>Konnte %s nicht zum Schreiben zu öffnen</translation>
 
-<reply>YES
+<reply>ERR
 The German grammar is incorrect. The verb 'öffnen' should be in the infinitive without 'zu' when used with the modal verb 'konnte'.
 
 Correct translation:
@@ -202,12 +203,10 @@ Konnte %s nicht zum Schreiben öffnen
 # Example (spam 'de' translation)
 
         <source>Create a new address</source>
-        <translation>use reqwest::Client;
-use serde_json::json;
-;</translation>
+        <translation>&lt;br&gt;(</translation>
 
 <reply>SPAM
-Rather than providing a correct German translation, the response includes unrelated Rust code.
+Rather than providing a correct German translation, the response includes unrelated code.
 
 Correct translation:
 Neue Adresse erstellen
