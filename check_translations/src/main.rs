@@ -28,6 +28,10 @@ struct Args {
     /// Limit to those language files, instead of iterating over all files
     #[arg(long)]
     lang: Vec<String>,
+
+    /// How long to sleep between requests in seconds
+    #[arg(long, default_value = "0")]
+    rate_limit: u64,
 }
 
 fn main() {
@@ -69,7 +73,14 @@ fn main() {
         .write_all("# Translations Review by LLM (✨ experimental)\n\nThe review quality depends on the LLM and the language. Currently, a fast LLM without rate limits is used. If you are interested in better quality for a specific language, please file an issue to ask for it to be re-run with a stronger model.\n\n".as_bytes())
         .unwrap();
 
-        check(lang, &cache_dir, &ts, &args.llm_api_key, &report_file);
+        check(
+            lang,
+            &cache_dir,
+            &ts,
+            &args.llm_api_key,
+            &report_file,
+            Duration::from_secs(args.rate_limit),
+        );
     }
 }
 
@@ -117,12 +128,18 @@ fn print_result(
     }
 }
 
-fn check(lang: &str, cache_dir: &Path, ts: &str, token: &str, mut report_file: &fs::File) {
+fn check(
+    lang: &str,
+    cache_dir: &Path,
+    ts: &str,
+    token: &str,
+    mut report_file: &fs::File,
+    rate_limit_wait: Duration,
+) {
     // Alternative LLMs for translations could be Mistral 3.1 or OpenAI 4.1-nano, or the "thinking"
     // ones Gemini-flash-2.5, openai-o4-mini, or R1.
     // For now use a model that has no rate limits.
     // From https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
-    let rate_limit_wait = Duration::from_secs(0);
     let url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
     let model = "gemini-2.5-flash-lite";
 
@@ -142,9 +159,12 @@ fn check(lang: &str, cache_dir: &Path, ts: &str, token: &str, mut report_file: &
             .expect("Must have closed message tag");
         let msg = msg
             // shorten msg in prompt
-            .replace("<translation type=\"unfinished\">", "<translation>")
-            // Skip &amp; in msg
-            .replace("&amp;", "");
+            .replace("<translation type=\"unfinished\">", "<translation>");
+        let shortcut_key_prompt = if msg.contains("&amp;") {
+            "- A single &amp; in the English text and the translation is usually used to indicate the shortcut key. Allow it to be placed anywhere, but ensure it exists exactly once."
+        } else {
+            ""
+        };
         let prompt = format!(
             r#"
 Evaluate the provided translation from English to the language '{lang}' for unwanted content, erroneous content, or spam.
@@ -154,6 +174,7 @@ Evaluate the provided translation from English to the language '{lang}' for unwa
 - The '{lang}' text is wrapped in <translation></translation>
 - Ensure that format specifiers (% prefix) are taken over correctly from the source to the translation.
 - Ensure that no whitespace format issues exist. For example, stray spacing or double space.
+{shortcut_key_prompt}
 
 
 # Output Format
