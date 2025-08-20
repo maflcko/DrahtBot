@@ -96,7 +96,7 @@ async fn spam_detection(
         let sw = |p| f.filename.starts_with(p);
         let ct = |p| f.filename.contains(p);
         sw("README.md")
-            || sw("doc/release-notes/release-notes-")
+            || sw("doc/release-notes/") // Must include trailing slash
             || sw("INSTALL.md")
             || ct("CONTRIBUTING")
             || ct("LICENSE")
