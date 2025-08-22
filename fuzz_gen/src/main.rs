@@ -30,7 +30,7 @@ struct Args {
     sanitizers: String,
 }
 
-const LLVM_VER: &str = "21";
+const LLVM_VER: &str = "22";
 const FUZZ_CORPORA_PATH_ELEMENT: &str = "fuzz_corpora";
 
 pub fn ensure_init_git(folder: &std::path::Path, url: &str) {
