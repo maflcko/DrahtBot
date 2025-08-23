@@ -70,7 +70,7 @@ fn main() {
         let mut report_file = fs::File::create(report_folder.join(format!("{lang}.md")))
             .expect("must be able to create empty report file");
         report_file
-        .write_all("# Translations Review by LLM (✨ experimental)\n\nThe review quality depends on the LLM and the language. Currently, a fast LLM without rate limits is used. If you are interested in better quality for a specific language, please file an issue to ask for it to be re-run with a stronger model.\n\n".as_bytes())
+        .write_all("# Translations Review by LLM (✨ experimental)\n\nThe review quality depends on the LLM and the language. To report LLM shortcomings for a specific language, please file an issue. It may be possible to re-run with a stronger model.\n\n".as_bytes())
         .unwrap();
 
         check(
@@ -147,7 +147,7 @@ fn check(
     let model = "gpt-4.1";
 
     report_file
-        .write_all(format!("\n\n<details><summary>{lang}</summary>\n\n[If the result is of low quality, please file an issue to find a better LLM for this language.](../../issues/new?title=%5B{lang}%5D%20low%20quality)\n\n").as_bytes())
+        .write_all(format!("\n\n<details><summary>{lang}</summary>\n\n[If the result is outdated or of low quality, please file an issue to request and updated run for this language.](../../issues/new?title=%5B{lang}%5D%20request)\n\n").as_bytes())
         .unwrap();
 
     let mut num_issues = 0;
