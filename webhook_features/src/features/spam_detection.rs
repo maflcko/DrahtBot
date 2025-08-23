@@ -103,7 +103,9 @@ async fn spam_detection(
             || ct(".devcontainer/devcontainer.json")
             || ct("SECURITY")
             || ct("FUNDING")
-    }) || all_files.iter().all(|f| f.status == DiffEntryStatus::Added)
+    })
+        // The next check will also detect a fully empty diff
+        || all_files.iter().all(|f| f.status == DiffEntryStatus::Added)
         || all_files
             .iter()
             .any(|f| f.filename.starts_with(".github") && f.status == DiffEntryStatus::Added)
