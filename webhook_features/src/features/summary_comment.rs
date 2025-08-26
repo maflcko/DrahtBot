@@ -239,7 +239,7 @@ Possible typos and grammar issues:
 "#;
                     text = section
                         .replace("{llm_reply}", &reply)
-                        .replace("{d_id}", "4_m");
+                        .replace("{d_id}", "5_m");
                 }
             }
             Err(err) => {
@@ -509,7 +509,7 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<String> {
         .join("\n");
 
     let payload = serde_json::json!({
-      "model": "o4-mini",
+      "model": "gpt-5-mini",
       "messages": [
         {
           "role": "developer",

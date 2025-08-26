@@ -146,7 +146,7 @@ fn check_google_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
 fn check_open_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
     println!("Check {file_name} via open_ai");
     let payload = serde_json::json!({
-      "model": "o4-mini",
+      "model": "gpt-5-mini",
       "messages": [
         {
           "role": "developer",
@@ -171,6 +171,7 @@ fn check_open_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
         "type": "text"
       },
       "reasoning_effort": "low",
+      "service_tier": "flex",
       "store": true
     });
     let temp = outputs
