@@ -191,7 +191,7 @@ async fn get_llm_reason(ci_log: &str, llm_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
     println!(" ... Run LLM summary for CI failure.");
     let payload = serde_json::json!({
-      "model": "gpt-4.1-nano",
+      "model": "gpt-5-nano",
       "messages": [
         {
           "role": "developer",
@@ -230,6 +230,9 @@ A single short sentence summarizing the underlying reason for the CI failure.
       "response_format": {
         "type": "text"
       },
+      "verbosity": "low",
+      "reasoning_effort": "low",
+      "service_tier": "flex",
       "store": true
     });
     let response = client
