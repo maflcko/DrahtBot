@@ -14,6 +14,7 @@ repositories:
         - '^cmake:'
         - '^depends:'
       TX fees and policy:
+        - '^fees:'
         - '^policy:'
       Utils/log/libs:
         - '^log:'
