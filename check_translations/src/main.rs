@@ -139,11 +139,11 @@ fn check(
     // Alternative LLMs for translations could be Mistral 3.1?
     // For now use a model that has no rate limits.
     // From https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
-    //let url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
-    //let model = "gemini-2.5-flash-lite";
+    let url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
+    let model = "gemini-2.5-pro";
 
-    let url = "https://api.openai.com/v1/chat/completions";
-    let model = "gpt-5";
+//    let url = "https://api.openai.com/v1/chat/completions";
+//    let model = "gpt-5";
 
     report_file
         .write_all(format!("\n\n<details><summary>{lang}</summary>\n\n[If the result is outdated or of low quality, please file an issue to request and updated run for this language.](../../issues/new?title=%5B{lang}%5D%20request)\n\n").as_bytes())
@@ -274,8 +274,6 @@ Evaluate this '{lang}' translation:
                 );
                 let sleep_target = Instant::now() + rate_limit_wait;
                 let payload = json!({
-                  "reasoning_effort": "low",
-                  "service_tier": "flex",
                   "model": model,
                   "messages": [
                     {"role": "user", "content": prompt}
