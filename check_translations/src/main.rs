@@ -136,8 +136,13 @@ fn check(
     mut report_file: &fs::File,
     rate_limit_wait: Duration,
 ) {
-    // Alternative LLMs for translations could be Mistral 3.1?
-    // For now use a model that has no rate limits.
+    // Sadly, the language support of LLMs is mixed and usually not well documented, except for the
+    // Gemini series.
+    //
+    // See https://ai.google.dev/gemini-api/docs/models#supported-languages
+    //
+    // However, the stronger Gemini models come with strict rate limits in Tier 1.
+    //
     // From https://ai.google.dev/gemini-api/docs/rate-limits#tier-1
     let url = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions";
     let model = "gemini-2.5-pro";
