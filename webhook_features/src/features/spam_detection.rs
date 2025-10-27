@@ -105,6 +105,7 @@ async fn spam_detection(
             || ct("FUNDING")
     })
         // The next check will also detect a fully empty diff
+        || all_files.iter().all(|f| f.status == DiffEntryStatus::Removed)
         || all_files.iter().all(|f| f.status == DiffEntryStatus::Added)
         || all_files
             .iter()
