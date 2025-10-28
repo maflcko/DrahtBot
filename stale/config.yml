@@ -5,7 +5,7 @@ inactive_rebase_comment: |
 
   * Is it still relevant? ➡️ Please solve the conflicts to make it ready for review and to ensure the CI passes.
   * Is it no longer relevant? ➡️ Please close.
-  * Did the author lose interest or time to work on this? ➡️ Please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.
+  * Did the author lose interest or time to work on this? ➡️ Please close it and mark it with one of the labels 'Up for grabs' or 'Insufficient Review', so that it can be picked up in the future.
 inactive_ci_days: 90
 inactive_ci_comment: |
   🤔 There hasn't been much activity lately and the CI seems to be failing.
@@ -16,7 +16,7 @@ inactive_stale_days: 180
 inactive_stale_comment: |
   There hasn't been much activity lately. What is the status here?
 
-  [Finding reviewers](https://github.com/{owner}/{repo}/blob/master/CONTRIBUTING.md#finding-reviewers) may take time. However, if the patch is no longer relevant, please close this pull request. If the author lost interest or time to work on this, please close it and mark it 'Up for grabs' with the label, so that it can be picked up in the future.
+  [Finding reviewers](https://github.com/{owner}/{repo}/blob/master/CONTRIBUTING.md#finding-reviewers) may take time. However, if the patch is no longer relevant, please close this pull request. If the author lost interest or time to work on this, please close it and mark it with one of the labels 'Up for grabs' or 'Insufficient Review', so that it can be picked up in the future.
 # Apply the label and comment to indicate a rebase is required
 needs_rebase_label: "Needs rebase"
 ci_failed_label: "CI failed"
