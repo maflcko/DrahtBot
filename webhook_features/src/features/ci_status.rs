@@ -72,33 +72,27 @@ impl Feature for CiStatusFeature {
                     .await?
                     .check_runs;
                 let pull_number = {
-                    // Hacky way to get the pull number. See also https://github.com/bitcoin/bitcoin/issues/27178#issuecomment-1503475232
-                    let cirrus_task_id = check_runs
-                        .first()
-                        .ok_or(DrahtBotError::KeyNotFound)?
-                        .details_url
-                        .as_ref()
-                        .ok_or(DrahtBotError::KeyNotFound)?
-                        .split('/')
-                        .next_back()
-                        .ok_or(DrahtBotError::KeyNotFound)?
-                        .to_string();
-
-                    let query = format!(
-                        r#"{{ "query": "query GetTaskDetailsById($taskId: ID!) {{ task(id: $taskId) {{ id build {{ id repository {{ owner name }} pullRequest }} }} }}", "variables": {{ "taskId": "{}" }} }}"#,
-                        cirrus_task_id
-                    );
-
-                    let response = reqwest::Client::new()
-                        .post("https://api.cirrus-ci.com/graphql")
-                        .header("Content-Type", "application/json")
-                        .body(query)
-                        .send()
-                        .await?;
-
-                    response.json::<serde_json::Value>().await?["data"]["task"]["build"]
-                        ["pullRequest"]
-                        .as_u64()
+                    let mut pull_number = None;
+                    // Hacky way to get the pull number. See also https://github.com/maflcko/DrahtBot/issues/59#issuecomment-3472438198
+                    for check_run in check_runs.iter().filter(|c| c.output.annotations_count > 0) {
+                        let annotations = checks_api
+                            .list_annotations(check_run.id)
+                            .per_page(99)
+                            .send()
+                            .await?;
+                        for a in annotations.iter().filter(|a| {
+                            a.title.as_deref().unwrap_or_default()
+                                == "debug_pull_request_number_str"
+                        }) {
+                            pull_number = Some(
+                                a.message
+                                    .as_deref()
+                                    .ok_or(DrahtBotError::KeyNotFound)?
+                                    .parse::<u64>()?,
+                            );
+                        }
+                    }
+                    pull_number
                 };
                 if pull_number.is_none() {
                     return Ok(());
