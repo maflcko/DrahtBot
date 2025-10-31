@@ -28,7 +28,7 @@ jobs:
           for i in $(seq 1 200); do
             echo "Dummy line $i"
           done
-          false
+          true
           
   dummy_2:
     name: 'Dummy Task 2'
@@ -39,7 +39,7 @@ jobs:
       - name: Print pull request number as annotation
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "::notice title=Pull Request Number::The PR number is ${{ github.event.number }}"
+            echo "::notice title=debug_pull_request_number_str::${{ github.event.number }}"
           fi
 
           echo "test1" >> $GITHUB_STEP_SUMMARY
