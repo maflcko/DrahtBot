@@ -8,8 +8,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dummy:
-    name: 'Checkout'
+  dummy_1:
+    name: 'Dummy Task 1'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -17,16 +17,33 @@ jobs:
       - name: Print pull request number as annotation
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "::debug title=Pull Request Number::The PR number is ${{ github.event.number }}"
+            echo "::notice title=Pull Request Number::The PR number is ${{ github.event.number }}"
           fi
 
           echo "test1" >> $GITHUB_STEP_SUMMARY
           echo "test2" >> $GITHUB_STEP_SUMMARY
 
-      - name: Checkout repo
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 1
+      - name: Print 200 lines then fail
+        run: |
+          for i in $(seq 1 200); do
+            echo "Dummy line $i"
+          done
+          false
+          
+  dummy_2:
+    name: 'Dummy Task 2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Print pull request number as annotation
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "::notice title=Pull Request Number::The PR number is ${{ github.event.number }}"
+          fi
+
+          echo "test1" >> $GITHUB_STEP_SUMMARY
+          echo "test2" >> $GITHUB_STEP_SUMMARY
 
       - name: Print 200 lines then fail
         run: |
