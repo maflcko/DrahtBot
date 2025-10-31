@@ -25,6 +25,9 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Run true
+      - name: Print 200 lines then fail
         run: |
+          for i in $(seq 1 200); do
+            echo "Dummy line $i"
+          done
           false
