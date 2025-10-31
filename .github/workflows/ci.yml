@@ -17,7 +17,7 @@ jobs:
       - name: Print pull request number as annotation
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "::notice title=Pull Request Number::The PR number is ${{ github.event.number }}"
+            echo "::notice title=Pull Request Number::The PR number is %0A %0An%0A ${{ github.event.number }}"
           fi
 
           echo "test1" >> $GITHUB_STEP_SUMMARY
