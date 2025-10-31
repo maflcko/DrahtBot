@@ -20,6 +20,11 @@ jobs:
             echo "::notice title=Pull Request Number::The PR number is ${{ github.event.number }}"
           fi
 
+          echo "::debug title=Pull Request Number::<<EOF"
+          echo "The PR number is ${{ github.event.number }}"
+          echo "Another line"
+          echo "EOF"
+
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
