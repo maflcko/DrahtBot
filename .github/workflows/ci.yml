@@ -14,6 +14,12 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      - name: Print pull request number as annotation
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "::notice title=Pull Request Number::The PR number is ${{ github.event.number }}"
+          fi
+
       - name: Checkout repo
         uses: actions/checkout@v5
         with:
