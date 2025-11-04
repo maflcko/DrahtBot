@@ -57,8 +57,8 @@ impl Feature for CiStatusFeature {
                     .as_str()
                     .ok_or(DrahtBotError::KeyNotFound)?;
                 if conclusion == "cancelled" || conclusion == "neutral" {
-                    // Return early and wait for a new check_suite result
-                    return Ok(());
+                    // Fall-through and treat as failure. Will be re-set on the new check_suite
+                    // result.
                 }
                 let success = "success" == conclusion;
                 let suite_id = payload["check_suite"]["id"]
@@ -98,6 +98,7 @@ impl Feature for CiStatusFeature {
                     return Ok(());
                 }
                 let pull_number = pull_number.unwrap();
+                println!("... pull number {pull_number} conclusion: {conclusion}");
                 let issues_api = ctx.octocrab.issues(repo_user, repo_name);
                 let issue = issues_api.get(pull_number).await?;
                 if issue.state != octocrab::models::IssueState::Open {
