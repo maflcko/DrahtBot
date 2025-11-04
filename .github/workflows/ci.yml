@@ -15,13 +15,12 @@ jobs:
 
     steps:
       - name: Print pull request number as annotation
+        shell: python
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "::notice title=debug_pull_request_number_str::${{ github.event.number }}"
-          fi
-
-          echo "test1" >> $GITHUB_STEP_SUMMARY
-          echo "test2" >> $GITHUB_STEP_SUMMARY
+         import os
+         if os.environ.get("GITHUB_EVENT_NAME") == "pull_request":
+          pr_number = os.environ.get("GITHUB_EVENT_NUMBER", "")
+          print(f"::notice title=debug_pull_request_number_str::{pr_number}")
 
       - name: Print 200 lines then fail
         run: |
