@@ -29,6 +29,8 @@ jobs:
           for i in $(seq 1 200); do
             echo "Dummy line $i"
           done
+          echo "Errors while running CTest"
+          echo "[[[]]]]]]]]]]]]]]]"
           false
           
   dummy_2:
