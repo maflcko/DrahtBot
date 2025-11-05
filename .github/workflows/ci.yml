@@ -30,7 +30,7 @@ jobs:
             echo "Dummy line $i"
           done
           echo "Errors while running CTest"
-          echo "[[[]]]]]]]]]]]]]]]"
+          echo "abc"
           false
           
   dummy_2:
