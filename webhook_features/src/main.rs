@@ -57,6 +57,7 @@ pub struct Context {
     octocrab: Octocrab,
     bot_username: String,
     pub config: Config,
+    github_token: String,
     llm_token: String,
     dry_run: bool,
 }
@@ -119,7 +120,7 @@ async fn main() -> Result<()> {
     .expect("yaml error");
 
     let octocrab = octocrab::Octocrab::builder()
-        .personal_token(args.token)
+        .personal_token(args.token.as_ref())
         .build()
         .map_err(DrahtBotError::GitHubError)?;
 
@@ -145,6 +146,7 @@ async fn main() -> Result<()> {
         octocrab,
         bot_username,
         config,
+        github_token: args.token,
         llm_token: args.llm_token,
         dry_run: args.dry_run,
     });

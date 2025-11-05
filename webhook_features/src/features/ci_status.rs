@@ -4,6 +4,7 @@ use crate::errors::Result;
 use crate::Context;
 use crate::GitHubEvent;
 use async_trait::async_trait;
+use std::process::{Command, Stdio};
 
 pub struct CiStatusFeature {
     meta: FeatureMeta,
@@ -127,15 +128,55 @@ impl Feature for CiStatusFeature {
                             .await?;
                         // Check if *compile* failed and add comment
                         // (functional tests are ignored due to intermittent issues)
-                        if let Some(first_fail) = check_runs.iter().find(|r| {
-                            let text = r.output.text.as_deref().unwrap_or_default();
-                            text.contains("make: *** [Makefile") // build
+                        for run in check_runs
+                            .iter()
+                            .filter(|r| r.conclusion.as_deref().unwrap_or_default() != "success")
+                        {
+                            let curl_out = Command::new("curl")
+                                .args([
+                                    "-L",
+                                    "-H",
+                                    "Accept: application/vnd.github+json",
+                                    "-H",
+                                    &format!("Authorization: Bearer {}", ctx.github_token),
+                                    "-H",
+                                    "X-GitHub-Api-Version: 2022-11-28",
+                                    &format!(
+                                        "https://api.github.com/repos/{}/{}/actions/jobs/{}/logs",
+                                        repo_user, repo_name, run.id
+                                    ),
+                                ])
+                                .stderr(Stdio::inherit())
+                                .output()
+                                .expect("Failed to execute curl");
+                            assert!(curl_out.status.success());
+                            let full_text = String::from_utf8_lossy(&curl_out.stdout);
+
+                            // excerpt
+                            let text = full_text
+                                .lines()
+                                .rev()
+                                .take(100) // 100 lines
+                                .collect::<Vec<_>>()
+                                .into_iter()
+                                .rev()
+                                .collect::<Vec<_>>()
+                                .join("\n")
+                                .chars()
+                                .rev()
+                                .take(10_000) // 10k unicode chars
+                                .collect::<Vec<_>>()
+                                .into_iter()
+                                .rev()
+                                .collect::<String>();
+
+                            if text.contains("make: *** [Makefile") // build
                                 || text.contains("Errors while running CTest")
                                 || text.contains("Error: Unexpected dependencies were detected. Check previous output.") // tidy (deps)
                                 || text.contains("ailure generated from") // lint, tidy, fuzz
-                        }) {
+                        {
                             let llm_reason = get_llm_reason(
-                                first_fail.output.text.as_deref().unwrap_or_default(),
+                                &text,
                                 &ctx.llm_token,
                             )
                             .await
@@ -149,8 +190,8 @@ impl Feature for CiStatusFeature {
 "#,
                                 id = util::IdComment::CiFailed.str(),
                                 msg = "🚧 At least one of the CI tasks failed.",
-                                check_name = first_fail.name,
-                                url = first_fail.html_url.as_deref().unwrap_or_default(),
+                                check_name = run.name,
+                                url = run.html_url.as_deref().unwrap_or_default(),
                                 hints = r#"
 <details><summary>Hints</summary>
 
@@ -172,6 +213,8 @@ Leave a comment here, if you need help tracking down a confusing failure.
 "#,
                             );
                             issues_api.create_comment(pull_number, comment).await?;
+                            break;
+                        }
                         }
                     }
                 }
