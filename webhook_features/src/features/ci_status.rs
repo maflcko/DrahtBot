@@ -149,7 +149,7 @@ impl Feature for CiStatusFeature {
                                 .stderr(Stdio::inherit())
                                 .output()
                                 .expect("Failed to execute curl");
-                            assert!(curl_out.status.success());
+                            assert!(curl_out.status.success()); // Could ignore error code or use exit_ok()? in the future.
                             let full_text = String::from_utf8_lossy(&curl_out.stdout);
 
                             // excerpt

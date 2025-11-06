@@ -16,7 +16,7 @@ impl SpamDetectionFeature {
             meta: FeatureMeta::new(
                 "Spam Detection",
                 "Automatically detect and close spam-like pull requests based on simple heuristics.",
-                vec![GitHubEvent::PullRequest],
+                vec![GitHubEvent::PullRequest, GitHubEvent::Issues],
             ),
         }
     }
@@ -50,27 +50,70 @@ impl Feature for SpamDetectionFeature {
             "Handling: {repo_user}/{repo_name} {event}::{action} ({feature_name})",
             feature_name = self.meta().name()
         );
+        let issues_api = ctx.octocrab.issues(repo_user, repo_name);
+        let pulls_api = ctx.octocrab.pulls(repo_user, repo_name);
         match event {
-            GitHubEvent::PullRequest if action == "opened" => {
+            GitHubEvent::PullRequest => {
                 // https://docs.github.com/en/developers/webhooks-and-events/webhooks/webhook-events-and-payloads#pull_request
                 let pr_number = payload["number"]
                     .as_u64()
                     .ok_or(DrahtBotError::KeyNotFound)?;
-                let issues_api = ctx.octocrab.issues(repo_user, repo_name);
-                let pulls_api = ctx.octocrab.pulls(repo_user, repo_name);
-                spam_detection(
-                    &ctx.octocrab,
-                    &issues_api,
-                    &pulls_api,
-                    pr_number,
-                    ctx.dry_run,
-                )
-                .await?;
+                if action == "opened" || action == "edited" {
+                    let title = payload["pull_request"]["title"]
+                        .as_str()
+                        .ok_or(DrahtBotError::KeyNotFound)?;
+                    spam_follow_up(&issues_api, title, pr_number, ctx.dry_run).await?;
+                }
+                if action == "opened" {
+                    spam_detection(
+                        &ctx.octocrab,
+                        &issues_api,
+                        &pulls_api,
+                        pr_number,
+                        ctx.dry_run,
+                    )
+                    .await?;
+                }
+            }
+            GitHubEvent::Issues => {
+                // https://docs.github.com/en/webhooks/webhook-events-and-payloads?actionType=edited#issues
+                let issue_number = payload["issue"]["number"]
+                    .as_u64()
+                    .ok_or(DrahtBotError::KeyNotFound)?;
+                let title = payload["issue"]["title"]
+                    .as_str()
+                    .ok_or(DrahtBotError::KeyNotFound)?;
+                if action == "opened" || action == "edited" {
+                    spam_follow_up(&issues_api, title, issue_number, ctx.dry_run).await?;
+                }
             }
             _ => {}
         }
         Ok(())
     }
+}
+
+async fn spam_follow_up(
+    issues_api: &octocrab::issues::IssueHandler<'_>,
+    title: &str,
+    issue_number: u64,
+    dry_run: bool,
+) -> Result<()> {
+    if title.trim() == "." {
+        println!("{} detected as spam", issue_number);
+        if !dry_run {
+            issues_api
+                .update(issue_number)
+                .body(".")
+                .state(octocrab::models::IssueState::Closed)
+                .send()
+                .await?;
+            issues_api
+                .lock(issue_number, octocrab::params::LockReason::Spam)
+                .await?;
+        }
+    }
+    Ok(())
 }
 
 async fn spam_detection(

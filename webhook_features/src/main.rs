@@ -42,6 +42,7 @@ struct Args {
 pub enum GitHubEvent {
     CheckSuite,
     IssueComment,
+    Issues,
     PullRequest,
     PullRequestReview,
 
