@@ -135,8 +135,8 @@ async fn spam_llm(
     if llm_res.starts_with("SPAM") {
         println!("{} detected as spam with title={title}", issue_number);
         let issue = issues_api.get(issue_number).await?;
-        // after https://github.com/XAMPPRocky/octocrab/pull/822
-        // if [FirstTimer, FirstTimeContributor, Mannequin, None].contains(&issue.author_association)
+        if [FirstTimer, FirstTimeContributor, Mannequin, None]
+            .contains(&issue.author_association.unwrap())
         {
             let _reason = format!(
                 r#"
