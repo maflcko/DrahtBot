@@ -7,3 +7,5 @@ example cmd
 ```
 ( cd rerun_ci && cargo run -- --help )
 ```
+
+.
