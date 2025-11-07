@@ -81,9 +81,8 @@ async fn postreceive_handler(
         .unwrap();
     let event = GitHubEvent::from_str(event_str).unwrap_or(GitHubEvent::Unknown);
 
-    emit_event(&ctx, event, data).await.unwrap();
-
-    "OK"
+    let num_errors = emit_event(&ctx, event, data).await;
+    format!("Number of errors: {num_errors}")
 }
 
 fn features() -> Vec<Box<dyn Feature>> {
@@ -130,20 +129,21 @@ lazy_static! {
     static ref MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::new(());
 }
 
-async fn emit_event(
-    ctx: &Context,
-    event: GitHubEvent,
-    data: web::Json<serde_json::Value>,
-) -> Result<()> {
+async fn emit_event(ctx: &Context, event: GitHubEvent, data: web::Json<serde_json::Value>) -> u32 {
     let _guard = MUTEX.lock().await;
+
+    let mut num_errors = 0;
 
     for feature in features() {
         if feature.meta().events().contains(&event) {
-            feature.handle(ctx, &event, &data).await?;
+            if let Err(e) = feature.handle(ctx, &event, &data).await {
+                println!("... ERROR\n{:?}", e);
+                num_errors += 1;
+            }
         }
     }
 
-    Ok(())
+    num_errors
 }
 
 #[actix_web::main]

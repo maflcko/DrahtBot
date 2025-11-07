@@ -74,7 +74,7 @@ impl Feature for SpamDetectionFeature {
                     spam_follow_up(&issues_api, title, pr_number, ctx.dry_run).await?;
                 }
                 if action == "opened" {
-                    spam_detection(
+                    spam_pr_heuristic(
                         &ctx.octocrab,
                         &issues_api,
                         &pulls_api,
@@ -86,7 +86,7 @@ impl Feature for SpamDetectionFeature {
                 if action == "opened" {
                     let body = payload["pull_request"]["body"]
                         .as_str()
-                        .ok_or(DrahtBotError::KeyNotFound)?;
+                        .unwrap_or("[the pull request body is empty]"); // Missing body is an empty string
                     spam_llm(
                         &issues_api,
                         title,
@@ -112,7 +112,7 @@ impl Feature for SpamDetectionFeature {
                 if action == "opened" {
                     let body = payload["issue"]["body"]
                         .as_str()
-                        .ok_or(DrahtBotError::KeyNotFound)?;
+                        .unwrap_or("[the issue body is empty]"); // Missing body is an empty string
                     spam_llm(
                         &issues_api,
                         title,
@@ -246,7 +246,7 @@ SPAM. This issue references a cryptocurrency called "AE917B4 COIN," which is unr
       },
       "verbosity": "low",
       "reasoning_effort": "low",
-      "service_tier": "flex",
+      "service_tier": "standard",
       "store": true
     });
     let response = client
@@ -291,7 +291,7 @@ async fn spam_follow_up(
     Ok(())
 }
 
-async fn spam_detection(
+async fn spam_pr_heuristic(
     github: &octocrab::Octocrab,
     issues_api: &octocrab::issues::IssueHandler<'_>,
     pulls_api: &octocrab::pulls::PullRequestHandler<'_>,

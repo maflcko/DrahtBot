@@ -279,7 +279,7 @@ A single short sentence summarizing the underlying reason for the CI failure.
       },
       "verbosity": "low",
       "reasoning_effort": "low",
-      "service_tier": "flex",
+      "service_tier": "standard",
       "store": true
     });
     let response = client
