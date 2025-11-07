@@ -133,30 +133,37 @@ async fn spam_llm(
         .await
         .unwrap_or("NORMAL".to_string());
     if llm_res.starts_with("SPAM") {
-        println!("{} detected as spam with title={title}", issue_number);
+        println!(
+            "{} detected as likely spam with title={title}",
+            issue_number
+        );
         let issue = issues_api.get(issue_number).await?;
         if [FirstTimer, FirstTimeContributor, Mannequin, None]
             .contains(&issue.author_association.unwrap())
         {
-            let _reason = format!(
+            let reason = format!(
                 r#"
-♻️ Automatically closing for now based on heuristics. Please leave a comment, if this was erroneous.
+LLM spam detection (✨ experimental): {llm_res}
+
+♻️ Automatically suggested to close for now based on heuristics. Please leave a comment, if this was erroneous.
 Generally, please focus on creating high-quality, original content that demonstrates a clear
 understanding of the project's requirements and goals.
 
-LLM reason (exp): {llm_res}
+📝 Moderators: If this is spam, please replace the title with `.`, so that the issue does not appear in
+search results.
 "#
             );
             if !dry_run {
+                issues_api.create_comment(issue_number, reason).await?;
                 // Commented out as experiment for now.
-                //
-                //issues_api.create_comment(issue_number, reason).await?;
                 //issues_api
                 //    .update(issue_number)
                 //    .body(".")
                 //    .state(octocrab::models::IssueState::Closed)
                 //    .send()
                 //    .await?;
+
+                // probably do not want to lock right away? Maybe after 24 hours?
                 //issues_api
                 //    .lock(issue_number, octocrab::params::LockReason::Spam)
                 //    .await?;
@@ -260,7 +267,10 @@ async fn spam_follow_up(
     dry_run: bool,
 ) -> Result<()> {
     if title.trim() == "." {
-        println!("{} detected as spam", issue_number);
+        println!(
+            "{} detected as spam to close with title={title}",
+            issue_number
+        );
         if !dry_run {
             issues_api
                 .update(issue_number)
