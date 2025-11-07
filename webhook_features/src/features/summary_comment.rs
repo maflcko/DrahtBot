@@ -549,7 +549,7 @@ If none are found, state: "No typos were found".
         "type": "text"
       },
       "reasoning_effort": "low",
-      "service_tier": "standard",
+      "service_tier": "default",
       "store": true
     });
     let response = client

@@ -246,7 +246,7 @@ SPAM. This issue references a cryptocurrency called "AE917B4 COIN," which is unr
       },
       "verbosity": "low",
       "reasoning_effort": "low",
-      "service_tier": "standard",
+      "service_tier": "default",
       "store": true
     });
     let response = client
