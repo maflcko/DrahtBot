@@ -2,7 +2,7 @@ use clap::Parser;
 use std::io::Write;
 
 #[derive(clap::Parser)]
-#[command(about = "Determine conflicting pull requests.", long_about = None)]
+#[command(about = "Determine conflicting pull requests in a monotree by merging them pairwise.", long_about = None)]
 struct Args {
     /// The access token for GitHub.
     #[arg(long)]

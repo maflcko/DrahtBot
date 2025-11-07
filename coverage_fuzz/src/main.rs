@@ -152,7 +152,7 @@ fn calc_coverage(
 }
 
 #[derive(clap::Parser)]
-#[command(about = "Run fuzz coverage reports.", long_about = None)]
+#[command(about = "Create Bitcoin Core fuzz coverage reports.", long_about = None)]
 struct Args {
     /// The repo slug of the remote on GitHub for reports.
     #[arg(long, default_value = "DrahtBot/reports")]

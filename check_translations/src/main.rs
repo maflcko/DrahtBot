@@ -8,6 +8,7 @@ use std::thread::sleep;
 use std::time::{Duration, Instant};
 
 #[derive(Parser)]
+#[command(about="Check Bitcoin Core GUI translations.", long_about = None)]
 struct Args {
     /// From https://aistudio.google.com/apikey
     #[arg(long)]

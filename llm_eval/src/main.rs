@@ -5,6 +5,7 @@ use std::path::Path;
 use std::process::Command;
 
 #[derive(Parser)]
+#[command(about = "Scratch script to evaluate LLMs.", long_about = None)]
 struct Cli {
     #[arg(long)]
     open_ai_token: String,

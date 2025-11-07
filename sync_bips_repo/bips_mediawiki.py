@@ -22,7 +22,7 @@ def get_git(args):
 
 def main():
     THIS_FILE_PATH = os.path.abspath(os.path.dirname(os.path.realpath(__file__)))
-    parser = argparse.ArgumentParser(description='Update the BIPs on the wiki with the latest text from the git repo.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(description='Update the BIPs on the wiki with the latest text from the BIPs git repo.', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--github_repo', help='The repo slug of the remote on GitHub.', default='bitcoin/bips')
     parser.add_argument('--mediawiki_login_tuple', help='The login tuple for the mediawiki.', default='None:None')
     parser.add_argument('--mediawiki_host', help='The mediawiki host.', default='en.bitcoin.it')

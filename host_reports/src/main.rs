@@ -1,7 +1,7 @@
 use clap::Parser;
 
 #[derive(clap::Parser)]
-#[command(about = "Pull a git repository and move it to /var/www/... .", long_about = None)]
+#[command(about = "Pull a git repository with static web content and move it to /var/www/... .", long_about = None)]
 struct Args {
     /// The repo slug of the remote on GitHub for reports.
     #[arg(long)]

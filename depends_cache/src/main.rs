@@ -1,7 +1,7 @@
 use clap::Parser;
 
 #[derive(clap::Parser)]
-#[command(about = "Fetch depends and move them to /var/www/.", long_about = None)]
+#[command(about = "Fetch Bitcoin Core depends sources and move them to /var/www/.", long_about = None)]
 struct Args {
     /// The repo slug of the remote on GitHub. Format: owner/repo
     #[arg(long)]

@@ -5,7 +5,7 @@ use util::{chdir, check_call, git};
 #[derive(clap::Parser)]
 #[command(long_about = format!(r#"
 
-Generate fuzz inputs until a crash.
+Generate Bitcoin Core fuzz inputs until a crash.
 
 To prepare, install:
 wget cargo sed git python3 ccache screen + Bitcoin Core deps

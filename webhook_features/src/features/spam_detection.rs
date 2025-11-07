@@ -149,7 +149,7 @@ LLM spam detection (✨ experimental): {llm_res}
 Generally, please focus on creating high-quality, original content that demonstrates a clear
 understanding of the project's requirements and goals.
 
-📝 Moderators: If this is spam, please replace the title with `.`, so that the issue does not appear in
+📝 Moderators: If this is spam, please replace the title with `.`, so that the thread does not appear in
 search results.
 "#
             );
@@ -268,7 +268,7 @@ async fn spam_follow_up(
 ) -> Result<()> {
     if title.trim() == "." {
         println!(
-            "{} detected as spam to close with title={title}",
+            "{} detected as spam to close and lock with title={title}",
             issue_number
         );
         if !dry_run {
@@ -328,8 +328,14 @@ async fn spam_detection(
         if [FirstTimer, FirstTimeContributor, Mannequin, None]
             .contains(&pull_request.author_association.unwrap())
         {
-            let reason =
-                "♻️ Automatically closing for now based on heuristics. Please leave a comment, if this was erroneous. Generally, please focus on creating high-quality, original content that demonstrates a clear understanding of the project's requirements and goals.";
+            let reason = r#"
+♻️ Automatically closing for now based on heuristics. Please leave a comment, if this was erroneous.
+Generally, please focus on creating high-quality, original content that demonstrates a clear
+understanding of the project's requirements and goals.
+
+📝 Moderators: If this is spam, please replace the title with `.`, so that the thread does not appear in
+search results.
+"#;
             if !dry_run {
                 issues_api.create_comment(pr_number, reason).await?;
                 issues_api

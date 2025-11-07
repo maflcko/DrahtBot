@@ -9,7 +9,12 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use util::{call, chdir, check_call, check_output, get_octocrab, get_pull_mergeable, git, Slug};
 
 #[derive(clap::Parser)]
-#[command(about="Guix build and create an issue comment to share the results.",long_about=None)]
+#[command(about=r#"
+Build Bitcoin Core via Guix.
+
+Either, scan a repo for tagged pulls and share the Guix build in a comment, or build just one
+commit and exit.
+"#,long_about=None)]
 struct Args {
     /// The access token for GitHub.
     #[arg(long)]
@@ -72,7 +77,7 @@ fn calculate_table(
         }
     };
     let mut set_rows = |dir: &Path, row_id: usize, commit_sha: &str| {
-        let mut files = lsdir::<Vec<_>>(dir);
+        let files = lsdir::<Vec<_>>(dir);
         for f in &files {
             let short_file_name = shorten(f);
             chdir(dir);

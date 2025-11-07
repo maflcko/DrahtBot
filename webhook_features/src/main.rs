@@ -13,13 +13,17 @@ use clap::Parser;
 use features::Feature;
 use lazy_static::lazy_static;
 use octocrab::Octocrab;
+use std::collections::BTreeSet;
 use strum::{Display, EnumString};
 
 use crate::config::Config;
 use crate::errors::{DrahtBotError, Result};
 
 #[derive(Parser)]
-#[command(about="Run features on webhooks", long_about = None)]
+#[command(about=format!(r#"
+Run features on webhooks.
+
+{features}"#, features=list_features()), long_about = None)]
 struct Args {
     #[arg(long, help = "GitHub token")]
     token: String,
@@ -37,7 +41,7 @@ struct Args {
     dry_run: bool,
 }
 
-#[derive(Display, EnumString, PartialEq, Eq)]
+#[derive(Display, EnumString, PartialEq, Eq, Hash)]
 #[strum(serialize_all = "snake_case")]
 pub enum GitHubEvent {
     CheckSuite,
@@ -91,6 +95,37 @@ fn features() -> Vec<Box<dyn Feature>> {
     ]
 }
 
+pub fn list_features() -> String {
+    format!(
+        "{intro}\n{list}\n{wh_sum_desc}\n{wh_sum}",
+        intro = "DrahtBot will will run the following features:",
+        list = features()
+            .iter()
+            .map(|f| format!(
+                "\n - {}\n   {}\n   Required webhooks: {}",
+                f.meta().name(),
+                f.meta().description(),
+                f.meta()
+                    .events()
+                    .iter()
+                    .map(|e| format!("{}", e))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+            .collect::<Vec<_>>()
+            .join("\n"),
+        wh_sum_desc = "\nThus, the following needs to be set in Settings/Webhooks/Manage_Webhook:",
+        wh_sum = features()
+            .iter()
+            .map(|f| f.meta().events())
+            .flat_map(|v| v.iter().map(|e| format!("- {}", e)))
+            .collect::<BTreeSet::<_>>()
+            .into_iter()
+            .collect::<Vec<_>>()
+            .join("\n")
+    )
+}
+
 lazy_static! {
     static ref MUTEX: tokio::sync::Mutex<()> = tokio::sync::Mutex::new(());
 }
@@ -125,12 +160,7 @@ async fn main() -> Result<()> {
         .build()
         .map_err(DrahtBotError::GitHubError)?;
 
-    println!("DrahtBot will will run the following features:");
-    for feature in features() {
-        println!(" - {}", feature.meta().name());
-        println!("   {}", feature.meta().description());
-    }
-
+    println!("{}", list_features());
     println!();
 
     // Get the bot's username
