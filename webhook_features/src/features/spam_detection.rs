@@ -154,28 +154,24 @@ async fn spam_llm(
                 r#"
 LLM spam detection (✨ experimental): {llm_res}
 
-♻️ Automatically suggested to close for now based on heuristics. Please leave a comment, if this was erroneous.
+♻️ Automatically wiping, closing, and locking for now based on heuristics.
 Generally, please focus on creating high-quality, original content that demonstrates a clear
 understanding of the project's requirements and goals.
-
-📝 Moderators: If this is spam, please replace the title with `.`, so that the thread does not appear in
-search results.
 "#
             );
             if !dry_run {
                 issues_api.create_comment(issue_number, reason).await?;
-                // Commented out as experiment for now.
-                //issues_api
-                //    .update(issue_number)
-                //    .body(".")
-                //    .state(octocrab::models::IssueState::Closed)
-                //    .send()
-                //    .await?;
+                issues_api
+                    .update(issue_number)
+                    .body(".")
+                    .state(octocrab::models::IssueState::Closed)
+                    .send()
+                    .await?;
 
                 // probably do not want to lock right away? Maybe after 24 hours?
-                //issues_api
-                //    .lock(issue_number, octocrab::params::LockReason::Spam)
-                //    .await?;
+                issues_api
+                    .lock(issue_number, octocrab::params::LockReason::Spam)
+                    .await?;
             }
         }
     }
