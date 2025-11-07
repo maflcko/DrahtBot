@@ -15,7 +15,7 @@ impl SpamDetectionFeature {
         Self {
             meta: FeatureMeta::new(
                 "Spam Detection",
-                "Automatically detect and close spam-like pull requests based on simple heuristics.",
+                "Automatically detect and close spam-like threads based on simple heuristics, if enabled in the yaml config.",
                 vec![GitHubEvent::PullRequest, GitHubEvent::Issues],
             ),
         }
@@ -50,6 +50,15 @@ impl Feature for SpamDetectionFeature {
             "Handling: {repo_user}/{repo_name} {event}::{action} ({feature_name})",
             feature_name = self.meta().name()
         );
+        if !ctx
+            .config
+            .repositories
+            .iter()
+            .find(|r| r.repo_slug == format!("{}/{}", repo_user, repo_name))
+            .is_some_and(|c| c.spam_detection)
+        {
+            return Ok(());
+        }
         let issues_api = ctx.octocrab.issues(repo_user, repo_name);
         let pulls_api = ctx.octocrab.pulls(repo_user, repo_name);
         match event {

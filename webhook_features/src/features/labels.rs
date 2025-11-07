@@ -14,7 +14,7 @@ impl LabelsFeature {
         Self {
             meta: FeatureMeta::new(
                 "Labels",
-                "Guess and set labels on pull requests missing them.",
+                "Guess and set labels on pull requests missing them, if they are set in the config yaml.",
                 vec![GitHubEvent::PullRequest],
             ),
         }
@@ -126,7 +126,9 @@ async fn apply_labels_one(
     }
     let mut new_labels = Vec::new();
     if pull.base.ref_field != base_name {
-        new_labels.push(config_repo.backport_label.to_string());
+        if let Some(bl) = &config_repo.backport_label {
+            new_labels.push(bl.to_string());
+        }
     } else {
         for (label_name, title_regs) in regs {
             if title_regs.iter().any(|r| r.is_match(pull_title)) {

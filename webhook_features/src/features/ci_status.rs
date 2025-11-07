@@ -15,7 +15,7 @@ impl CiStatusFeature {
         Self {
             meta: FeatureMeta::new(
                 "CI Status",
-                "Set a label for a failing CI status.",
+                "Set a label for a failing CI status. Must also be enabled in the config yaml.",
                 vec![GitHubEvent::CheckSuite],
             ),
         }
@@ -51,6 +51,15 @@ impl Feature for CiStatusFeature {
             "Handling: {repo_user}/{repo_name} {event}::{action} ({feature_name})",
             feature_name = self.meta().name()
         );
+        if !ctx
+            .config
+            .repositories
+            .iter()
+            .find(|r| r.repo_slug == format!("{}/{}", repo_user, repo_name))
+            .is_some_and(|c| c.ci_status)
+        {
+            return Ok(());
+        }
         match event {
             GitHubEvent::CheckSuite if action == "completed" => {
                 // https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads#check_suite

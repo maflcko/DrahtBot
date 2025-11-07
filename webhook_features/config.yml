@@ -1,9 +1,23 @@
 repositories:
+  - repo_slug: rust-bitcoin/rust-bitcoin
+    backport_label: null
+    repo_labels:
+    spam_detection: false
+    ci_status: false
+    corecheck: false
   - repo_slug: maflcko/DrahtBot
     backport_label: Backport
     repo_labels:
       Dummy:
         - '^dummy:'
+    spam_detection: true
+    ci_status: true
+    corecheck: false
+  - repo_slug: bitcoin-core/gui
+    backport_label: null
+    repo_labels:
+    spam_detection: true
+    ci_status: true
     corecheck: false
   - repo_slug: bitcoin/bitcoin
     backport_label: Backport
@@ -96,4 +110,6 @@ repositories:
         - '^refactor(ing)?:'
         - '^move-?only:'
         - '^scripted-diff:'
+    spam_detection: true
+    ci_status: true
     corecheck: true
