@@ -163,12 +163,13 @@ understanding of the project's requirements and goals.
                 issues_api.create_comment(issue_number, reason).await?;
                 issues_api
                     .update(issue_number)
+                    .title(".")
                     .body(".")
                     .state(octocrab::models::IssueState::Closed)
+                    .state_reason(octocrab::models::issues::IssueStateReason::NotPlanned)
+                    .labels(&[])
                     .send()
                     .await?;
-
-                // probably do not want to lock right away? Maybe after 24 hours?
                 issues_api
                     .lock(issue_number, octocrab::params::LockReason::Spam)
                     .await?;
@@ -279,8 +280,11 @@ async fn spam_follow_up(
         if !dry_run {
             issues_api
                 .update(issue_number)
+                .title(".")
                 .body(".")
                 .state(octocrab::models::IssueState::Closed)
+                .state_reason(octocrab::models::issues::IssueStateReason::NotPlanned)
+                .labels(&[])
                 .send()
                 .await?;
             issues_api
