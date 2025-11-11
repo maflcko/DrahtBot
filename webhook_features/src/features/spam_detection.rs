@@ -200,6 +200,7 @@ body: {body}
 r#"
 Detect whether the provided GitHub issue or pull request is SPAM or NORMAL based on its content.
 Start your reply with either SPAM or NORMAL. If you claim SPAM, you must include an explanation.
+Do not include any direct or verbatim references to the spam content (Promotional names, websites, services, ...)
 
 - Analyze the title and body to determine if it is legitimate discussion or unwanted/irrelevant promotional content.
 
@@ -225,7 +226,7 @@ title: AE917B4 COIN
 body: Please describe the feature you'd like to see added. AE917B4.COIN.LOGO.png (view on web)
 
 Output:
-SPAM. This issue references a cryptocurrency called "AE917B4 COIN," which is unrelated to Bitcoin. It appears to be a placeholder or generic template with no real context or content, lacking any meaningful description, problem statement, or feature request related to the Bitcoin project.
+SPAM. This issue references a cryptocurrency which is unrelated to Bitcoin. It appears to be a placeholder or generic template with no real context or content, lacking any meaningful description, problem statement, or feature request related to the Bitcoin project.
 
 **Objective Reminder:** Classify GitHub issues and pull requests as either SPAM or NORMAL.
 "#
