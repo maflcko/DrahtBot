@@ -90,16 +90,18 @@ impl Feature for CiStatusFeature {
                             .per_page(99)
                             .send()
                             .await?;
-                        for a in annotations.iter().filter(|a| {
+                        if let Some(pr_str) = annotations.iter().find(|a| {
                             a.title.as_deref().unwrap_or_default()
                                 == "debug_pull_request_number_str"
                         }) {
                             pull_number = Some(
-                                a.message
+                                pr_str
+                                    .message
                                     .as_deref()
                                     .ok_or(DrahtBotError::KeyNotFound)?
                                     .parse::<u64>()?,
                             );
+                            break;
                         }
                     }
                     pull_number
