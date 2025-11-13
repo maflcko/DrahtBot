@@ -1,4 +1,4 @@
-name: nightly
+name: ci
 on:
   push:
   pull_request:
@@ -8,17 +8,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  dummy:
-    name: 'Checkout'
+  dummy_1:
+    name: 'Dummy Task 1'
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 1
+      - name: Print pull request number as annotation
+        shell: python
+        run: |         
+          event_name = """${{ github.event_name }}"""
+          event_number = """${{ github.event.number }}"""
+          if event_name == "pull_request":
+              print(f"::notice title=debug_pull_request_number_str::{event_number}")
 
-      - name: Run true
+
+
+      - name: Print 200 lines then fail
         run: |
+          for i in $(seq 1 200); do
+            echo "Dummy line $i"
+          done
+          echo "Errors while running CTest"
+          echo "abc"
+          false
+          
+  dummy_2:
+    name: 'Dummy Task 2'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Print pull request number as annotation
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "::notice title=debug_pull_request_number_str::${{ github.event.number }}"
+          fi
+
+          echo "test1" >> $GITHUB_STEP_SUMMARY
+          echo "test2" >> $GITHUB_STEP_SUMMARY
+
+      - name: Print 200 lines then fail
+        run: |
+          for i in $(seq 1 200); do
+            echo "Dummy line $i"
+          done
           true
