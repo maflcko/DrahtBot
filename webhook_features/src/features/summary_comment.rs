@@ -8,6 +8,7 @@ use crate::GitHubEvent;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
 use regex::Regex;
+use reqwest::Url;
 use util::{all_llm_checks, make_llm_payload};
 
 pub struct SummaryCommentFeature {
@@ -175,6 +176,7 @@ See [the guideline]({review_url}) for information on the review process.
 
 struct GitHubReviewComment {
     user: String,
+    avatar_url: Url,
     url: String,
     body: String,
     date: chrono::DateTime<chrono::Utc>,
@@ -259,6 +261,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
             let user = c.user;
             GitHubReviewComment {
                 user: user.login,
+                avatar_url: user.avatar_url,
                 url: c.html_url.to_string(),
                 body: c.body.unwrap_or_default(),
                 date: c.updated_at.unwrap_or(c.created_at),
@@ -275,6 +278,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
             let user = c.user.unwrap();
             GitHubReviewComment {
                 user: user.login,
+                avatar_url: user.avatar_url,
                 url: c.html_url.to_string(),
                 body: c.body.unwrap_or_default(),
                 date: c.submitted_at.unwrap(),
@@ -304,6 +308,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
             let has_current_head = ac.commit.is_some_and(|c| head_commit.starts_with(&c));
             v.push(Review {
                 user: comment.user.clone(),
+                avatar_url: comment.avatar_url.clone(),
                 ack_type: if comment.body.contains(BOT_SKIP_TAG) {
                     AckType::Ignored
                 } else if ac.ack_type == AckType::Ack && !has_current_head {
@@ -448,13 +453,17 @@ lazy_static! {
 #[derive(Clone)]
 struct Review {
     user: String,
+    avatar_url: Url,
     ack_type: AckType,
     url: String,
     date: chrono::DateTime<chrono::Utc>,
 }
 
 fn format_reviewer_link(review: &Review) -> String {
-    format!("[{}]({})", review.user, review.url)
+    let mut avatar_url = review.avatar_url.clone();
+    avatar_url.query_pairs_mut().append_pair("s", "14");
+    let user_display = review.user.clone();
+    format!("![]({}) [{}]({})", avatar_url, user_display, review.url)
 }
 
 #[derive(Debug, PartialEq)]
@@ -530,6 +539,7 @@ mod tests {
     fn test_format_reviewer_link() {
         let review = Review {
             user: "user".to_string(),
+            avatar_url: Url::parse("https://avatars.example/u/1?v=4").unwrap(),
             ack_type: AckType::Ack,
             url: "https://example.com/review".to_string(),
             date: chrono::Utc::now(),
@@ -537,7 +547,7 @@ mod tests {
 
         assert_eq!(
             format_reviewer_link(&review),
-            "[user](https://example.com/review)"
+            "![](https://avatars.example/u/1?v=4&s=14) [user](https://example.com/review)"
         );
     }
 
