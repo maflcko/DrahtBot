@@ -7,6 +7,7 @@ use crate::Context;
 use crate::GitHubEvent;
 use async_trait::async_trait;
 use lazy_static::lazy_static;
+use octocrab::models::AuthorAssociation;
 use regex::Regex;
 use reqwest::Url;
 use util::{all_llm_checks, make_llm_payload};
@@ -164,6 +165,7 @@ See [the guideline]({review_url}) for information on the review process.
             }
         }
 
+        comment += "\n<sup>Repository members are shown in italics.</sup>\n";
         comment += "\n";
         comment += "If your review is incorrectly listed, please copy-paste ";
         comment += "<code>&lt;!--meta-tag:bot-skip--&gt;</code>" /* BOT_SKIP_TAG */;
@@ -177,6 +179,7 @@ See [the guideline]({review_url}) for information on the review process.
 struct GitHubReviewComment {
     user: String,
     avatar_url: Url,
+    author_association: AuthorAssociation,
     url: String,
     body: String,
     date: chrono::DateTime<chrono::Utc>,
@@ -262,6 +265,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
             GitHubReviewComment {
                 user: user.login,
                 avatar_url: user.avatar_url,
+                author_association: c.author_association,
                 url: c.html_url.to_string(),
                 body: c.body.unwrap_or_default(),
                 date: c.updated_at.unwrap_or(c.created_at),
@@ -279,6 +283,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
             GitHubReviewComment {
                 user: user.login,
                 avatar_url: user.avatar_url,
+                author_association: c.author_association.unwrap_or(AuthorAssociation::None),
                 url: c.html_url.to_string(),
                 body: c.body.unwrap_or_default(),
                 date: c.submitted_at.unwrap(),
@@ -309,6 +314,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
             v.push(Review {
                 user: comment.user.clone(),
                 avatar_url: comment.avatar_url.clone(),
+                author_association: comment.author_association,
                 ack_type: if comment.body.contains(BOT_SKIP_TAG) {
                     AckType::Ignored
                 } else if ac.ack_type == AckType::Ack && !has_current_head {
@@ -454,6 +460,7 @@ lazy_static! {
 struct Review {
     user: String,
     avatar_url: Url,
+    author_association: AuthorAssociation,
     ack_type: AckType,
     url: String,
     date: chrono::DateTime<chrono::Utc>,
@@ -462,7 +469,7 @@ struct Review {
 fn format_reviewer_link(review: &Review) -> String {
     let mut avatar_url = review.avatar_url.clone();
     avatar_url.query_pairs_mut().append_pair("s", "14");
-    let user_display = review.user.clone();
+    let user_display = if review.author_association == AuthorAssociation::Member { format!("*{}*", review.user) } else { review.user.clone() };
     format!("![]({}) [{}]({})", avatar_url, user_display, review.url)
 }
 
@@ -537,17 +544,32 @@ mod tests {
 
     #[test]
     fn test_format_reviewer_link() {
-        let review = Review {
-            user: "user".to_string(),
+        let member_review = Review {
+            user: "member".to_string(),
             avatar_url: Url::parse("https://avatars.example/u/1?v=4").unwrap(),
+            author_association: AuthorAssociation::Member,
             ack_type: AckType::Ack,
             url: "https://example.com/review".to_string(),
             date: chrono::Utc::now(),
         };
 
         assert_eq!(
-            format_reviewer_link(&review),
-            "![](https://avatars.example/u/1?v=4&s=14) [user](https://example.com/review)"
+            format_reviewer_link(&member_review),
+            "![](https://avatars.example/u/1?v=4&s=14) [*member*](https://example.com/review)"
+        );
+
+        let external_review = Review {
+            user: "external".to_string(),
+            avatar_url: Url::parse("https://avatars.example/u/2").unwrap(),
+            author_association: AuthorAssociation::Contributor,
+            ack_type: AckType::Ack,
+            url: "https://example.com/review".to_string(),
+            date: chrono::Utc::now(),
+        };
+
+        assert_eq!(
+            format_reviewer_link(&external_review),
+            "![](https://avatars.example/u/2?s=14) [external](https://example.com/review)"
         );
     }
 
