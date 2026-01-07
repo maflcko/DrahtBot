@@ -133,11 +133,9 @@ See [the guideline]({review_url}) for information on the review process.
         comment += "| ---- | --------- |\n";
 
         let mut ack_map = reviews.into_iter().fold(HashMap::new(), |mut acc, review| {
-            acc.entry(review.ack_type).or_insert(Vec::<_>::new()).push((
-                review.user,
-                review.url,
-                review.date,
-            ));
+            acc.entry(review.ack_type)
+                .or_insert(Vec::<_>::new())
+                .push(review);
             acc
         });
 
@@ -152,14 +150,13 @@ See [the guideline]({review_url}) for information on the review process.
             AckType::Ignored,
         ] {
             if let Some(mut users) = ack_map.remove(ack_type) {
-                // Sort by date
-                users.sort_by_key(|u| u.2);
+                users.sort_by_key(|review| review.date);
                 comment += &format!(
                     "| {} | {} |\n",
                     ack_type.as_str(),
                     users
                         .iter()
-                        .map(|(user, url, _)| format!("[{user}]({url})"))
+                        .map(format_reviewer_link)
                         .collect::<Vec<_>>()
                         .join(", ")
                 );
@@ -258,11 +255,14 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
     let mut all_comments = all_comments
         .into_iter()
         .filter(|c| cmt.id != Some(c.id))
-        .map(|c| GitHubReviewComment {
-            user: c.user.login,
-            url: c.html_url.to_string(),
-            body: c.body.unwrap_or_default(),
-            date: c.updated_at.unwrap_or(c.created_at),
+        .map(|c| {
+            let user = c.user;
+            GitHubReviewComment {
+                user: user.login,
+                url: c.html_url.to_string(),
+                body: c.body.unwrap_or_default(),
+                date: c.updated_at.unwrap_or(c.created_at),
+            }
         })
         .collect::<Vec<_>>();
     let mut all_review_comments = ctx
@@ -271,11 +271,14 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
         .await?
         .into_iter()
         .filter(|c| c.user.is_some())
-        .map(|c| GitHubReviewComment {
-            user: c.user.unwrap().login,
-            url: c.html_url.to_string(),
-            body: c.body.unwrap_or_default(),
-            date: c.submitted_at.unwrap(),
+        .map(|c| {
+            let user = c.user.unwrap();
+            GitHubReviewComment {
+                user: user.login,
+                url: c.html_url.to_string(),
+                body: c.body.unwrap_or_default(),
+                date: c.submitted_at.unwrap(),
+            }
         })
         .collect::<Vec<_>>();
 
@@ -450,6 +453,10 @@ struct Review {
     date: chrono::DateTime<chrono::Utc>,
 }
 
+fn format_reviewer_link(review: &Review) -> String {
+    format!("[{}]({})", review.user, review.url)
+}
+
 #[derive(Debug, PartialEq)]
 struct AckCommit {
     ack_type: AckType,
@@ -518,6 +525,21 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_format_reviewer_link() {
+        let review = Review {
+            user: "user".to_string(),
+            ack_type: AckType::Ack,
+            url: "https://example.com/review".to_string(),
+            date: chrono::Utc::now(),
+        };
+
+        assert_eq!(
+            format_reviewer_link(&review),
+            "[user](https://example.com/review)"
+        );
+    }
 
     struct TestCase {
         comment: &'static str,
