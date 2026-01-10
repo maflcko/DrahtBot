@@ -118,7 +118,7 @@ impl Feature for SummaryCommentFeature {
 
 const BOT_SKIP_TAG: &str = "<!--meta-tag:bot-skip-->";
 
-fn summary_comment_template(reviews: Vec<Review>) -> String {
+fn summary_comment_template(reviews: Vec<Review>, history: Vec<Review>) -> String {
     let review_url = "https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review";
     let mut comment = format!(
         r#"
@@ -159,11 +159,21 @@ See [the guideline]({review_url}) for information on the review process.
                     ack_type.as_str(),
                     users
                         .iter()
-                        .map(|(user, url, _)| format!("[{user}]({url})"))
+                        .map(|(user, url, _)| format_ack(user, url))
                         .collect::<Vec<_>>()
                         .join(", ")
                 );
             }
+        }
+
+        if !history.is_empty() {
+            comment += "\n<details><summary>Review history</summary>\n\n";
+            comment += "| Type | Reviewer | Date |\n";
+            comment += "| ---- | -------- | ---- |\n";
+            for Review { ack_type, user, url, date } in history {
+                comment += &format!("| {} | {} | {} |\n", ack_type.as_str(), format_ack(&user, &url), date.format("%F"));
+            }
+            comment += "\n</details>\n";
         }
 
         comment += "\n";
@@ -176,6 +186,8 @@ See [the guideline]({review_url}) for information on the review process.
     comment
 }
 
+fn format_ack(user: &String, url: &String) -> String { format!("[{user}]({url})") }
+
 struct GitHubReviewComment {
     user: String,
     url: String,
@@ -187,7 +199,7 @@ fn collect_user_reviews(
     all_comments: Vec<GitHubReviewComment>,
     pr_author: &str,
     head_commit: &str,
-) -> Vec<Review> {
+) -> (Vec<Review>, Vec<Review>) {
     let mut user_reviews: HashMap<String, Vec<Review>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
 
     for comment in all_comments.into_iter() {
@@ -212,7 +224,15 @@ fn collect_user_reviews(
         }
     }
 
-    user_reviews
+    let mut history = user_reviews
+        .values()
+        .flatten()
+        .filter(|r| r.ack_type != AckType::Ignored)
+        .cloned()
+        .collect::<Vec<_>>();
+    history.sort_by_key(|r| r.date);
+
+    let reviews = user_reviews
         .into_iter()
         .map(|e| {
             let e = e.1;
@@ -225,7 +245,9 @@ fn collect_user_reviews(
                 e.into_iter().max_by_key(|r| r.date).unwrap()
             }
         })
-        .collect::<Vec<_>>()
+        .collect::<Vec<_>>();
+
+    (reviews, history)
 }
 
 async fn refresh_summary_comment(
@@ -335,7 +357,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
     );
 
     let pr_author = pr.user.unwrap().login;
-    let user_reviews = collect_user_reviews(all_comments, &pr_author, &head_commit);
+    let (user_reviews, history) = collect_user_reviews(all_comments, &pr_author, &head_commit);
 
     let max_ack_date = user_reviews
         .iter()
@@ -378,7 +400,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
         .map(|r| r.user.clone())
         .collect::<Vec<_>>();
 
-    let comment = summary_comment_template(user_reviews);
+    let comment = summary_comment_template(user_reviews, history);
     util::update_metadata_comment(
         &issues_api,
         &mut cmt,
@@ -529,7 +551,7 @@ mod tests {
     use chrono::TimeZone;
 
     #[test]
-    fn test_summary_comment_template() {
+    fn test_summary_comment_template_includes_history() {
         let reviews = vec![Review {
             user: "user".to_string(),
             ack_type: AckType::Ack,
@@ -537,7 +559,22 @@ mod tests {
             date: chrono::Utc.with_ymd_and_hms(2026, 1, 2, 0, 0, 0).unwrap(),
         }];
 
-        let text = summary_comment_template(reviews);
+        let history = vec![
+            Review {
+                user: "user".to_string(),
+                ack_type: AckType::ConceptAck,
+                url: "https://example.com/review/old".to_string(),
+                date: chrono::Utc.with_ymd_and_hms(2026, 1, 1, 0, 0, 0).unwrap(),
+            },
+            Review {
+                user: "user".to_string(),
+                ack_type: AckType::Ack,
+                url: "https://example.com/review".to_string(),
+                date: chrono::Utc.with_ymd_and_hms(2026, 1, 2, 0, 0, 0).unwrap(),
+            },
+        ];
+
+        let text = summary_comment_template(reviews, history);
         assert_eq!(
             text,
             r#"
@@ -546,6 +583,15 @@ See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.
 | Type | Reviewers |
 | ---- | --------- |
 | ACK | [user](https://example.com/review) |
+
+<details><summary>Review history</summary>
+
+| Type | Reviewer | Date |
+| ---- | -------- | ---- |
+| Concept ACK | [user](https://example.com/review/old) | 2026-01-01 |
+| ACK | [user](https://example.com/review) | 2026-01-02 |
+
+</details>
 
 If your review is incorrectly listed, please copy-paste <code>&lt;!--meta-tag:bot-skip--&gt;</code> into the comment that the bot should ignore.
 "#
