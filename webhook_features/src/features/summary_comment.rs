@@ -518,7 +518,31 @@ async fn get_llm_check(llm_diff_pr: &str, llm_token: &str) -> Result<Vec<String>
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::TimeZone;
 
+    #[test]
+    fn test_summary_comment_template() {
+        let reviews = vec![Review {
+            user: "user".to_string(),
+            ack_type: AckType::Ack,
+            url: "https://example.com/review".to_string(),
+            date: chrono::Utc.with_ymd_and_hms(2026, 1, 2, 0, 0, 0).unwrap(),
+        }];
+
+        let text = summary_comment_template(reviews);
+        assert_eq!(
+            text,
+            r#"
+### Reviews
+See [the guideline](https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#code-review) for information on the review process.
+| Type | Reviewers |
+| ---- | --------- |
+| ACK | [user](https://example.com/review) |
+
+If your review is incorrectly listed, please copy-paste <code>&lt;!--meta-tag:bot-skip--&gt;</code> into the comment that the bot should ignore.
+"#
+        );
+    }
     struct TestCase {
         comment: &'static str,
         expected: Option<AckCommit>,
