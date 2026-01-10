@@ -183,6 +183,51 @@ struct GitHubReviewComment {
     date: chrono::DateTime<chrono::Utc>,
 }
 
+fn collect_user_reviews(
+    all_comments: Vec<GitHubReviewComment>,
+    pr_author: &str,
+    head_commit: &str,
+) -> Vec<Review> {
+    let mut user_reviews: HashMap<String, Vec<Review>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
+
+    for comment in all_comments.into_iter() {
+        if comment.user == pr_author {
+            continue;
+        }
+        if let Some(ac) = parse_review(&comment.body) {
+            let v = user_reviews.entry(comment.user.clone()).or_default();
+            let has_current_head = ac.commit.is_some_and(|c| head_commit.starts_with(&c));
+            v.push(Review {
+                user: comment.user.clone(),
+                ack_type: if comment.body.contains(BOT_SKIP_TAG) {
+                    AckType::Ignored
+                } else if ac.ack_type == AckType::Ack && !has_current_head {
+                    AckType::StaleAck
+                } else {
+                    ac.ack_type
+                },
+                url: comment.url,
+                date: comment.date,
+            });
+        }
+    }
+
+    user_reviews
+        .into_iter()
+        .map(|e| {
+            let e = e.1;
+            if let Some(ack) = e.iter().find(|r| r.ack_type == AckType::Ack) {
+                // Prefer ACK commit_hash over anything, to match the behavior of
+                // https://github.com/bitcoin-core/bitcoin-maintainer-tools/blob/f9b845614f7aecb9423d0621375e1bad17f92fde/github-merge.py#L208
+                ack.clone()
+            } else {
+                // Fallback to the most recent comment, otherwise
+                e.into_iter().max_by_key(|r| r.date).unwrap()
+            }
+        })
+        .collect::<Vec<_>>()
+}
+
 async fn refresh_summary_comment(
     ctx: &Context,
     repo: Repository,
@@ -283,8 +328,6 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
 
     let head_commit = pr.head.sha;
 
-    let mut user_reviews: HashMap<String, Vec<Review>> = HashMap::new(); // Need to store all acks per user to avoid duplicates
-
     println!(
         " ... Refresh of {num} comments from {url}.",
         num = all_comments.len(),
@@ -292,42 +335,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
     );
 
     let pr_author = pr.user.unwrap().login;
-    for comment in all_comments.into_iter() {
-        if comment.user == pr_author {
-            continue;
-        }
-        if let Some(ac) = parse_review(&comment.body) {
-            let v = user_reviews.entry(comment.user.clone()).or_default();
-            let has_current_head = ac.commit.is_some_and(|c| head_commit.starts_with(&c));
-            v.push(Review {
-                user: comment.user.clone(),
-                ack_type: if comment.body.contains(BOT_SKIP_TAG) {
-                    AckType::Ignored
-                } else if ac.ack_type == AckType::Ack && !has_current_head {
-                    AckType::StaleAck
-                } else {
-                    ac.ack_type
-                },
-                url: comment.url,
-                date: comment.date,
-            });
-        }
-    }
-
-    let user_reviews = user_reviews
-        .into_iter()
-        .map(|e| {
-            let e = e.1;
-            if let Some(ack) = e.iter().find(|r| r.ack_type == AckType::Ack) {
-                // Prefer ACK commit_hash over anything, to match the behavior of
-                // https://github.com/bitcoin-core/bitcoin-maintainer-tools/blob/f9b845614f7aecb9423d0621375e1bad17f92fde/github-merge.py#L208
-                ack.clone()
-            } else {
-                // Fallback to the most recent comment, otherwise
-                e.into_iter().max_by_key(|r| r.date).unwrap()
-            }
-        })
-        .collect::<Vec<_>>();
+    let user_reviews = collect_user_reviews(all_comments, &pr_author, &head_commit);
 
     let max_ack_date = user_reviews
         .iter()
