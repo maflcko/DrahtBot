@@ -423,8 +423,8 @@ async fn main() -> octocrab::Result<()> {
                 ARCH
             );
             text += "| File ";
-            text += &format!("| commit {}<br>({}) ", &base_commit, pull.base.ref_field);
-            text += &format!("| commit {}<br>(pull/{}/merge) ", &commit, pull.number);
+            text += &format!("| commit {}<br>({}) ", base_commit, pull.base.ref_field);
+            text += &format!("| commit {}<br>(pull/{}/merge) ", commit, pull.number);
             text += "|\n";
             text += "|--|--|--|\n";
 

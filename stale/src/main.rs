@@ -276,7 +276,10 @@ async fn rebase_label(
                 println!("... add label '{}'", config.needs_rebase_label);
                 if !dry_run {
                     issues_api
-                        .add_labels(pull.number, &[config.needs_rebase_label.to_string()])
+                        .add_labels(
+                            pull.number,
+                            std::slice::from_ref(&config.needs_rebase_label),
+                        )
                         .await?;
                     let text = format!(
                         "{}\n{}",
