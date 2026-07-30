@@ -90,7 +90,13 @@ fn cache_key(lang: &str, msg: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(msg);
     let result = hasher.finalize();
-    format!("cache_translation_check_{lang}_{result:x}")
+
+    let mut hex = String::with_capacity(result.len() * 2);
+    for byte in result {
+        hex.push_str(&format!("{byte:02x}"));
+    }
+
+    format!("cache_translation_check_{lang}_{hex}")
 }
 
 fn print_result(
