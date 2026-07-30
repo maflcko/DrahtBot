@@ -50,7 +50,11 @@ async fn main() -> octocrab::Result<()> {
                 item.number,
             );
             if !args.dry_run {
-                issues_api.lock(item.number, None).await?;
+                let ok = issues_api.lock(item.number, None).await?;
+                if !ok {
+                    println!("Error while locking issue! Skipping this slug!");
+                    break;
+                }
             }
         }
     }
