@@ -218,7 +218,8 @@ pub static LLM_NAMED_ARGS: LlmCheck = LlmCheck {
 pub static LLM_CMP_MACROS: LlmCheck = LlmCheck {
     prompt: LLM_PROMPT_CMP_MACROS,
     magic_all_good: "No comparison macro suggestions were found.",
-    topic: "Possible places where comparison-specific test macros should replace generic comparisons:",
+    topic:
+        "Possible places where comparison-specific test macros should replace generic comparisons:",
 };
 
 /// Return all available LLM lint checks
