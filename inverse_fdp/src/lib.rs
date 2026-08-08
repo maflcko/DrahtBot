@@ -88,6 +88,12 @@ impl Ifdp {
         self.push_str_u8(input.as_bytes());
     }
     pub fn push_str_u8(&mut self, input: &[u8]) {
+        self.push_str_u8_no_term(input);
+        // Terminate string
+        self.bytes.push(b'\\');
+        self.bytes.push(b'_');
+    }
+    pub fn push_str_u8_no_term(&mut self, input: &[u8]) {
         for byte in input.iter() {
             if *byte == b'\\' {
                 // Map "\" to "\\"
@@ -97,9 +103,6 @@ impl Ifdp {
                 self.bytes.push(*byte);
             }
         }
-        // Terminate string
-        self.bytes.push(b'\\');
-        self.bytes.push(b'_');
     }
     pub fn retrieve_bytes(&self) -> Vec<u8> {
         let mut result = self.bytes.clone();
@@ -658,6 +661,27 @@ mod tests {
         }
     }
 
+    fn consume_str_max(fdp_ptr: *mut std::ffi::c_void, max_length: usize) -> Vec<u8> {
+        let mut b_ptr: u64 = 0;
+        let mut b_sz: u64 = 0;
+
+        let b_ptr_ptr = &b_ptr;
+        let b_sz_ptr = &b_sz;
+
+        unsafe {
+            cpp!([fdp_ptr as "void*", max_length as "uint64_t", b_ptr_ptr as "uint64_t*", b_sz_ptr as "uint64_t*"] {
+                auto* fdp = static_cast<FuzzedDataProvider*>(fdp_ptr);
+                auto* data{new std::string{}}; // leaked
+                *data = fdp->ConsumeRandomLengthString(max_length);
+
+                *b_ptr_ptr = uint64_t{reinterpret_cast<std::uintptr_t>(data->data())};
+                *b_sz_ptr = uint64_t{data->size()};
+            })
+        }
+
+        unsafe { std::slice::from_raw_parts(b_ptr as *const u8, b_sz as usize).to_vec() }
+    }
+
     macro_rules! single_int_macro {
         ($num:expr, $expected_bytes:expr, $consume_fn:ident) => {{
             let mut ifdp = Ifdp::new();
@@ -797,5 +821,29 @@ mod tests {
                 assert_eq!(r, 7u8);
             }
         }
+    }
+
+    #[test]
+    fn test_ifdp_str_termination() {
+        let mut ifdp = Ifdp::new();
+        ifdp.push_str_u8(b"");
+        ifdp.push_str_u8(b"h");
+        ifdp.push_str_u8(b"hi");
+        ifdp.push_str_u8_no_term(b"hij");
+
+        let buffer = ifdp.retrieve_bytes();
+        let data = vec![
+            0x5C, 0x5F, // ""
+            0x68, 0x5C, 0x5F, // "h"
+            0x68, 0x69, 0x5C, 0x5F, // "hi"
+            0x68, 0x69, 0x6A, // "hij"
+        ];
+        assert_eq!(buffer, data);
+
+        let fdp_ptr = create_fuzzed_data_provider(&buffer);
+        assert_eq!(consume_str_max(fdp_ptr, 3), b"");
+        assert_eq!(consume_str_max(fdp_ptr, 3), b"h");
+        assert_eq!(consume_str_max(fdp_ptr, 3), b"hi");
+        assert_eq!(consume_str_max(fdp_ptr, 3), b"hij");
     }
 }
