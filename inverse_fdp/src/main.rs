@@ -2,70 +2,54 @@ fn main() {
     let mut ifdp = inverse_fdp::Ifdp::new();
     // Insert below
 
+    // Taken from fuzz input qa-assets/fuzz_corpora/process_message/f5253cc5b2b243e59eb03205f7321674a8a6e326
+    ifdp.push_bytes(&[
+        0x74, 0x78, 0x0, 0x66, 0xe6, 0x4, 0x0, 0x20, 0x0, 0x70, 0x2b, 0x1,
+    ]); // (len=12)
+    ifdp.push_integral_in_range(1095216660480i64, 0i64, 9223372036854775807i64);
+    ifdp.push_integral_in_range(4294967294u32, 4294967294u32, 4294967295u32);
+    ifdp.push_integral_in_range(0u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(0u64, 0u64, 5u64);
+    ifdp.push_bytes(&[0xc0, 0x0, 0x42, 0x0]); // (len=4)
+    ifdp.push_integral_in_range(26992u16, 0u16, 65535u16);
+    ifdp.push_integral_in_range(97u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(1u64, 0u64, 6u64);
+    ifdp.push_integral_in_range(16449536u32, 0u32, 4294967295u32);
+    ifdp.push_integral_in_range(1127013566931252u64, 0u64, 18446744073709551615u64);
+    ifdp.push_integral_in_range(3711527921903402496u64, 0u64, 18446744073709551615u64);
+    ifdp.push_integral_in_range(0u64, 0u64, 5u64);
+    ifdp.push_bytes(&[0xcc, 0xf6, 0x2, 0x0]); // (len=4)
+    ifdp.push_integral_in_range(3111u16, 0u16, 65535u16);
+    ifdp.push_integral_in_range(217u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(2u64, 0u64, 6u64);
+    ifdp.push_integral_in_range(1900544u32, 0u32, 4294967295u32);
+    ifdp.push_str_u8(&[0x8, 0x0]); // (len=2), Limit: 64 (When the limit is equal to the len, it may actually be unlimited in the format)
+    ifdp.push_integral_in_range(2u64, 0u64, 6u64);
+    ifdp.push_integral_in_range(18374687579274834944u64, 0u64, 18446744073709551615u64);
+    ifdp.push_integral_in_range(59u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(4u64, 0u64, 9u64);
+    ifdp.push_integral_in_range(255u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(255u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(3u64, 0u64, 6u64);
+    ifdp.push_integral_in_range(251u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(1u64, 0u64, 6u64);
+    ifdp.push_integral_in_range(50560056i32, 31800i32, 2147483647i32);
+    ifdp.push_integral_in_range(124u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(255u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(255u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(255u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(7u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(255u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(255u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(135u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(172u8, 0u8, 255u8);
+    ifdp.push_integral_in_range(1i64, -1i64, 9i64);
+    ifdp.push_integral_in_range(2615519419i64, 946684801i64, 4133980799i64);
+    ifdp.push_str_u8(&[0x0, 0x0]); // (len=2), Limit: 4000000 (When the limit is equal to the len, it may actually be unlimited in the format)
 
-ifdp.push_integral_in_range(1i32, 1i32, 3i32, );
-ifdp.push_integral_in_range(132503042246713i64, 0i64, 9223372036854775807i64, );
-ifdp.push_integral_in_range(4294967295u32, 4294967294u32, 4294967295u32, );
-ifdp.push_integral_in_range(0u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(0u64, 0u64, 5u64, );
-ifdp.push_bytes(&[0xcb,0x31,0xc8,0xc3,]); // (len=4)
-ifdp.push_integral_in_range(2313u16, 0u16, 65535u16, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(1u64, 0u64, 6u64, );
-ifdp.push_integral_in_range(872611380u32, 0u32, 4294967295u32, );
-ifdp.push_integral_in_range(26156273523227906u64, 0u64, 18446744073709551615u64, );
-ifdp.push_integral_in_range(18303194034617450495u64, 0u64, 18446744073709551615u64, );
-ifdp.push_integral_in_range(0u64, 0u64, 5u64, );
-ifdp.push_bytes(&[0xc4,0x82,0x78,0x0,]); // (len=4)
-ifdp.push_integral_in_range(0u16, 0u16, 65535u16, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(2u64, 0u64, 6u64, );
-ifdp.push_integral_in_range(116785640u32, 0u32, 4294967295u32, );
-ifdp.push_str_u8(&[0x0,0x0,]); // (len=2), Limit: 64
-ifdp.push_integral_in_range(2u64, 0u64, 6u64, );
-ifdp.push_integral_in_range(7882264731116589913u64, 0u64, 18446744073709551615u64, );
-ifdp.push_integral_in_range(11u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(3u64, 0u64, 9u64, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(3u64, 0u64, 6u64, );
-ifdp.push_integral_in_range(101u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(2u64, 0u64, 6u64, );
-ifdp.push_integral_in_range(1970593181i32, 31800i32, 2147483647i32, );
-ifdp.push_integral_in_range(102u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-ifdp.push_integral_in_range(255u8, 0u8, 255u8, );
-//ifdp.push_bytes(&[0x74,0x78,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x0,0x5a,0xa9,]); // (len=12)
-      ifdp.push_bytes(&[0x62, 0x6c, 0x6f, 0x63, 0x6b, 0x0, 0x0, 0x0, 0x0, 0x0,0x0, 0xcf]); // (len=10)
-
-ifdp.push_integral_in_range(2037602433i64, 946684801i64, 4133980799i64, );
-//ifdp.push_str_u8(&[0xff,0x9,0x9,0x0,0xfe,0xff,0xff,0xf4,0x0,0x6,0x4,0x0,0xff,0xfd,0xa9,]); // (len=15), Limit: 4000000; not terminated! consider ifdp.push_str_u8_no_term instead?
-
-
-//ifdp.push_bytes(&[]); // (len=0)
-//ifdp.push_str_u8(&[]); // (len=0), Limit: 4000000; not terminated! consider ifdp.push_str_u8_no_term instead?
-
- //   ifdp.push_bytes(&[0x74, 0x78, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xcf,]); // (len=12)
-
-
-
-
-ifdp.push_str_u8(&
-[0x0,0x0,0x0,0x30,0x1f,0xb4,0xeb,0xdd,0xf,0x4b,0x5,0xa9,0x71,0x31,0xe9,0x44,0xb9,0x54,0x89,0x27,0x96,0xc3,0x89,0xa9,0x9e,0x60,0xa0,0xcc,0x2d,0x9b,0x6,0x41,0x3d,0xd0,0xb1,0x41,0x96,0xda,0xb4,0x1b,0x16,0x3c,0xe4,0x77,0x15,0xc5,0x2f,0x48,0xb2,0xec,0x2b,0x7,0x20,0x29,0x3f,0x17,0x76,0x68,0xef,0xe,0xb,0x24,0x1f,0x9a,0x4a,0x88,0x5,0x8,0xfe,0xe5,0x49,0x4d,0xff,0xff,0x7f,0x20,0x0,0x0,0x0,0x0,0x1,0x2,0x0,0x0,0x0,0x0,0x1,0x1,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xff,0xff,0xff,0xff,0x3,0x2,0xc9,0x0,0xfe,0xff,0xff,0xff,0x2,0x0,0xf9,0x2,0x95,0x0,0x0,0x0,0x0,0x1,0x51,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x26,0x6a,0x24,0xaa,0x21,0xa9,0xed,0xe2,0xf6,0x1c,0x3f,0x71,0xd1,0xde,0xfd,0x3f,0xa9,0x99,0xdf,0xa3,0x69,0x53,0x75,0x5c,0x69,0x6,0x89,0x79,0x99,0x62,0xb4,0x8b,0xeb,0xd8,0x36,0x97,0x4e,
-  0x8c,0xf9,0x1,0x20,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0xc8,0x0,0x0,0x0]); // (len=82), Limit: 4000000
-
-
-
+    //                 ^^^^^^^^
+    // Those two bytes are the TX payload (untested)
+    // A hex payload can be copy-pasted into this.
 
     // Insert above
     let buffer = ifdp.retrieve_bytes();
