@@ -117,3 +117,26 @@ mkdir -p inputs/
 FUZZ=process_messages honggfuzz/honggfuzz --persistent  -i inputs/ -- src/test/fuzz/fuzz
 
 FUZZ=process_messages honggfuzz/honggfuzz --timeout 999 --threads 9 --persistent  -i ./qa-assets/fuzz_seed_corpus/process_messages -- src/test/fuzz/fuzz
+```
+
+# IPV6
+
+
+
+```diff
+diff --git a/depends/Makefile b/depends/Makefile
+index 27bf804..768db6b 100644
+--- a/depends/Makefile
++++ b/depends/Makefile
+@@ -45,7 +45,7 @@ NO_USDT ?=
+ NO_NATPMP ?=
+ MULTIPROCESS ?=
+ LTO ?=
+-FALLBACK_DOWNLOAD_PATH ?= https://bitcoincore.org/depends-sources
++FALLBACK_DOWNLOAD_PATH ?= https://drahtbot.space/depends_download_fallback
+
+ C_STANDARD ?= c11
+ CXX_STANDARD ?= c++17
+```
+
+
