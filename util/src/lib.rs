@@ -115,10 +115,7 @@ pub fn prepare_raw_diff_for_llm(diff: &str) -> String {
 
 /// Shared prompt that tells the LLM it will be given a git diff before receiving instructions.
 pub const LLM_SHARED_PROMPT_DIFF: &str = r#"
-Examine the provided git diff. Wait for additional instructions regarding how to evaluate or process the diff.
-
-- Upon receiving further instructions, carefully read and interpret the git diff according to the provided evaluation criteria.
-- Use the format or structure requested in follow-up instructions.
+Evaluate the following git diff according to the instructions that follow.
 "#;
 
 #[derive(Clone, Copy)]
@@ -140,14 +137,13 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 
 - Flag only if a word is misspelled, or the English is clearly broken and the intended meaning cannot be understood without guessing.
 - Ignore style preferences, such as Oxford comma, missing or superfluous commas, missing articles, and missing or inconsistent punctuation.
-- Focus solely on lines added (starting with a + in the diff).
+- Focus solely on added diff lines beginning with +.
 - Address only code comments (for example C++ or Python comments) or documentation (for example inline strings or markdown files).
-- If no errors are found, say "{magic_all_good}".
 
 # Output Format
 
 List each error with minimal context, followed by a very brief rationale:
-- typo -> replacement [explanation]
+- original -> suggested revision [brief explanation]
 
 If none are found, state: "{magic_all_good}".
 "#;
@@ -156,16 +152,15 @@ If none are found, state: "{magic_all_good}".
 pub const LLM_PROMPT_NAMED_ARGS: &str = r#"
 Check C++ and Python code in the provided git diff for function calls where integral literal values (e.g., 0, true) are used as arguments.
 
-- Focus solely on lines added (starting with a + in the diff).
-- In C++: Look for function calls with literals as positional arguments. Recommend replacing `func(x, 0)` with `func(x, /*named_arg=*/0)`.
-- In Python: Look for function calls with literals as positional arguments. Recommend replacing `func(x, 0)` with `func(x, named_arg=0)` if the argument is not already named or is already using keyword syntax.
+- Focus solely on added diff lines beginning with +.
+- In C++: Look for function calls with literals as positional arguments. Recommend replacing `func(x, y, 0)` with `func(x, y, /*named_arg=*/0)`.
+- In Python: Look for function calls with literals as positional arguments. Recommend replacing `func(x, y, 0)` with `func(x, y, named_arg=0)` if the argument is not already named or not already using keyword syntax.
 - Only suggest a named arg if the meaning of the integral literal is ambiguous and not obvious from the context.
 - Do not flag or suggest changes for arguments that are already named or where such a comment would be more confusing.
-- Do not flag the first two argument of a function call. Only flag the third and later arguments.
+- Do not flag the first two arguments of a function call. Only flag the third and later arguments.
 - Do not flag string literals.
-- Do not flag literals in low-level/system/library calls when the literal is well-understood and naming it would add noise, like std::max, std::format.
+- Do not flag literals in low-level/system/library calls when the literal's purpose is obvious and naming it would add noise, like std::max, std::format.
 - Limit findings and suggestions to literals (do not suggest for variables or expressions).
-- If no opportunities are found, say "{magic_all_good}".
 
 # Output Format
 
@@ -179,7 +174,7 @@ If none are found, state: "{magic_all_good}".
 pub const LLM_PROMPT_CMP_MACROS: &str = r#"
 Scan the provided git diff for test comparisons that rely on generic check macros or bare assertions instead of using the comparison-specific helpers.
 
-- Focus only on lines added (starting with a + in the diff).
+- Focus only on added diff lines beginning with +.
 - In C++ only look for the BOOST_CHECK_THROW Boost.Test macro that only check a generic exception type and not a detailed message, for example:
   * BOOST_CHECK_THROW(obj.write(), std::runtime_error) -> BOOST_CHECK_EXCEPTION(obj.write(), std::runtime_error, HasReason("the exact failure message"))
 - Do not flag bare assert(...) checks or any other boost test macros in any C++ code.
@@ -193,7 +188,6 @@ Scan the provided git diff for test comparisons that rely on generic check macro
   * assert abs(v - vexp) < 0.00001 → assert_approx(v, vexp, vspan=...)
 - In Python do not flag asserts on expressions that are guaranteed to evaluate to `bool`. E.g `a in b` or `a not in b`.
 - Only flag instances where the intent is explicit and the specialized macro is clearly applicable to avoid noise.
-- If no changes are needed, say "{magic_all_good}".
 
 # Output Format
 
@@ -228,7 +222,7 @@ pub fn all_llm_checks() -> Vec<LlmCheck> {
 }
 
 /// Construct the OpenAI chat payload used by llm clients that request diff checks.
-pub fn make_llm_payload(diff: &str, typo_prompt: String) -> serde_json::Value {
+pub fn make_llm_payload(diff: &str, check_prompt: String) -> serde_json::Value {
     serde_json::json!({
       "model": "gpt-5.4-mini",
       "messages": [
@@ -250,7 +244,7 @@ pub fn make_llm_payload(diff: &str, typo_prompt: String) -> serde_json::Value {
             },
             {
               "type": "text",
-              "text": typo_prompt
+              "text": check_prompt
             }
           ]
         }

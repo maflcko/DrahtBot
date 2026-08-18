@@ -54,7 +54,7 @@ fn main() {
             prepare_raw_diff_for_llm(&diff)
         );
 
-        check_google_ai(&cli, &outputs, &file_name, &diff);
+        //check_google_ai(&cli, &outputs, &file_name, &diff);
         check_open_ai(&cli, &outputs, &file_name, &diff);
     }
 }
