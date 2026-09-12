@@ -338,7 +338,7 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
 
     // Re-request reviewers.
     // Ideally, do this after some time (7 days) after the last push to avoid requesting reviewers
-    // on a pull that did not finish CI yet and to avoid too agressive spam.
+    // on a pull that did not finish CI yet and to avoid too aggressive spam.
     // However, the API does not give a last push date, so it would need to be fetched and stored
     // somehow (via a synchronize event, or opened event, or the commit date of the head commit).
     // For now, if there was 1 ACK, assume it happened after sufficient time.

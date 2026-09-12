@@ -97,7 +97,7 @@ fn features() -> Vec<Box<dyn Feature>> {
 pub fn list_features() -> String {
     format!(
         "{intro}\n{list}\n{wh_sum_desc}\n{wh_sum}",
-        intro = "DrahtBot will will run the following features:",
+        intro = "DrahtBot will run the following features:",
         list = features()
             .iter()
             .map(|f| format!(
