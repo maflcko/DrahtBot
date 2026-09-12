@@ -110,6 +110,15 @@ impl Feature for CiStatusFeature {
                     return Ok(());
                 }
                 let pull_number = pull_number.unwrap();
+                let suite_head_sha = payload["check_suite"]["head_sha"]
+                    .as_str()
+                    .ok_or(DrahtBotError::KeyNotFound)?;
+                let pulls_api = ctx.octocrab.pulls(repo_user, repo_name);
+                let pull = pulls_api.get(pull_number).await?;
+                if pull.head.sha != suite_head_sha {
+                    println!("... ignore annotated pull number {pull_number}, not part of check suite {suite_head_sha}");
+                    return Ok(());
+                }
                 println!("... pull number {pull_number} conclusion: {conclusion}");
                 let issues_api = ctx.octocrab.issues(repo_user, repo_name);
                 let issue = issues_api.get(pull_number).await?;
