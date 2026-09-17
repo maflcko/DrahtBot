@@ -434,7 +434,7 @@ lazy_static! {
         (r"\b([Aa]pproach ACK)\b", AckType::ApproachAck),
         (r"\b([Aa]pproach NACK)\b", AckType::ApproachNack),
         (r"\b(NACK)\b", AckType::ConceptNack),
-        (r"\b([Cc]oncept ACK)\b", AckType::ConceptAck),
+        (r"\b([Cc]oncept ?ACK)\b", AckType::ConceptAck),
         (r"(ACK)(?:.*?)([0-9a-f]{6,40})\b", AckType::Ack),
         (r"(ACK)\b", AckType::ConceptAck)
     ]
@@ -589,6 +589,13 @@ mod tests {
             },
             TestCase {
                 comment: "Concept ACK 1234567890123456789012345678901234567890",
+                expected: Some(AckCommit {
+                    ack_type: AckType::ConceptAck,
+                    commit: None,
+                }),
+            },
+            TestCase {
+                comment: "ConceptACK",
                 expected: Some(AckCommit {
                     ack_type: AckType::ConceptAck,
                     commit: None,
