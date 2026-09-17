@@ -40,7 +40,7 @@ fn main() {
         );
     }
 
-    println!("Fetch upsteam, checkout latest `main` branch");
+    println!("Fetch upstream, checkout latest `main` branch");
     util::chdir(&host_reports_www_folder);
     util::check_call(util::git().args(["fetch", "--quiet", "--all"]));
     util::check_call(util::git().args(["checkout", "origin/main"]));

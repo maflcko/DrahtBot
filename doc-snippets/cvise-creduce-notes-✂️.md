@@ -1,14 +1,14 @@
 # How to reduce a compiler bug
 
-In practise, a compiler bug will usually manifest inside a large executable, possibly a fuzz test, unit test, or the main program.
+In practice, a compiler bug will usually manifest inside a large executable, possibly a fuzz test, unit test, or the main program.
 
 To investigate, possibly report and fix the bug, it should be reduced. All reduction steps must preserve the bug.
 
 A compilation error bug is usually easier to reduce, because normally only a single translation unit is needed, without the need to run a link step.
 
-Should the compiler spit out the wrong assembly, leading to runtime errors, a main function and a successful link step is needed.
+Should the compiler spit out the wrong assembly, leading to runtime errors, a main function and a successful link step are needed.
 
-Usually, automated tools such as cvise/creduce can be used to minimize, but they often end up in an ugly local minima, sometimes with added UB, that is hard to recover from.
+Usually, automated tools such as cvise/creduce can be used to minimize, but they often end up in an ugly local minimum, sometimes with added UB, that is hard to recover from.
 
 Thus, it may be faster and cleaner to manually reduce with the following unordered steps in a loop:
 

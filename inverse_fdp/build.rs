@@ -1,4 +1,4 @@
-// # Shrot Description
+// # Short Description
 //
 // Requires:
 // cargo clean --package=inverse_fdp && cargo test && cargo run
@@ -13,7 +13,7 @@
 // This leads to the havoc effect, where a minimal change in the fuzz input bytes may trigger a
 // completely different execution.
 //
-// This project is mostly for fun, to make it easier to expand/mutate a properly formatted fuzz
+// This project is mostly for fun, to make it easier to expand/mutate properly formatted fuzz
 // inputs by hand. For example, to swap one byte blob with another, or swap one integral enum value
 // with another.
 //

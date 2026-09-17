@@ -61,7 +61,7 @@ fn main() {
     ensure_init_git(&dir_code, &url_code);
     ensure_init_git(&dir_assets, &url_seed);
 
-    println!("Fetch upsteam, checkout latest branch");
+    println!("Fetch upstream, checkout latest branch");
     chdir(&dir_code);
     check_call(git().args(["fetch", "--quiet", "--all"]));
     check_call(git().args(["checkout", "origin/master", "--force"]));

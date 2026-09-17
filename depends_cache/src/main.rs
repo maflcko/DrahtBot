@@ -56,7 +56,7 @@ fn main() -> Result<(), std::io::Error> {
         );
     }
 
-    println!("Fetch upsteam, checkout {}", args.git_ref);
+    println!("Fetch upstream, checkout {}", args.git_ref);
     util::chdir(&git_repo_dir);
     util::check_call(util::git().args(["fetch", "--quiet", "--all"]));
     util::check_call(util::git().args(["checkout", &args.git_ref]));

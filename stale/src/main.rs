@@ -4,7 +4,7 @@ use clap::Parser;
 #[command(about = "\
 Handle stale issues and pull requests:
 * Comment on pull requests that needed a rebase for too long.\n\
-* Comment on pull requests that a failing CI for too long.\n\
+* Comment on pull requests that had a failing CI for too long.\n\
 * Comment on pull requests that are inactive for too long.\n\
 * Update the label that indicates a rebase is required.\n\
 ", long_about = None)]
