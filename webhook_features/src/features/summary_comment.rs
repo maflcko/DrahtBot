@@ -393,11 +393,13 @@ For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
     // Done one-by-one to work around https://github.com/maflcko/DrahtBot/issues/29
     for stale_reviewer in &stale_reviewers {
         println!(" ... Request review from {}", stale_reviewer);
-        if let Err(err) = pulls_api
-            .request_reviews(pr_number, [stale_reviewer.to_string()], [])
-            .await
-        {
-            println!(" ... ERROR when requesting review {:?}", err);
+        if !ctx.dry_run {
+            if let Err(err) = pulls_api
+                .request_reviews(pr_number, [stale_reviewer.to_string()], [])
+                .await
+            {
+                println!(" ... ERROR when requesting review {:?}", err);
+            }
         }
     }
     Ok(())
