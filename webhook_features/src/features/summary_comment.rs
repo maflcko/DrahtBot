@@ -602,6 +602,13 @@ mod tests {
                 }),
             },
             TestCase {
+                comment: "ConceptACK 1234567890123456789012345678901234567890",
+                expected: Some(AckCommit {
+                    ack_type: AckType::ConceptAck,
+                    commit: None,
+                }),
+            },
+            TestCase {
                 comment: "tACK",
                 expected: Some(AckCommit {
                     ack_type: AckType::ConceptAck,
