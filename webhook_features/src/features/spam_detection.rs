@@ -190,7 +190,7 @@ body: {body}
 "#
     );
     let payload = serde_json::json!({
-      "model": "gpt-5.4-nano",
+      "model": "gpt-6-luna",
       "messages": [
         {
           "role": "developer",
