@@ -227,7 +227,7 @@ async fn refresh_summary_comment(
                 &issues_api,
                 &mut cmt,
                 &external_sites,
-                util::IdComment::SecCodeCoverage,
+                util::IdComment::SecExternalSites,
                 ctx.dry_run,
             )
             .await?;

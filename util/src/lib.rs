@@ -45,7 +45,7 @@ pub enum IdComment {
     InactiveCi,
     InactiveStale,
     Metadata, // The "root" section
-    SecCodeCoverage,
+    SecExternalSites,
     SecConflicts,
     SecCoverage,
     SecReviews,
@@ -62,7 +62,7 @@ impl IdComment {
             Self::InactiveCi => "<!--2e250dc3d92b2c9115b66051148d6e47-->",
             Self::InactiveStale => "<!--8ac04cdde196e94527acabf64b896448-->",
             Self::Metadata => "<!--e57a25ab6845829454e8d69fc972939a-->",
-            Self::SecCodeCoverage => "<!--006a51241073e994b41acfe9ec718e94-->",
+            Self::SecExternalSites => "<!--006a51241073e994b41acfe9ec718e94-->",
             Self::SecConflicts => "<!--174a7506f384e20aa4161008e828411d-->",
             Self::SecCoverage => "<!--2502f1a698b3751726fa55edcda76cd3-->",
             Self::SecReviews => "<!--021abf342d371248e50ceaed478a90ca-->",
