@@ -117,4 +117,5 @@ repositories:
     spam_detection: true
     ci_status: true
     external_sites:
-      - 'Code coverage & benchmarks: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.'
+      - 'Code coverage & benchmarks: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}'
+      - 'Ralph review: https://git.fish.foo/{owner}/{repo}/pulls/{pull_num}#author-ralph'
