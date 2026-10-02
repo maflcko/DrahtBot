@@ -118,4 +118,4 @@ repositories:
     ci_status: true
     external_sites:
       - 'Code coverage & benchmarks: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}'
-      - 'Ralph review: https://git.fish.foo/{owner}/{repo}/pulls/{pull_num}#author-ralph'
+      - 'Ralph review <img src=https://review.fish.foo/assets/{owner}/{repo}/{pull_num}.png alt="Ralph review status"> https://git.fish.foo/{owner}/{repo}/pulls/{pull_num}#author-ralph'
