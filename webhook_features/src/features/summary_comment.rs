@@ -208,18 +208,25 @@ async fn refresh_summary_comment(
         .iter()
         .find(|r| r.repo_slug == format!("{}/{}", repo.owner, repo.name))
     {
-        if config_repo.corecheck {
-            let coverage = r#"
-### Code Coverage & Benchmarks
-For details see: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.
-"#;
+        if !config_repo.external_sites.is_empty() {
+            let external_sites = format!(
+                "\n### External sites\n\n{}\n",
+                config_repo
+                    .external_sites
+                    .iter()
+                    .map(|site| format!(
+                        "* {}",
+                        site.replace("{owner}", &repo.owner)
+                            .replace("{repo}", &repo.name)
+                            .replace("{pull_num}", &pr_number.to_string())
+                    ))
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            );
             util::update_metadata_comment(
                 &issues_api,
                 &mut cmt,
-                &coverage
-                    .replace("{owner}", &repo.owner)
-                    .replace("{repo}", &repo.name)
-                    .replace("{pull_num}", &pr_number.to_string()),
+                &external_sites,
                 util::IdComment::SecCodeCoverage,
                 ctx.dry_run,
             )

@@ -6,19 +6,19 @@ repositories:
         - '^dummy:'
     spam_detection: true
     ci_status: true
-    corecheck: false
+    external_sites: []
   - repo_slug: bitcoin-core/gui
     backport_label: null
     repo_labels:
     spam_detection: true
     ci_status: true
-    corecheck: false
+    external_sites: []
   - repo_slug: bitcoin-core/packaging
     backport_label: null
     repo_labels:
     spam_detection: true
     ci_status: false
-    corecheck: false
+    external_sites: []
   - repo_slug: bitcoin/bitcoin
     backport_label: Backport
     # labels taken from https://github.com/bitcoin/bitcoin/blob/master/CONTRIBUTING.md#creating-the-pull-request
@@ -116,4 +116,5 @@ repositories:
         - '^scripted-diff:'
     spam_detection: true
     ci_status: true
-    corecheck: true
+    external_sites:
+      - 'Code coverage & benchmarks: https://corecheck.dev/{owner}/{repo}/pulls/{pull_num}.'

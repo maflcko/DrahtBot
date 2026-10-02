@@ -5,7 +5,7 @@ pub struct Repo {
     pub repo_labels: std::collections::HashMap<String, Vec<String>>,
     pub spam_detection: bool,
     pub ci_status: bool,
-    pub corecheck: bool,
+    pub external_sites: Vec<String>,
 }
 
 #[derive(serde::Deserialize)]
