@@ -431,15 +431,19 @@ fn write_ack_count_svg(
     ack_count: usize,
 ) -> Result<()> {
     std::fs::create_dir_all(ack_count_folder)?;
+    let (display_count, color, font_weight) = if ack_count > 2 {
+        ("2+", "darkgreen", "bold")
+    } else if ack_count > 0 {
+        (if ack_count == 1 { "1" } else { "2" }, "darkgreen", "bold")
+    } else {
+        ("0", "grey", "normal")
+    };
 
     let svg = format!(
         r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="13" height="18">
-  <text x="25" y="55" text-anchor="middle" font-size="60" fill="darkgreen">
-  {}
-  </text>
+  <text x="25" y="55" text-anchor="middle" font-size="60" font-weight="{font_weight}" fill="{color}">{display_count}</text>
 </svg>
-"#,
-        ack_count.min(9)
+"#
     );
     std::fs::write(ack_count_folder.join(format!("{pr_number}.svg")), svg)?;
     Ok(())
