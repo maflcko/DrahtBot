@@ -378,6 +378,19 @@ async fn refresh_summary_comment(
         .map(|r| r.user.clone())
         .collect::<Vec<_>>();
 
+    let ack_count = user_reviews
+        .iter()
+        .filter(|r| r.ack_type == AckType::Ack)
+        .count();
+    write_ack_count_svg(
+        &ctx.www_folder
+            .join("ack_count")
+            .join(&repo.owner)
+            .join(&repo.name),
+        pr_number,
+        ack_count,
+    )?;
+
     let comment = summary_comment_template(user_reviews);
     util::update_metadata_comment(
         &issues_api,
@@ -409,6 +422,26 @@ async fn refresh_summary_comment(
             }
         }
     }
+    Ok(())
+}
+
+fn write_ack_count_svg(
+    ack_count_folder: &std::path::Path,
+    pr_number: u64,
+    ack_count: usize,
+) -> Result<()> {
+    std::fs::create_dir_all(ack_count_folder)?;
+
+    let svg = format!(
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="13" height="18">
+  <text x="25" y="55" text-anchor="middle" font-size="60" fill="darkgreen">
+  {}
+  </text>
+</svg>
+"#,
+        ack_count.min(9)
+    );
+    std::fs::write(ack_count_folder.join(format!("{pr_number}.svg")), svg)?;
     Ok(())
 }
 

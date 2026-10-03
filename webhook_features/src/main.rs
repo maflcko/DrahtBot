@@ -36,6 +36,9 @@ struct Args {
     /// The path to the yaml config file.
     #[arg(long)]
     config_file: std::path::PathBuf,
+    /// Scratch directory for webhook output files in dry-run mode. Normal mode writes to /var/www/html.
+    #[arg(long)]
+    webhook_scratch: std::path::PathBuf,
     /// Print changes/edits instead of calling the GitHub/CI API.
     #[arg(long, default_value_t = false)]
     dry_run: bool,
@@ -65,6 +68,7 @@ pub struct Context {
     github_token: String,
     llm_token: String,
     dry_run: bool,
+    www_folder: std::path::PathBuf,
 }
 
 #[post("/drahtbot")]
@@ -150,6 +154,12 @@ async fn emit_event(ctx: &Context, event: GitHubEvent, data: web::Json<serde_jso
 async fn main() -> Result<()> {
     let args = Args::parse();
 
+    let www_folder = if args.dry_run {
+        args.webhook_scratch.join("www_folder")
+    } else {
+        std::path::PathBuf::from("/var/www/html")
+    };
+
     let config: Config = serde_yaml::from_reader(
         std::fs::File::open(args.config_file).expect("config file path error"),
     )
@@ -180,6 +190,7 @@ async fn main() -> Result<()> {
         github_token: args.token,
         llm_token: args.llm_token,
         dry_run: args.dry_run,
+        www_folder,
     });
 
     HttpServer::new(move || {
