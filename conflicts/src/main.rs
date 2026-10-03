@@ -16,6 +16,9 @@ struct Args {
     /// Update all conflicts comments and labels.
     #[arg(long, default_value_t = false)]
     update_comments: bool,
+    /// URL template for ACK-count badges in conflict lists. Supports {owner}, {repo}, and {number}.
+    #[arg(long)]
+    with_ack_counts: Option<String>,
     /// The local dir used for scratching.
     #[arg(long)]
     scratch_dir: std::path::PathBuf,
@@ -159,6 +162,7 @@ async fn update_comment(
     config: &Config,
     api: &octocrab::Octocrab,
     dry_run: bool,
+    ack_counts_url: Option<&str>,
     pull: &MetaPull,
     pulls_conflict: &[&MetaPull],
 ) -> octocrab::Result<()> {
@@ -196,11 +200,22 @@ async fn update_comment(
                 &pulls_conflict
                     .iter()
                     .map(|p| format!(
-                        "\n* [#{sn}]({url}) ({title} by {user})",
+                        "\n* [#{sn}]({url}){ack_count} ({title} by {user})",
                         sn = p
                             .slug_num
                             .trim_start_matches(&format!("{sl}/", sl = pull.slug.str())),
                         url = p.pull.html_url.as_ref().expect("remote api error"),
+                        ack_count = if let Some(template) = ack_counts_url {
+                            format!(
+                                " <sub><img src=\"{url}\"></sub>",
+                                url = template
+                                    .replace("{owner}", &p.slug.owner)
+                                    .replace("{repo}", &p.slug.repo)
+                                    .replace("{number}", &p.pull.number.to_string()),
+                            )
+                        } else {
+                            String::new()
+                        },
                         title = p.pull.title.as_ref().expect("remote api error").trim(),
                         user = p.pull.user.as_ref().expect("remote api error").login
                     ))
@@ -336,8 +351,15 @@ async fn main() -> octocrab::Result<()> {
                     pr_id = pull_update.slug_num
                 );
                 let pulls_conflict = calc_conflicts(&mono_pulls_mergeable, pull_update);
-                update_comment(&config, &github, args.dry_run, pull_update, &pulls_conflict)
-                    .await?;
+                update_comment(
+                    &config,
+                    &github,
+                    args.dry_run,
+                    args.with_ack_counts.as_deref(),
+                    pull_update,
+                    &pulls_conflict,
+                )
+                .await?;
             }
         }
         if let Some(pull_id) = args.pull_id {
@@ -356,7 +378,15 @@ async fn main() -> octocrab::Result<()> {
                 id = pull_merge.slug_num
             );
             let conflicts = calc_conflicts(&mono_pulls_mergeable, pull_merge);
-            update_comment(&config, &github, args.dry_run, pull_merge, &conflicts).await?;
+            update_comment(
+                &config,
+                &github,
+                args.dry_run,
+                args.with_ack_counts.as_deref(),
+                pull_merge,
+                &conflicts,
+            )
+            .await?;
         }
     }
     util::chdir(&temp_dir);
