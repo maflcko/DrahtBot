@@ -24,7 +24,7 @@ fallocate -l 22G /swapfile_ci && chmod 600 /swapfile_ci && mkswap /swapfile_ci &
 sysctl vm.mmap_rnd_bits=28 # https://github.com/bitcoin/bitcoin/issues/30674 on Ubuntu
 sysctl net.ipv6.conf.all.disable_ipv6=0 && podman run --rm --privileged docker.io/multiarch/qemu-user-static --reset -p yes && cd b-c-ci/ && tmux new -s "ci_runner"
 
-podman run --rm -ti --platform linux/s390x "docker.io/debian:bookworm" uname --machine
+podman run --rm -ti --platform linux/s390x "docker.io/debian:unstable" uname --machine
 ```
 
 ```
