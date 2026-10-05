@@ -440,8 +440,8 @@ fn write_ack_count_svg(
     };
 
     let svg = format!(
-        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 70" width="13" height="18">
-  <text x="25" y="55" text-anchor="middle" font-size="60" font-weight="{font_weight}" fill="{color}">{display_count}</text>
+        r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 70" width="26" height="18">
+  <text x="50" y="55" text-anchor="middle" font-size="60" font-weight="{font_weight}" fill="{color}">{display_count}</text>
 </svg>
 "#
     );
