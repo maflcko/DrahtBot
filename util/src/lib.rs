@@ -142,8 +142,8 @@ Identify and provide feedback on typographic or grammatical errors in the provid
 
 # Output Format
 
-List each error with minimal context, followed by a very brief rationale:
-- original -> suggested revision [brief explanation]
+List each error with minimal context, the suggested revision, followed by a very brief rationale. For example:
+- `doc/example.md`: `teh` → `the` [misspelling]
 
 If none are found, state: "{magic_all_good}".
 "#;
@@ -153,20 +153,21 @@ pub const LLM_PROMPT_NAMED_ARGS: &str = r#"
 Check C++ and Python code in the provided git diff for function calls where integral literal values (e.g., 0, true) are used as arguments.
 
 - Focus solely on added diff lines beginning with +.
-- In C++: Look for function calls with literals as positional arguments. Recommend replacing `func(x, y, 0)` with `func(x, y, /*named_arg=*/0)`.
-- In Python: Look for function calls with literals as positional arguments. Recommend replacing `func(x, y, 0)` with `func(x, y, named_arg=0)` if the argument is not already named or not already using keyword syntax.
-- Only suggest a named arg if the meaning of the integral literal is ambiguous and not obvious from the context.
-- Do not flag or suggest changes for arguments that are already named or where such a comment would be more confusing.
+- In C++: Identify function calls with integral literal positional arguments that may benefit from a named-argument comment, such as `func(x, y, /*param_name=*/0)`.
+- In Python: Identify function calls with integral literal positional arguments that may benefit from keyword syntax.
+- Only report calls where the literal's meaning is ambiguous and not obvious from the context.
+- Do not report arguments that are already named or calls where a name would be more confusing.
 - Do not flag the first two arguments of a function call. Only flag the third and later arguments.
 - Do not flag string literals.
 - Do not flag literals in low-level/system/library calls when the literal's purpose is obvious and naming it would add noise, like std::max, std::format.
-- Limit findings and suggestions to literals (do not suggest for variables or expressions).
+- Limit findings to integral literals; do not report variables or expressions.
 
 # Output Format
 
-List each location with minimal context. Only list the location, and do not suggest an arg name for the keyword:
+List each location with minimal context; do not infer or suggest an argument name. For example:
 
-- [function_call_signature] in [filename]
+- `src/manager/util.cpp`: `Derive(std::move(desc), 0, 1, false)`
+- `src/manager/util.py`: `derive(..., 0, 1, False)`
 
 If none are found, state: "{magic_all_good}".
 "#;
@@ -176,7 +177,7 @@ Scan the provided git diff for test comparisons that rely on generic check macro
 
 - Focus only on added diff lines beginning with +.
 - In C++ only look for the BOOST_CHECK_THROW Boost.Test macro that only checks a generic exception type and not a detailed message, for example:
-  * BOOST_CHECK_THROW(obj.write(), std::runtime_error) -> BOOST_CHECK_EXCEPTION(obj.write(), std::runtime_error, HasReason("the exact failure message"))
+  * BOOST_CHECK_THROW(obj.write(), std::runtime_error) -> BOOST_CHECK_EXCEPTION(obj.write(), std::runtime_error, HasReason{"the exact failure message"})
 - Do not flag bare assert(...) checks or any other boost test macros in any C++ code.
 - In Python, functional tests under test/functional/, look for bare assert statements using built‑in comparison operators where a helper is clearly more appropriate. Only the following helpers are available:
   * assert a is b → assert_equal(a, b)
@@ -191,27 +192,28 @@ Scan the provided git diff for test comparisons that rely on generic check macro
 
 # Output Format
 
-List each location with a concise suggestion:
-- [filename] snippet -> recommendation
+List each location with a concise suggestion. For example:
+
+- `src/test/driver_tests.cpp`: `BOOST_CHECK_THROW(driver.run(), RunError)` → Prefer `BOOST_CHECK_EXCEPTION(..., HasReason{"..."})`, rather than only asserting the exception type.
 
 If none are found, state: "{magic_all_good}".
 "#;
 
 pub static LLM_TYPOS: LlmCheck = LlmCheck {
     prompt: LLM_PROMPT_TYPOS,
-    magic_all_good: "No typos were found",
+    magic_all_good: "MAGIC_ALL_GOOD_TYPOS",
     topic: "Possible typos and grammar issues:",
 };
 
 pub static LLM_NAMED_ARGS: LlmCheck = LlmCheck {
     prompt: LLM_PROMPT_NAMED_ARGS,
-    magic_all_good: "No suggestions were found",
+    magic_all_good: "MAGIC_ALL_GOOD_NAMED_ARGS",
     topic: "Possible places where named args for integral literals may be used (e.g. `func(x, /*named_arg=*/0)` in C++, and `func(x, named_arg=0)` in Python):",
 };
 
 pub static LLM_CMP_MACROS: LlmCheck = LlmCheck {
     prompt: LLM_PROMPT_CMP_MACROS,
-    magic_all_good: "No comparison macro suggestions were found.",
+    magic_all_good: "MAGIC_ALL_GOOD_CMP_MACROS",
     topic:
         "Possible places where comparison-specific test macros should replace generic comparisons:",
 };
