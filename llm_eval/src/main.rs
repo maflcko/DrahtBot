@@ -3,7 +3,10 @@ use std::fs;
 use std::hash::{BuildHasher, Hasher, RandomState};
 use std::path::Path;
 use std::process::Command;
-use util::{LLM_SHARED_PROMPT_DIFF, LLM_TYPOS, make_llm_payload, prepare_raw_diff_for_llm};
+use util::{
+    LLM_CMP_MACROS, LLM_NAMED_ARGS, LLM_SHARED_PROMPT_DIFF, LLM_TYPOS, LlmCheck, make_llm_payload,
+    prepare_raw_diff_for_llm,
+};
 
 #[derive(Parser)]
 #[command(about = "Scratch script to evaluate LLMs.", long_about = None)]
@@ -55,7 +58,15 @@ fn main() {
         );
 
         //check_google_ai(&cli, &outputs, &file_name, &diff);
-        check_open_ai(&cli, &outputs, &file_name, &diff);
+        for (check_name, check) in [
+            ("typos", LLM_TYPOS),
+            ("named_args", LLM_NAMED_ARGS),
+            ("cmp_macros", LLM_CMP_MACROS),
+        ] {
+            let check_outputs = outputs.join(check_name);
+            fs::create_dir_all(&check_outputs).expect("folder must be creatable");
+            check_open_ai(&cli, &check_outputs, &file_name, &diff, check, check_name);
+        }
     }
 }
 
@@ -129,9 +140,16 @@ fn check_google_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
         .expect("Must be able to write file");
 }
 
-fn check_open_ai(cli: &Cli, outputs: &Path, file_name: &str, diff: &str) {
-    println!("Check {file_name} via open_ai");
-    let payload = make_llm_payload(diff, LLM_TYPOS.prompt());
+fn check_open_ai(
+    cli: &Cli,
+    outputs: &Path,
+    file_name: &str,
+    diff: &str,
+    check: LlmCheck,
+    check_name: &str,
+) {
+    println!("Check {file_name} via open_ai ({check_name})");
+    let payload = make_llm_payload(diff, check.prompt());
     let temp = outputs
         .join("temp_scratch")
         .to_str()
