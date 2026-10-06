@@ -226,7 +226,7 @@ pub fn all_llm_checks() -> Vec<LlmCheck> {
 /// Construct the OpenAI chat payload used by llm clients that request diff checks.
 pub fn make_llm_payload(diff: &str, check_prompt: String) -> serde_json::Value {
     serde_json::json!({
-      "model": "gpt-5.4-mini",
+      "model": "gpt-6-luna",
       "messages": [
         {
           "role": "developer",
