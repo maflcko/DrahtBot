@@ -60,8 +60,8 @@ fn main() {
         //check_google_ai(&cli, &outputs, &file_name, &diff);
         for (check_name, check) in [
             ("typos", LLM_TYPOS),
-            ("named_args", LLM_NAMED_ARGS),
-            ("cmp_macros", LLM_CMP_MACROS),
+            //("named_args", LLM_NAMED_ARGS),
+            //("cmp_macros", LLM_CMP_MACROS),
         ] {
             let check_outputs = outputs.join(check_name);
             fs::create_dir_all(&check_outputs).expect("folder must be creatable");

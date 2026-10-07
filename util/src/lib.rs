@@ -131,14 +131,14 @@ impl LlmCheck {
     }
 }
 
-/// Prompt encouraging the LLM to highlight typos in git diff documentation.
+/// Prompt encouraging the LLM to highlight typos in a git diff.
 pub const LLM_PROMPT_TYPOS: &str = r#"
 Identify and provide feedback on typographic or grammatical errors in the provided git diff comments or documentation, focusing exclusively on errors impacting comprehension.
 
 - Flag only if a word is misspelled, or the English is clearly broken and the intended meaning cannot be understood without guessing.
 - Ignore style preferences, such as Oxford comma, missing or superfluous commas, missing articles, and missing or inconsistent punctuation.
 - Focus solely on added diff lines beginning with +.
-- Address only code comments (for example C++ or Python comments) or documentation (for example inline strings or markdown files).
+- Address only code comments or documentation like inline strings or markdown files.
 
 # Output Format
 
@@ -148,7 +148,7 @@ List each error with minimal context, the suggested revision, followed by a very
 If none are found, state: "{magic_all_good}".
 "#;
 
-/// Prompt encouraging the LLM to highlight missing named args in git diff.
+/// Prompt encouraging the LLM to highlight missing named args in a git diff.
 pub const LLM_PROMPT_NAMED_ARGS: &str = r#"
 Check C++ and Python code in the provided git diff for function calls where integral literal values (e.g., 0, true) are used as arguments.
 
