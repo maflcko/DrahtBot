@@ -199,6 +199,23 @@ List each location with a concise suggestion. For example:
 If none are found, state: "{magic_all_good}".
 "#;
 
+/// Prompt encouraging the LLM to flag internal implementation names in C++ logs.
+pub const LLM_PROMPT_LOG_CALLS: &str = r#"
+Check C++ logging calls in the provided git diff, such as WalletLogPrintf(...), LogInfo(...), or LogDebug(category, ...).
+
+- Only flag issues introduced by added lines beginning with +.
+- Flag internal type, class, or function names emitted in log messages, including __func__. Function/source identification is redundant with -logsourcelocations.
+- Suggest removing the internal name or replacing it with a plain-language description of the event.
+
+# Output Format
+
+List each location with the log statement including its arguments (possibly abbreviated), followed by a concise suggestion and rationale. For example:
+
+- `src/wallet/wallet.cpp`: `WalletLogPrintf("%s: failed to load wallet", __func__)` → Remove `__func__`; function identification is redundant with `-logsourcelocations`.
+
+If none are found, state: "{magic_all_good}".
+"#;
+
 pub static LLM_TYPOS: LlmCheck = LlmCheck {
     prompt: LLM_PROMPT_TYPOS,
     magic_all_good: "MAGIC_ALL_GOOD_TYPOS",
@@ -218,9 +235,15 @@ pub static LLM_CMP_MACROS: LlmCheck = LlmCheck {
         "Possible places where comparison-specific test macros should replace generic comparisons:",
 };
 
+pub static LLM_LOG_CALLS: LlmCheck = LlmCheck {
+    prompt: LLM_PROMPT_LOG_CALLS,
+    magic_all_good: "MAGIC_ALL_GOOD_LOG_CALLS",
+    topic: "Possible internal implementation names in log messages:",
+};
+
 /// Return all available LLM lint checks
 pub fn all_llm_checks() -> Vec<LlmCheck> {
-    vec![LLM_TYPOS, LLM_NAMED_ARGS, LLM_CMP_MACROS]
+    vec![LLM_TYPOS, LLM_NAMED_ARGS, LLM_CMP_MACROS, LLM_LOG_CALLS]
 }
 
 /// Construct the OpenAI chat payload used by llm clients that request diff checks.
