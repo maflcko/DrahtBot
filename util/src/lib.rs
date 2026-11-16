@@ -227,6 +227,10 @@ pub fn all_llm_checks() -> Vec<LlmCheck> {
 pub fn make_llm_payload(diff: &str, check_prompt: String) -> serde_json::Value {
     serde_json::json!({
       "model": "gpt-6-luna",
+      "prompt_cache_options": {
+        "mode": "explicit",
+        "ttl": "30m"
+      },
       "messages": [
         {
           "role": "developer",
@@ -242,7 +246,10 @@ pub fn make_llm_payload(diff: &str, check_prompt: String) -> serde_json::Value {
           "content": [
             {
               "type": "text",
-              "text": diff
+              "text": diff,
+              "prompt_cache_breakpoint": {
+                "mode": "explicit"
+              }
             },
             {
               "type": "text",
