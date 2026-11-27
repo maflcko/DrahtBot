@@ -125,35 +125,67 @@ fn calc_conflicts<'a>(
     pull_check: &MetaPull,
     worktrees: &[tempfile::TempDir],
 ) -> Vec<&'a MetaPull> {
-    let mut conflicts = Vec::new();
     let base_id = pull_check
         .merge_commit
         .as_ref()
         .expect("merge commit hash missing");
-    for pull_other in pulls_mergeable {
-        if pull_check.slug_num == pull_other.slug_num {
-            continue;
+    let next_other = std::sync::atomic::AtomicUsize::new(0);
+    let conflicts = std::sync::Mutex::new(Vec::new());
+    std::thread::scope(|scope| {
+        for worktree in worktrees {
+            let next_other = &next_other;
+            let conflicts = &conflicts;
+            scope.spawn(move || loop {
+                let other_index = next_other.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if other_index >= pulls_mergeable.len() {
+                    break;
+                }
+                let pull_other: &'a MetaPull = &pulls_mergeable[other_index];
+                if pull_check.slug_num == pull_other.slug_num {
+                    continue;
+                }
+                util::check_call(
+                    util::git()
+                        .current_dir(worktree.path())
+                        .args(["checkout", base_id, "--quiet"]),
+                );
+                if !util::call(
+                    util::git()
+                        .current_dir(worktree.path())
+                        .args([
+                            "merge",
+                            MERGE_STRATEGY,
+                            "--quiet",
+                            &pull_other.head_commit,
+                            "-m",
+                        ])
+                        .arg(format!(
+                            "Merge base_{pr_id}+{pr_o_id}",
+                            pr_id = pull_check.slug_num,
+                            pr_o_id = pull_other.slug_num
+                        )),
+                ) {
+                    util::check_call(
+                        util::git()
+                            .current_dir(worktree.path())
+                            .args(["merge", "--abort"]),
+                    );
+                    conflicts
+                        .lock()
+                        .expect("conflict lock poisoned")
+                        .push(pull_other);
+                }
+            });
         }
-        util::check_call(util::git().args(["checkout", &base_id, "--quiet"]));
-        if !util::call(
-            util::git()
-                .args([
-                    "merge",
-                    MERGE_STRATEGY,
-                    "--quiet",
-                    &pull_other.head_commit,
-                    "-m",
-                ])
-                .arg(format!(
-                    "Merge base_{pr_id}+{pr_o_id}",
-                    pr_id = pull_check.slug_num,
-                    pr_o_id = pull_other.slug_num
-                )),
-        ) {
-            util::check_call(util::git().args(["merge", "--abort"]));
-            conflicts.push(pull_other);
-        }
-    }
+    });
+    let mut conflicts = conflicts.into_inner().expect("conflict lock poisoned");
+    conflicts.sort_unstable_by(|a, b| {
+        a.slug
+            .owner
+            .cmp(&b.slug.owner)
+            .then_with(|| a.slug.repo.cmp(&b.slug.repo))
+            .then_with(|| b.pull.number.cmp(&a.pull.number))
+    });
     conflicts
 }
 
