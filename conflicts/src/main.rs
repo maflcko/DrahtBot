@@ -126,12 +126,10 @@ fn calc_conflicts<'a>(
     worktrees: &[tempfile::TempDir],
 ) -> Vec<&'a MetaPull> {
     let mut conflicts = Vec::new();
-    let base_id = util::check_output(util::git().args([
-        "log",
-        "-1",
-        "--format=%H",
-        pull_check.merge_commit.as_ref().expect("merge id missing"),
-    ]));
+    let base_id = pull_check
+        .merge_commit
+        .as_ref()
+        .expect("merge commit hash missing");
     for pull_other in pulls_mergeable {
         if pull_check.slug_num == pull_other.slug_num {
             continue;
