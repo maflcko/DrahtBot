@@ -178,11 +178,10 @@ async fn maybe_add_ci_failure_comment(
 ) -> Result<()> {
     let issues_api = ctx.octocrab.issues(repo_user, repo_name);
 
-    // Check if *compile* failed and add comment
-    // (functional tests are ignored due to intermittent issues)
+    // Only inspect failed runs; cancelled and skipped runs may have no useful log.
     for run in check_runs
         .iter()
-        .filter(|r| r.conclusion.as_deref().unwrap_or_default() != "success")
+        .filter(|r| r.conclusion.as_deref() == Some("failure"))
     {
         let curl_out = Command::new("curl")
             .args([
@@ -204,6 +203,9 @@ async fn maybe_add_ci_failure_comment(
             .expect("Failed to execute curl");
         assert!(curl_out.status.success()); // Could ignore error code or use exit_ok()? in the future.
         let full_text = String::from_utf8_lossy(&curl_out.stdout);
+        if full_text.trim().is_empty() {
+            continue;
+        }
 
         // excerpt
         let text = full_text
@@ -223,27 +225,21 @@ async fn maybe_add_ci_failure_comment(
             .rev()
             .collect::<String>();
 
-        let should_summarize = text.contains("make: *** [Makefile") // build
-            || text.contains("Errors while running CTest")
-            || text.contains("Error: Unexpected dependencies were detected. Check previous output.") // tidy (deps)
-            || text.contains("ailure generated from") // lint, tidy, fuzz
-            ;
-        if should_summarize {
-            let llm_reason = get_llm_reason(&text, &ctx.llm_token)
-                .await
-                .unwrap_or("(empty)".to_string());
-            let comment = format!(
-                r#"{id}
+        let llm_reason = get_llm_reason(&text, &run.name, &ctx.llm_token)
+            .await
+            .unwrap_or("(empty)".to_string());
+        let comment = format!(
+            r#"{id}
 {msg}
 <sub>Task `{check_name}`: {url}</sub>
 <sub>LLM reason (✨ experimental): {llm_reason}</sub>
 {hints}
 "#,
-                id = util::IdComment::CiFailed.str(),
-                msg = "🚧 At least one of the CI tasks failed.",
-                check_name = run.name,
-                url = run.html_url.as_deref().unwrap_or_default(),
-                hints = r#"
+            id = util::IdComment::CiFailed.str(),
+            msg = "🚧 At least one of the CI tasks failed.",
+            check_name = run.name,
+            url = run.html_url.as_deref().unwrap_or_default(),
+            hints = r#"
 <details><summary>Hints</summary>
 
 Try to run the tests locally, according to the documentation. However, a CI failure may still
@@ -256,21 +252,23 @@ commit of the target branch.
 * A sanitizer issue, which can only be found by compiling with the sanitizer and running the
   affected test.
 
-* An intermittent issue.
+* Intermittent network issues can occur; re-run CI for now, and report the issue if they keep happening.
+
+* A functional or integration test failure may be intermittent or unrelated to this pull request.
+  If no dedicated issue thread exists, create a new one to track it.
 
 Leave a comment here, if you need help tracking down a confusing failure.
 
 </details>
 "#,
-            );
-            issues_api.create_comment(pull_number, comment).await?;
-            break;
-        }
+        );
+        issues_api.create_comment(pull_number, comment).await?;
+        break;
     }
     Ok(())
 }
 
-async fn get_llm_reason(ci_log: &str, llm_token: &str) -> Result<String> {
+async fn get_llm_reason(ci_log: &str, check_name: &str, llm_token: &str) -> Result<String> {
     let client = reqwest::Client::new();
     println!(" ... Run LLM summary for CI failure.");
     let payload = serde_json::json!({
@@ -281,22 +279,28 @@ async fn get_llm_reason(ci_log: &str, llm_token: &str) -> Result<String> {
           "content": [
             {
               "type": "text",
-              "text":
-r#"
-Analyze the tail of a CI log to determine and communicate the underlying reason for the CI failure.
+              "text": format!(r#"
+Analyze the provided CI log tail, even if it is truncated, and determine the underlying reason for the failure.
 
-Consider potential causes such as build errors, ctest errors, clang-tidy errors, lint test errors, or fuzz test errors, even if the log is truncated.
+The check run name is `{check_name}`. Use it only as context, and base the classification on evidence in the log.
 
-# Steps
+Classify the primary cause using exactly one of these categories:
 
-- Read and parse the provided CI log tail.
-- If multiple errors appear, prioritize according to potential severity or probable cause of failure and identify the most significant underlying reason.
-- Formulate a concise, one-line summary that clearly communicates the identified reason for the failure in the shortest form possible.
+- intermittent_network: A likely transient CI network or external service connectivity failure. Use only when the log supports an infrastructure or external-service cause; a network-dependent test failing by itself is not enough.
+- build_fail: A compiler, linker, or other build failure.
+- test_fail: A unit or fuzz test failure, excluding functional tests.
+- functional_test_fail: A functional or integration test failure.
+- lint_fail: A failure in a lint check.
+- tidy_fail: A clang-tidy or dependency-tidy check failure.
+- other_fail: Another identifiable CI failure that does not fit the categories above.
+- unknown: The log tail does not provide enough evidence to identify the cause.
+
+If multiple errors appear, choose the most significant underlying cause. Do not infer a cause that is not supported by the log.
 
 # Output Format
 
-A single short sentence summarizing the underlying reason for the CI failure.
-"#
+A single line in the format `category: explanation`, using one category listed above.
+"#)
     }
           ]
         },
