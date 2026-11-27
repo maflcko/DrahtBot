@@ -152,74 +152,98 @@ impl Feature for CiStatusFeature {
                         issues_api
                             .add_labels(pull_number, &[ci_failed_label.to_string()])
                             .await?;
-                        // Check if *compile* failed and add comment
-                        // (functional tests are ignored due to intermittent issues)
-                        for run in check_runs
-                            .iter()
-                            .filter(|r| r.conclusion.as_deref().unwrap_or_default() != "success")
-                        {
-                            let curl_out = Command::new("curl")
-                                .args([
-                                    "--fail",
-                                    "-L",
-                                    "-H",
-                                    "Accept: application/vnd.github+json",
-                                    "-H",
-                                    &format!("Authorization: Bearer {}", ctx.github_token),
-                                    "-H",
-                                    "X-GitHub-Api-Version: 2022-11-28",
-                                    &format!(
-                                        "https://api.github.com/repos/{}/{}/actions/jobs/{}/logs",
-                                        repo_user, repo_name, run.id
-                                    ),
-                                ])
-                                .stderr(Stdio::inherit())
-                                .output()
-                                .expect("Failed to execute curl");
-                            assert!(curl_out.status.success()); // Could ignore error code or use exit_ok()? in the future.
-                            let full_text = String::from_utf8_lossy(&curl_out.stdout);
+                        maybe_add_ci_failure_comment(
+                            ctx,
+                            repo_user,
+                            repo_name,
+                            pull_number,
+                            &check_runs,
+                        )
+                        .await?;
+                    }
+                }
+            }
+            _ => {}
+        }
+        Ok(())
+    }
+}
 
-                            // excerpt
-                            let text = full_text
-                                .lines()
-                                .rev()
-                                .take(500) // lines
-                                .collect::<Vec<_>>()
-                                .into_iter()
-                                .rev()
-                                .collect::<Vec<_>>()
-                                .join("\n")
-                                .chars()
-                                .rev()
-                                .take(20_000) // unicode chars
-                                .collect::<Vec<_>>()
-                                .into_iter()
-                                .rev()
-                                .collect::<String>();
+async fn maybe_add_ci_failure_comment(
+    ctx: &Context,
+    repo_user: &str,
+    repo_name: &str,
+    pull_number: u64,
+    check_runs: &[octocrab::models::checks::CheckRun],
+) -> Result<()> {
+    let issues_api = ctx.octocrab.issues(repo_user, repo_name);
 
-                            if text.contains("make: *** [Makefile") // build
-                                || text.contains("Errors while running CTest")
-                                || text.contains("Error: Unexpected dependencies were detected. Check previous output.") // tidy (deps)
-                                || text.contains("ailure generated from") // lint, tidy, fuzz
-                        {
-                            let llm_reason = get_llm_reason(
-                                &text,
-                                &ctx.llm_token,
-                            )
-                            .await
-                            .unwrap_or("(empty)".to_string());
-                            let comment = format!(
-                                r#"{id}
+    // Check if *compile* failed and add comment
+    // (functional tests are ignored due to intermittent issues)
+    for run in check_runs
+        .iter()
+        .filter(|r| r.conclusion.as_deref().unwrap_or_default() != "success")
+    {
+        let curl_out = Command::new("curl")
+            .args([
+                "--fail",
+                "-L",
+                "-H",
+                "Accept: application/vnd.github+json",
+                "-H",
+                &format!("Authorization: Bearer {}", ctx.github_token),
+                "-H",
+                "X-GitHub-Api-Version: 2022-11-28",
+                &format!(
+                    "https://api.github.com/repos/{}/{}/actions/jobs/{}/logs",
+                    repo_user, repo_name, run.id
+                ),
+            ])
+            .stderr(Stdio::inherit())
+            .output()
+            .expect("Failed to execute curl");
+        assert!(curl_out.status.success()); // Could ignore error code or use exit_ok()? in the future.
+        let full_text = String::from_utf8_lossy(&curl_out.stdout);
+
+        // excerpt
+        let text = full_text
+            .lines()
+            .rev()
+            .take(500) // lines
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect::<Vec<_>>()
+            .join("\n")
+            .chars()
+            .rev()
+            .take(20_000) // unicode chars
+            .collect::<Vec<_>>()
+            .into_iter()
+            .rev()
+            .collect::<String>();
+
+        let should_summarize = text.contains("make: *** [Makefile") // build
+            || text.contains("Errors while running CTest")
+            || text.contains("Error: Unexpected dependencies were detected. Check previous output.") // tidy (deps)
+            || text.contains("ailure generated from") // lint, tidy, fuzz
+            ;
+        if should_summarize {
+            let llm_reason = get_llm_reason(&text, &ctx.llm_token)
+                .await
+                .unwrap_or("(empty)".to_string());
+            let comment = format!(
+                r#"{id}
 {msg}
 <sub>Task `{check_name}`: {url}</sub>
 <sub>LLM reason (✨ experimental): {llm_reason}</sub>
 {hints}
 "#,
-                                id = util::IdComment::CiFailed.str(),
-                                msg = "🚧 At least one of the CI tasks failed.",
-                                check_name = run.name,
-                                url = run.html_url.as_deref().unwrap_or_default(),
-                                hints = r#"
+                id = util::IdComment::CiFailed.str(),
+                msg = "🚧 At least one of the CI tasks failed.",
+                check_name = run.name,
+                url = run.html_url.as_deref().unwrap_or_default(),
+                hints = r#"
 <details><summary>Hints</summary>
 
 Try to run the tests locally, according to the documentation. However, a CI failure may still
@@ -238,18 +262,12 @@ Leave a comment here, if you need help tracking down a confusing failure.
 
 </details>
 "#,
-                            );
-                            issues_api.create_comment(pull_number, comment).await?;
-                            break;
-                        }
-                        }
-                    }
-                }
-            }
-            _ => {}
+            );
+            issues_api.create_comment(pull_number, comment).await?;
+            break;
         }
-        Ok(())
     }
+    Ok(())
 }
 
 async fn get_llm_reason(ci_log: &str, llm_token: &str) -> Result<String> {
