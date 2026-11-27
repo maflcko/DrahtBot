@@ -121,8 +121,9 @@ fn calc_mergeable(pulls: Vec<MetaPull>, base_branch: &str) -> Vec<MetaPull> {
 }
 
 fn calc_conflicts<'a>(
-    pulls_mergeable: &'a Vec<MetaPull>,
+    pulls_mergeable: &'a [MetaPull],
     pull_check: &MetaPull,
+    worktrees: &[tempfile::TempDir],
 ) -> Vec<&'a MetaPull> {
     let mut conflicts = Vec::new();
     let base_id = util::check_output(util::git().args([
@@ -343,6 +344,31 @@ async fn main() -> octocrab::Result<()> {
         println!("Calculate mergeable pulls");
 
         let mono_pulls_mergeable = calc_mergeable(mono_pulls, base_name);
+        if mono_pulls_mergeable.is_empty() {
+            println!("No open, mergeable {base_name} pulls found");
+            return Ok(());
+        }
+        let worktree_count = std::thread::available_parallelism()
+            .unwrap_or(std::num::NonZeroUsize::MIN)
+            .get();
+        let initial_commit = mono_pulls_mergeable[0]
+            .merge_commit
+            .as_ref()
+            .expect("merge id missing");
+        let conflict_worktrees = (0..worktree_count)
+            .map(|_| {
+                let worktree_temp_dir =
+                    tempfile::TempDir::new_in(&temp_dir).expect("tempdir error");
+                util::check_call(
+                    util::git()
+                        .current_dir(temp_git_work_tree)
+                        .args(["worktree", "add", "--quiet", "--detach"])
+                        .arg(worktree_temp_dir.path())
+                        .arg(initial_commit),
+                );
+                worktree_temp_dir
+            })
+            .collect::<Vec<_>>();
         if args.update_comments {
             for (i, pull_update) in mono_pulls_mergeable.iter().enumerate() {
                 println!(
@@ -350,7 +376,8 @@ async fn main() -> octocrab::Result<()> {
                     len = mono_pulls_mergeable.len(),
                     pr_id = pull_update.slug_num
                 );
-                let pulls_conflict = calc_conflicts(&mono_pulls_mergeable, pull_update);
+                let pulls_conflict =
+                    calc_conflicts(&mono_pulls_mergeable, pull_update, &conflict_worktrees);
                 update_comment(
                     &config,
                     &github,
@@ -377,7 +404,7 @@ async fn main() -> octocrab::Result<()> {
                 "Checking for conflicts {base_name} <> {id} <> other_pulls ... ",
                 id = pull_merge.slug_num
             );
-            let conflicts = calc_conflicts(&mono_pulls_mergeable, pull_merge);
+            let conflicts = calc_conflicts(&mono_pulls_mergeable, pull_merge, &conflict_worktrees);
             update_comment(
                 &config,
                 &github,
