@@ -293,7 +293,7 @@ Classify the primary cause using exactly one of these categories:
 - lint_fail: A failure in a lint check.
 - tidy_fail: A clang-tidy or dependency-tidy check failure.
 - other_fail: Another identifiable CI failure that does not fit the categories above.
-- unknown: The log tail does not provide enough evidence to identify the cause.
+- unknown_ci_fail: The log tail does not provide enough evidence to identify the cause.
 
 If multiple errors appear, choose the most significant underlying cause. Do not infer a cause that is not supported by the log.
 
