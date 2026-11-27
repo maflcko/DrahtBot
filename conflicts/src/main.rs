@@ -389,7 +389,5 @@ async fn main() -> octocrab::Result<()> {
             .await?;
         }
     }
-    util::chdir(&temp_dir);
-
     Ok(())
 }
